@@ -148,7 +148,7 @@
   ];
 
   var CSS =
-    "#sp-app{font-family:Roboto,sans-serif;color:#e0e0e0;max-width:600px;margin:0 auto}" +
+    "#sp-app{font-family:Roboto,sans-serif;color:#e0e0e0;max-width:900px;margin:0 auto}" +
     "esp-app{display:none !important}" +
 
     // Header
