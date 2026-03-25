@@ -235,13 +235,13 @@
     "border-radius:10px;position:relative;overflow:hidden;" +
     "box-shadow:0 2px 20px rgba(0,0,0,.35);border:2px solid #1a1a1a;" +
     "container-type:inline-size;font-family:Roboto,sans-serif;user-select:none}" +
-    ".sp-topbar{position:absolute;top:0;left:0;right:0;height:4.1cqw;" +
-    "display:flex;align-items:center;padding:0.78cqw;z-index:1}" +
+    ".sp-topbar{position:absolute;top:0;left:0;right:0;height:3.2cqw;" +
+    "display:flex;align-items:center;padding:0.39cqw;z-index:1}" +
     ".sp-temp{color:#fff;font-size:1.95cqw;white-space:nowrap;opacity:0;transition:opacity .3s}" +
     ".sp-temp.sp-visible{opacity:1}" +
     ".sp-clock{position:absolute;left:50%;transform:translateX(-50%);" +
     "color:#fff;font-size:1.95cqw;white-space:nowrap}" +
-    ".sp-main{position:absolute;top:5.1cqw;left:0.49cqw;right:0.49cqw;bottom:0.49cqw;" +
+    ".sp-main{position:absolute;top:3.9cqw;left:0.49cqw;right:0.49cqw;bottom:0.49cqw;" +
     "display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start;gap:0.98cqw}" +
 
     // Preview buttons
