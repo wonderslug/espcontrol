@@ -105,9 +105,11 @@ font:
       - "\U000F032A"  # mdi-leaf
       - "\U000F07D6"  # mdi-led-strip
       - "\U000F1051"  # mdi-led-strip-variant
+      - "\U000F1A4B"  # mdi-led-strip-variant-off
       - "\U000F097E"  # mdi-light-switch
       - "\U000F0335"  # mdi-lightbulb
       - "\U000F1253"  # mdi-lightbulb-group
+      - "\U000F1254"  # mdi-lightbulb-group-outline
       - "\U000F1A4C"  # mdi-lightbulb-night
       - "\U000F1A4D"  # mdi-lightbulb-night-outline
       - "\U000F0E4F"  # mdi-lightbulb-off
@@ -228,12 +230,14 @@ substitutions:
   icon_wifi: "\U000F05A9"
   icon_cog: "\U000F0493"
   icon_lightbulb: "\U000F0335"
+  icon_lightbulb_group_outline: "\U000F1254"
   icon_lightbulb_night_outline: "\U000F1A4D"
   icon_lightbulb_off: "\U000F0E4F"
   icon_lightbulb_outline: "\U000F0336"
   icon_printer_3d: "\U000F042B"
   icon_air_filter: "\U000F0D43"
   icon_led_strip_variant: "\U000F1051"
+  icon_led_strip_variant_off: "\U000F1A4B"
   icon_package_closed: "\U000F03D7"
   icon_led_strip: "\U000F07D6"
   icon_blinds: "\U000F00AC"
