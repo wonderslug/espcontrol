@@ -223,7 +223,7 @@
 
     // App shell
     "#sp-app{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;" +
-    "color:var(--text);max-width:480px;margin:0 auto;-webkit-font-smoothing:antialiased}" +
+    "color:var(--text);max-width:960px;margin:0 auto;-webkit-font-smoothing:antialiased}" +
     "esp-app{display:none !important}" +
 
     // Header
@@ -1790,7 +1790,7 @@
           els.setOutdoorField.className = "sp-cond-field" + (state._outdoorOn ? " sp-visible" : "");
           syncInput(els.setOutdoorEntity, state.outdoorEntity);
           syncInput(els.setPresence, state.presenceEntity);
-          syncInput(els.setSSTimeout, String(state.screensaverTimeout));
+          if (els.setSSTimeout) els.setSSTimeout.value = String(state.screensaverTimeout);
           updateTempPreview();
         }
 
@@ -1884,7 +1884,7 @@
       },
       "number-screensaver_timeout": function (val) {
         state.screensaverTimeout = parseFloat(val) || 300;
-        syncInput(els.setSSTimeout, String(state.screensaverTimeout));
+        if (els.setSSTimeout) els.setSSTimeout.value = String(state.screensaverTimeout);
       },
       "text-presence_sensor_entity": function (val) {
         state.presenceEntity = val;
