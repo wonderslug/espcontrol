@@ -215,8 +215,8 @@ font:
     size: 20
     bpp: 2
 
-  # Top bar clock and temperature (18px, down from common 22px)
+  # Top bar clock and temperature (24px)
   - file: "gfonts://Roboto"
     id: clockbar_font_sm
-    size: 18
+    size: 24
     bpp: 2
