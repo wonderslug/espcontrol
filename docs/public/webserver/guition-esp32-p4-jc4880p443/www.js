@@ -266,8 +266,8 @@
     ".sp-clock{position:absolute;left:50%;transform:translateX(-50%);" +
     "color:#fff;font-size:5cqw;white-space:nowrap}" +
     ".sp-main{position:absolute;top:10.83cqw;left:1.04cqw;right:1.04cqw;bottom:1.04cqw;" +
-    "display:grid;grid-template-columns:repeat(" + GRID_COLS + ",1fr);" +
-    "grid-template-rows:repeat(" + GRID_ROWS + ",1fr);gap:2.08cqw;overflow:hidden}" +
+    "display:grid;grid-template-columns:repeat(" + GRID_COLS + ",minmax(0,1fr));" +
+    "grid-template-rows:repeat(" + GRID_ROWS + ",minmax(0,1fr));gap:2.08cqw;overflow:hidden}" +
 
     // Preview buttons
     ".sp-btn{border-radius:2.08cqw;padding:3.33cqw;" +
