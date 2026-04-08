@@ -551,6 +551,7 @@
   var dragRafPending = CFG.dragAnimation ? false : null;
   var dragSrcEl = CFG.dragAnimation ? null : null;
   var dragIsSubpage = false;
+  var dragEnterCount = 0;
   var orderReceived = false;
   var migrationTimer = null;
   var _eventSource = null;
@@ -2183,6 +2184,16 @@
 
   // ── Preview drag and drop ─────────────────────────────────────────
 
+  function resolveSpanPos(pos) {
+    var grid = state.editingSubpage ? getSubpage(state.editingSubpage).grid : state.grid;
+    var sizes = state.editingSubpage ? getSubpage(state.editingSubpage).sizes : state.sizes;
+    if (grid[pos] === -1) {
+      var above = pos - GRID_COLS;
+      if (above >= 0 && grid[above] > 0 && sizes[grid[above]] === 2) return above;
+    }
+    return pos;
+  }
+
   function getCellFromEvent(e, container) {
     if (CFG.dragMode === "swap") {
       var rect = container.getBoundingClientRect();
@@ -2190,7 +2201,7 @@
       var row = Math.floor((e.clientY - rect.top) / (rect.height / GRID_ROWS));
       col = Math.max(0, Math.min(col, GRID_COLS - 1));
       row = Math.max(0, Math.min(row, GRID_ROWS - 1));
-      return row * GRID_COLS + col;
+      return resolveSpanPos(row * GRID_COLS + col);
     }
     var x = e.clientX, y = e.clientY;
     var children = container.children;
@@ -2215,6 +2226,7 @@
   }
 
   function moveToCell(fromPos, toPos) {
+    toPos = resolveSpanPos(toPos);
     if (state.grid[toPos] === -1) return;
     var grid = state.grid.slice();
     var movingSlot = grid[fromPos];
@@ -2258,6 +2270,7 @@
   function moveToCellSubpage(fromPos, toPos) {
     var sp = getSubpage(state.editingSubpage);
     var maxPos = NUM_SLOTS - 1;
+    toPos = resolveSpanPos(toPos);
     if (toPos >= maxPos || sp.grid[toPos] === -1) return;
     var grid = sp.grid.slice();
     var movingSlot = grid[fromPos];
@@ -2303,13 +2316,6 @@
     sp.grid = grid;
   }
 
-  function clearAllPlaceholders(container) {
-    var cells = container.children;
-    for (var i = 0; i < cells.length; i++) {
-      cells[i].classList.remove("sp-drop-placeholder");
-    }
-  }
-
   function clearPlaceholder() {
     if (previewPlaceholder) {
       previewPlaceholder.classList.remove("sp-drop-placeholder");
@@ -2321,6 +2327,23 @@
     var container = els.previewMain;
     var pendingCellIdx = -1;
 
+    function updatePlaceholder(cellIdx) {
+      if (cellIdx === previewDropIdx) return;
+      previewDropIdx = cellIdx;
+      clearPlaceholder();
+      var target = container.querySelector('[data-pos="' + cellIdx + '"]');
+      if (target) {
+        previewPlaceholder = target;
+        previewPlaceholder.classList.add("sp-drop-placeholder");
+      }
+    }
+
+    container.addEventListener("dragenter", function (e) {
+      if (dragSrcPos < 0) return;
+      e.preventDefault();
+      dragEnterCount++;
+    });
+
     container.addEventListener("dragover", function (e) {
       if (dragSrcPos < 0) return;
       e.preventDefault();
@@ -2331,48 +2354,29 @@
         dragRafPending = true;
         requestAnimationFrame(function () {
           dragRafPending = false;
-          if (pendingCellIdx === previewDropIdx) return;
-          previewDropIdx = pendingCellIdx;
-          clearPlaceholder();
-          var target = container.querySelector('[data-pos="' + pendingCellIdx + '"]');
-          if (target) {
-            previewPlaceholder = target;
-            previewPlaceholder.classList.add("sp-drop-placeholder");
-          }
+          updatePlaceholder(pendingCellIdx);
         });
       } else {
-        var cellIdx = getCellFromEvent(e, container);
-        if (cellIdx === previewDropIdx) return;
-        previewDropIdx = cellIdx;
-        clearAllPlaceholders(container);
-        var target = container.querySelector('[data-pos="' + cellIdx + '"]');
-        if (target) {
-          target.classList.add("sp-drop-placeholder");
-        }
+        updatePlaceholder(getCellFromEvent(e, container));
       }
     });
 
-    container.addEventListener("dragleave", function (e) {
-      if (!container.contains(e.relatedTarget)) {
+    container.addEventListener("dragleave", function () {
+      dragEnterCount--;
+      if (dragEnterCount <= 0) {
+        dragEnterCount = 0;
         previewDropIdx = -1;
-        if (CFG.dragAnimation) {
-          clearPlaceholder();
-        } else {
-          clearAllPlaceholders(container);
-        }
+        clearPlaceholder();
       }
     });
 
     container.addEventListener("drop", function (e) {
       e.preventDefault();
+      dragEnterCount = 0;
       var toPos = previewDropIdx;
       previewDropIdx = -1;
-      if (CFG.dragAnimation) {
-        clearPlaceholder();
-        if (dragSrcEl) { dragSrcEl.classList.remove("sp-dragging"); dragSrcEl = null; }
-      } else {
-        clearAllPlaceholders(container);
-      }
+      clearPlaceholder();
+      if (dragSrcEl) { dragSrcEl.classList.remove("sp-dragging"); dragSrcEl = null; }
       if (dragIsSubpage) {
         var maxPos = NUM_SLOTS - 1;
         if (dragSrcPos < 0 || toPos < 0 || toPos >= maxPos) { dragSrcPos = -1; dragIsSubpage = false; return; }
@@ -2400,6 +2404,7 @@
       if (CFG.dragAnimation) dragSrcEl = btn;
       dragIsSubpage = !!state.editingSubpage;
       didDrag = true;
+      dragEnterCount = 0;
       e.dataTransfer.effectAllowed = "move";
       e.dataTransfer.setData("text/plain", String(pos));
       if (CFG.dragAnimation) {
@@ -2410,12 +2415,9 @@
       dragSrcPos = -1;
       previewDropIdx = -1;
       dragIsSubpage = false;
-      if (CFG.dragAnimation) {
-        clearPlaceholder();
-        if (dragSrcEl) { dragSrcEl.classList.remove("sp-dragging"); dragSrcEl = null; }
-      } else {
-        clearAllPlaceholders(els.previewMain);
-      }
+      dragEnterCount = 0;
+      clearPlaceholder();
+      if (dragSrcEl) { dragSrcEl.classList.remove("sp-dragging"); dragSrcEl = null; }
     });
   }
 
