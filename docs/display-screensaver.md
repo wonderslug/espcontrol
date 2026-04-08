@@ -1,39 +1,47 @@
 ---
 title: Display & Screensaver
 description:
-  How to configure the temperature display, screensaver timeout, and presence sensor wake on your Espcontrol panel.
+  How to configure the temperature display, screensaver modes, and presence sensor wake on your Espcontrol panel.
 ---
 
 # Display & Screensaver
 
-These settings control what the panel shows on screen and how it behaves when you're not using it. All of these are configured from the **Settings** tab in the [Web UI](/web-ui).
+These settings control what the panel shows on screen and how it behaves when you're not using it. You'll find all of these in the **Settings** tab on the [Web UI](/web-ui).
 
 ## Temperature display
 
-The top bar of your panel can show indoor and outdoor temperatures, pulled from any temperature sensor in Home Assistant.
+The top bar of your panel can show indoor and outdoor temperatures from any temperature sensor in Home Assistant.
 
-- **Indoor temperature** — toggle it on or off, then enter the entity ID of the sensor you want to use (for example, `sensor.living_room_temperature`).
-- **Outdoor temperature** — works the same way. Use a weather sensor or outdoor thermometer entity.
+- **Indoor temperature** — turn it on, then choose which sensor to use (for example, a room thermometer).
+- **Outdoor temperature** — works the same way. Use a weather sensor or outdoor thermometer.
 
-When both are enabled, the top bar shows two temperatures side by side. When only one is enabled, it shows a single value.
+When both are turned on, the top bar shows two temperatures side by side. When only one is turned on, it shows a single value.
 
 ## Screensaver
 
-To protect the display and save power, the panel activates a screensaver after a period of inactivity.
+To save power and protect the display, the panel activates a screensaver when it's not being used. The screen shows a gentle snow animation and the backlight turns off. Touch the screen to wake it up.
 
-- **Timeout** — how long the panel waits with no touch before activating the screensaver. You can set this from **30 seconds to 30 minutes**, in 30-second steps. The default is **5 minutes**.
+There are two ways to control the screensaver, and you can switch between them in the Settings tab:
 
-When the screensaver is active, the screen shows a gentle snow animation and the backlight turns off. Touching the screen wakes it back up immediately.
+### Timer
 
-## Presence sensor wake
+The screensaver turns on after the panel hasn't been touched for a set amount of time. Choose from:
 
-If you have a motion or presence sensor (such as a mmWave sensor), you can connect it so the panel wakes up when someone walks nearby — no need to touch the screen.
+- **5 minutes** (the default)
+- 10, 15, 20, 30, or 45 minutes
+- 1 hour
 
-- **Presence sensor** — enter the entity ID of a binary sensor in Home Assistant (for example, `binary_sensor.hallway_presence`). When this sensor detects motion, the panel wakes from the screensaver automatically.
+### Sensor
 
-Leave this field blank if you don't have a presence sensor or prefer touch-only wake.
+Instead of a timer, the screensaver is controlled by a motion or presence sensor (like a mmWave sensor mounted nearby). When someone is in the room, the screen stays on. When nobody is detected, the screen goes to sleep — and wakes up again when someone walks past.
+
+To use this, enter the name of your motion or presence sensor from Home Assistant (for example, `binary_sensor.hallway_presence`).
+
+::: tip
+Touching the screen always wakes it up, no matter which mode you're using.
+:::
 
 ## Related
 
 - [Backlight Schedule](/backlight-schedule) — automatic day and night brightness
-- [Web UI](/web-ui) — full guide to the Settings tab
+- [Web UI](/web-ui) — full guide to all the settings

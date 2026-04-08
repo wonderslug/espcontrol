@@ -2516,8 +2516,87 @@
         postText("Button Off Color", data.button_off_color || "313131");
 
         var empty = { entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "", type: "" };
+        var buttons, orderStr, spKeyMap;
+
+        if (importedCount !== NUM_SLOTS) {
+          // Grid dimensions differ — remap used buttons into target slots
+          var origParts = (data.button_order || "").split(",");
+          var usedSlots = [];
+          var seen = {};
+          for (var j = 0; j < origParts.length; j++) {
+            var tok = origParts[j].trim();
+            if (!tok) continue;
+            var dbl = tok.charAt(tok.length - 1) === "d";
+            var num = parseInt(tok, 10);
+            if (isNaN(num) || num < 1 || num > importedCount || seen[num]) continue;
+            seen[num] = true;
+            usedSlots.push({ oldSlot: num, isDouble: dbl });
+          }
+          for (var j = 0; j < importedCount; j++) {
+            var sn = j + 1;
+            if (seen[sn]) continue;
+            var bb = data.buttons[j];
+            if (bb.entity || bb.label || bb.type) {
+              usedSlots.push({ oldSlot: sn, isDouble: false });
+            }
+          }
+
+          var limit = Math.min(usedSlots.length, NUM_SLOTS);
+          var slotMap = {};
+          buttons = [];
+          var newSizes = {};
+          for (var j = 0; j < limit; j++) {
+            var ns = j + 1;
+            slotMap[usedSlots[j].oldSlot] = ns;
+            buttons.push(data.buttons[usedSlots[j].oldSlot - 1]);
+            if (usedSlots[j].isDouble) newSizes[ns] = 2;
+          }
+          for (var j = limit; j < NUM_SLOTS; j++) buttons.push(empty);
+
+          var newGrid = [];
+          for (var j = 0; j < NUM_SLOTS; j++) newGrid.push(0);
+          var pos = 0;
+          for (var j = 0; j < limit && pos < NUM_SLOTS; j++) {
+            var ns = j + 1;
+            var isD = newSizes[ns] === 2;
+            var row = Math.floor(pos / GRID_COLS);
+            if (isD && row >= GRID_ROWS - 1) { isD = false; delete newSizes[ns]; }
+            newGrid[pos] = ns;
+            if (isD) {
+              var bp = pos + GRID_COLS;
+              if (bp < NUM_SLOTS) newGrid[bp] = -1;
+            }
+            pos++;
+            while (pos < NUM_SLOTS && newGrid[pos] === -1) pos++;
+          }
+
+          state.sizes = newSizes;
+          orderStr = serializeGrid(newGrid);
+
+          spKeyMap = {};
+          if (data.subpages) {
+            for (var k in data.subpages) {
+              var oldKey = parseInt(k, 10);
+              if (slotMap[oldKey]) spKeyMap[k] = slotMap[oldKey];
+            }
+          }
+        } else {
+          buttons = [];
+          for (var j = 0; j < NUM_SLOTS; j++) {
+            buttons.push(j < importedCount ? data.buttons[j] : empty);
+          }
+          orderStr = data.button_order || "";
+          spKeyMap = {};
+          if (data.subpages) {
+            for (var k in data.subpages) {
+              var kn = parseInt(k, 10);
+              if (kn >= 1 && kn <= NUM_SLOTS) spKeyMap[k] = kn;
+            }
+          }
+        }
+
         for (var i = 0; i < NUM_SLOTS; i++) {
-          var b = i < importedCount ? data.buttons[i] : empty;
+          var b = buttons[i];
           var n = i + 1;
           postText("Button " + n + " Entity", b.entity || "");
           postText("Button " + n + " Label", b.label || "");
@@ -2538,16 +2617,16 @@
         state.subpages = {};
         if (data.subpages) {
           for (var k in data.subpages) {
-            if (parseInt(k, 10) > NUM_SLOTS) continue;
+            var newKey = spKeyMap[k];
+            if (!newKey) continue;
             var sp = parseSubpageConfig(data.subpages[k]);
             sp.sizes = {};
             buildSubpageGrid(sp);
-            state.subpages[k] = sp;
-            postText("Subpage " + k + " Config", data.subpages[k]);
+            state.subpages[String(newKey)] = sp;
+            postText("Subpage " + newKey + " Config", data.subpages[k]);
           }
         }
 
-        var orderStr = data.button_order || "";
         postText("Button Order", orderStr);
         state.grid = parseOrder(orderStr);
         state.onColor = data.button_on_color || "FF8C00";

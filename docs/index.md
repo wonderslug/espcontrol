@@ -2,7 +2,7 @@
 title: Espcontrol — Home Assistant touch control panel
 titleTemplate: :title
 description:
-  Touchscreen control panel for Home Assistant: up to 20 buttons, web-based configuration, automatic firmware updates.
+  Touchscreen control panel for Home Assistant: up to 20 buttons with subpages, web-based configuration, automatic firmware updates.
 ---
 
 ![Espcontrol on a 7-inch touchscreen: home screen with temperature, clock, and control tiles](/home_screen_hero.jpg)
@@ -15,14 +15,17 @@ description:
 
 ## Features
 
-- **Up to 20 buttons** — control lights, switches, fans, locks, covers, media players, and more (9, 12, or 20 depending on screen size)
+- **Up to 20 buttons** — control lights, switches, fans, locks, covers, media players, and more (9, 15, or 20 depending on screen size)
+- **Subpages** — group related buttons into nested pages to organise controls without using up home screen slots
+- **Double-height buttons** — make any button span two rows for emphasis or readability
 - **Drag-and-drop ordering** — rearrange buttons from the web page on your phone or computer
 - **Automatic icons** — the panel picks an icon based on the device type, or choose from hundreds manually
 - **Custom labels** — name each button however you like, or leave it blank to use the name from Home Assistant
 - **Colour themes** — set the on and off colours for your buttons
+- **Import and export** — back up your entire configuration as a JSON file and restore it on any panel
 - **Indoor and outdoor temperature** shown in the top bar from any Home Assistant sensor
 - **Live clock** — always visible, synced automatically
-- **Screensaver** — dims and sleeps after a configurable idle time (30 seconds to 30 minutes), with an optional motion sensor to wake it
+- **Screensaver** — dims and sleeps after a configurable idle time, or use a presence sensor to wake it automatically
 - **Day and night brightness** — the screen adjusts automatically based on sunrise and sunset
 - **Over-the-air updates** — new firmware versions are installed automatically, or you can check and update manually
 - **Easy WiFi setup** — if the panel can't connect, it creates its own hotspot so you can enter your WiFi details

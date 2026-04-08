@@ -1,33 +1,61 @@
 ---
 title: Buttons & Icons
 description:
-  How to set up buttons on your Espcontrol panel — choosing devices, picking icons, using Auto mode, and adding sensor readouts.
+  How to set up buttons on your Espcontrol panel — choosing devices, picking icons, using Auto mode, subpages, double-height buttons, and sensor readouts.
 ---
 
 # Buttons & Icons
 
-Your panel has a fixed grid of button slots — **20** on the 7-inch, **15** on the 4.3-inch, or **9** on the 4-inch. Each button can control one device in Home Assistant — a light, switch, fan, lock, cover, media player, or anything else that can be toggled.
+Your panel has a grid of button spaces — **20** on the 7-inch, **15** on the 4.3-inch, or **9** on the 4-inch. Each space can hold a **Toggle** button that turns a device on and off, or a **Subpage** button that opens a new page of extra buttons.
 
 ## Setting up a button
 
 From the [Web UI](/web-ui) **Screen** tab:
 
-1. **Tap an empty slot** to add a new button.
-2. **Enter the entity ID** of the Home Assistant device you want to control (for example, `light.living_room` or `switch.garden_lights`). You can find entity IDs in Home Assistant under **Settings > Devices & Services**, or by looking at the entity in the developer tools.
-3. **Choose an icon** from the dropdown, or select **Auto** (see below).
-4. **Set a label** (optional). If you leave it blank, the button will show the device's friendly name from Home Assistant.
+1. **Tap an empty space** in the grid to add a new button.
+2. **Choose a type** — **Toggle** (the default) to control a device, or **Subpage** to create a page of extra buttons.
+3. **Pick the device** you want to control by entering its name from Home Assistant (for example, `light.living_room` or `switch.garden_lights`). You can find these names in Home Assistant under **Settings > Devices & Services**. Subpage buttons don't need a device name.
+4. **Choose an icon** — type to search, or select **Auto** to let the panel pick one for you (see below).
+5. **Set a label** (optional). If you leave it blank, the button uses the device's name from Home Assistant.
+
+## Button types
+
+### Toggle
+
+The default type. A toggle button is connected to a device in Home Assistant — tap it on the panel to switch the device on or off. The button changes colour to show whether the device is currently on or off.
+
+### Subpage
+
+A subpage button works like a folder — tapping it on the panel opens a new page with its own set of buttons. This is great for grouping related controls together (for example, all the lights in one room) without filling up the home screen.
+
+The subpage has one fewer button space than the home screen, because the first space is used for a **Back** button that takes you back.
+
+To set up a subpage:
+
+1. Select a button and change its type to **Subpage**.
+2. Click **Configure Subpage**, or right-click the button and choose **Setup Subpage**.
+3. The preview switches to the subpage. Add and arrange buttons here the same way you would on the home screen.
+4. Click the back arrow to return to the home screen.
+
+Subpage buttons show a small **arrow badge** on the home screen so you can spot them easily.
+
+## Double-height buttons
+
+You can make any button **twice as tall**, spanning two rows instead of one. Right-click the button and choose **Double Height**. This can make important buttons easier to find and tap.
+
+To change it back, right-click and choose **Single Height**. If there's already a button in the space below, it gets moved to the next available space automatically.
 
 ## Shared button settings
 
-These settings apply to all buttons:
+These settings apply to all buttons on the panel:
 
-- **On colour** — the colour shown when a device is switched on. Default: orange (`FF8C00`).
-- **Off colour** — the colour shown when a device is switched off. Default: dark grey (`313131`).
-- **Button order** — the arrangement of buttons on the grid. Each button can be placed at any grid cell. Drag and drop buttons to move them — if you drop onto an occupied cell, the existing button is displaced to the next empty cell.
+- **On colour** — the colour a button shows when its device is switched on. Default: orange.
+- **Off colour** — the colour a button shows when its device is switched off. Default: dark grey.
+- **Button order** — you can drag and drop buttons to rearrange them. If you drop a button onto a space that's already taken, the existing button shifts to the next available space.
 
 ## Auto icons
 
-When you set a button's icon to **Auto**, the panel picks an appropriate icon based on the type of device:
+When you set a button's icon to **Auto**, the panel picks an appropriate icon based on what kind of device it controls:
 
 | Device type | Icon shown |
 | --- | --- |
@@ -40,16 +68,26 @@ When you set a button's icon to **Auto**, the panel picks an appropriate icon ba
 | Media player | Speaker |
 | Camera | Camera |
 | Binary sensor (motion, door) | Motion sensor |
-| Anything else | Gear (cog) |
+| Anything else | Gear |
 
-If you'd rather pick a specific icon, the dropdown offers hundreds of choices from the [Material Design Icons](https://pictogrammers.com/library/mdi/) set — covering lighting, climate, security, weather, media, and more. Browse the full list on the [Icon Reference](/icons) page.
+If you'd rather pick a specific icon, the dropdown offers hundreds of choices covering lighting, climate, security, weather, media, and more. Type to search by name. Browse the full list on the [Icon Reference](/icons) page.
 
-## Sensor readouts
+## When Entity On
 
-Each button can optionally display a sensor value alongside the icon and label. This is useful for showing a temperature, humidity, or power reading on the same button that controls the device.
+Each toggle button has an optional **When Entity On** setting that changes what the button shows while the device is switched on. Turn it on and choose one of two options:
 
-- **Sensor** — enter the entity ID of a Home Assistant sensor (for example, `sensor.living_room_temperature`).
-- **Sensor unit** — the unit to display (for example, `°C` or `W`).
+### Replace Icon
+
+Show a different icon when the device is on. For example, you could show an outline lightbulb when the light is off and a filled lightbulb when it's on.
+
+### Sensor Data
+
+Show a live reading on the button when the device is on — for example, a temperature, power usage, or completion percentage.
+
+- **Sensor** — choose which sensor from Home Assistant to display (for example, `sensor.printer_percent_complete`).
+- **Unit** — the unit to show alongside the value (for example, `%`, `°C`, or `W`).
+
+When the device is off, the button goes back to showing its normal icon.
 
 ## Missing an icon?
 

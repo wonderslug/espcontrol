@@ -151,6 +151,7 @@ export default defineConfig({
       {
         text: 'Reference',
         items: [
+          { text: 'Specifications', link: '/hardware-architecture' },
           { text: 'Icon Reference', link: '/icons' },
           { text: 'FAQ', link: '/faq' },
           { text: 'Roadmap', link: '/roadmap' },

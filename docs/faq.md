@@ -65,11 +65,21 @@ The panel includes hundreds of icons from the Material Design Icons set. If the 
 
 ## How many buttons can I have?
 
-Each panel has a grid of cells sized to fill the screen. Buttons can be placed at any cell, and empty cells are left visible. The grid sizes are:
+Each panel has a grid of cells sized to fill the screen. The home grid sizes are:
 
 - **7-inch JC1060P470** — 20 buttons (4 rows x 5 columns)
 - **4.3-inch JC4880P443** — 15 buttons (5 rows x 3 columns)
 - **4-inch 4848S040** — 9 buttons (3 rows x 3 columns)
+
+You can go beyond these limits using **subpages**. Any button can be set to the Subpage type, which opens a nested page with its own grid of buttons (one fewer slot than the home grid, since the first position is a Back button). See [Buttons & Icons — Subpages](/buttons-and-icons#subpages) for details.
+
+## What are subpages?
+
+Subpages let you group related buttons together. A button set to the **Subpage** type acts like a folder — tapping it on the display opens a nested grid of buttons. This is useful for organising controls by room or device type without filling up the home screen. Each subpage has its own buttons, icons, and labels, configured the same way as the home grid. See [Buttons & Icons — Subpages](/buttons-and-icons#subpages).
+
+## Can I back up my configuration?
+
+Yes. In the [Web UI](/web-ui) **Settings** tab, under **Backup**, you can **Export** your full configuration (buttons, subpages, colours, and display settings) as a JSON file. To restore it, use **Import** to upload a previously exported file. You can also use this to copy a configuration from one panel to another — the importer remaps buttons automatically if the panels have different grid sizes.
 
 ## Which panels are supported?
 
