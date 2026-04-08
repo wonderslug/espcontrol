@@ -40,9 +40,9 @@ Your button configuration is stored separately and will be preserved unless you 
 No. The panel is designed to work with Home Assistant. It needs Home Assistant for:
 
 - Controlling your smart home devices (lights, switches, fans, etc.)
-- Time synchronisation (for the clock and backlight schedule)
-- Temperature sensor data
-- Presence sensor data for screensaver wake
+- Keeping the clock accurate
+- Temperature readings
+- Motion sensor data for the screensaver
 
 Without Home Assistant, the panel would have no devices to control and no data to display.
 
@@ -65,21 +65,21 @@ The panel includes hundreds of icons from the Material Design Icons set. If the 
 
 ## How many buttons can I have?
 
-Each panel has a grid of cells sized to fill the screen. The home grid sizes are:
+The home screen has a grid of buttons sized to fill the screen:
 
-- **7-inch JC1060P470** — 20 buttons (4 rows x 5 columns)
-- **4.3-inch JC4880P443** — 15 buttons (5 rows x 3 columns)
-- **4-inch 4848S040** — 9 buttons (3 rows x 3 columns)
+- **7-inch JC1060P470** — 20 buttons (4 rows, 5 columns)
+- **4.3-inch JC4880P443** — 15 buttons (5 rows, 3 columns)
+- **4-inch 4848S040** — 9 buttons (3 rows, 3 columns)
 
-You can go beyond these limits using **subpages**. Any button can be set to the Subpage type, which opens a nested page with its own grid of buttons (one fewer slot than the home grid, since the first position is a Back button). See [Buttons & Icons — Subpages](/buttons-and-icons#subpages) for details.
+You can have even more using **subpages**. Any button can be turned into a folder that opens a new page of buttons. So you could have 20 buttons on the home screen, and each one could open a subpage with up to 19 more. See [Buttons & Icons — Subpages](/buttons-and-icons#subpages) for details.
 
 ## What are subpages?
 
-Subpages let you group related buttons together. A button set to the **Subpage** type acts like a folder — tapping it on the display opens a nested grid of buttons. This is useful for organising controls by room or device type without filling up the home screen. Each subpage has its own buttons, icons, and labels, configured the same way as the home grid. See [Buttons & Icons — Subpages](/buttons-and-icons#subpages).
+Subpages are like folders for your buttons. Set any button to the **Subpage** type and it becomes a folder — tapping it on the panel opens a new page with its own set of buttons. This is great for grouping controls by room or device type without filling up the home screen. Each subpage has its own buttons, icons, and labels, set up the same way as the home screen. See [Buttons & Icons — Subpages](/buttons-and-icons#subpages).
 
-## Can I back up my configuration?
+## Can I back up my setup?
 
-Yes. In the [Web UI](/web-ui) **Settings** tab, under **Backup**, you can **Export** your full configuration (buttons, subpages, colours, and display settings) as a JSON file. To restore it, use **Import** to upload a previously exported file. You can also use this to copy a configuration from one panel to another — the importer remaps buttons automatically if the panels have different grid sizes.
+Yes. In the [Web UI](/web-ui) **Settings** tab, under **Backup**, you can **Export** your entire setup (buttons, subpages, colours, and display settings) as a file. To restore it later, use **Import** to load the saved file. You can also use this to copy your setup to a different panel — the import will rearrange buttons automatically if the panels are different sizes.
 
 ## Which panels are supported?
 

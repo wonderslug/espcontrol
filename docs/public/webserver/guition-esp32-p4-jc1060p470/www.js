@@ -1838,6 +1838,9 @@
       grid[toPos] = movingSlot;
       applySpans(grid, c.sizes, c.maxSlots);
     }
+    if (c.sizes[movingSlot] === 2 && toPos + GRID_COLS >= c.maxSlots) {
+      delete c.sizes[movingSlot];
+    }
     if (c.isSub) {
       getSubpage(state.editingSubpage).grid = grid;
     } else {
