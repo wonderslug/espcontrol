@@ -493,14 +493,6 @@
     ".sp-fw-btn:hover{background:var(--border)}" +
     ".sp-fw-btn:disabled{opacity:.4;cursor:not-allowed}" +
 
-    // Subpage breadcrumb
-    ".sp-breadcrumb{display:flex;align-items:center;gap:6px;padding:8px var(--gap) 0;" +
-    "font-size:.85rem;color:var(--text2)}" +
-    ".sp-breadcrumb-link{color:var(--accent);cursor:pointer;text-decoration:none}" +
-    ".sp-breadcrumb-link:hover{text-decoration:underline}" +
-    ".sp-breadcrumb-sep{color:var(--text2)}" +
-    ".sp-breadcrumb-current{color:var(--text)}" +
-
     // Subpage back button in preview
     ".sp-back-btn{border-radius:0.78cqw;padding:1.37cqw;display:flex;flex-direction:column;" +
     "justify-content:space-between;box-sizing:border-box;border:2px solid transparent;" +
@@ -925,12 +917,6 @@
     els.temp = wrap.querySelector(".sp-temp");
     els.clock = wrap.querySelector(".sp-clock");
     els.previewMain = wrap.querySelector(".sp-main");
-
-    var breadcrumb = document.createElement("div");
-    breadcrumb.className = "sp-breadcrumb";
-    breadcrumb.style.display = "none";
-    page.appendChild(breadcrumb);
-    els.breadcrumb = breadcrumb;
 
     var hint = document.createElement("div");
     hint.className = "sp-hint";
@@ -1401,8 +1387,6 @@
       return;
     }
 
-    // Hide breadcrumb and show hint when on home
-    if (els.breadcrumb) els.breadcrumb.style.display = "none";
     if (els.previewHint) els.previewHint.style.display = "";
 
     for (var pos = 0; pos < NUM_SLOTS; pos++) {
@@ -1495,25 +1479,6 @@
     var sp = getSubpage(homeSlot);
     var homeBtn = state.buttons[homeSlot - 1];
     var maxPos = NUM_SLOTS - 1;
-
-    // Show breadcrumb
-    if (els.breadcrumb) {
-      els.breadcrumb.style.display = "";
-      els.breadcrumb.innerHTML = "";
-      var homeLink = document.createElement("span");
-      homeLink.className = "sp-breadcrumb-link";
-      homeLink.textContent = "Home";
-      homeLink.addEventListener("click", exitSubpage);
-      els.breadcrumb.appendChild(homeLink);
-      var sep = document.createElement("span");
-      sep.className = "sp-breadcrumb-sep";
-      sep.textContent = " \u203A ";
-      els.breadcrumb.appendChild(sep);
-      var cur = document.createElement("span");
-      cur.className = "sp-breadcrumb-current";
-      cur.textContent = homeBtn.label || homeBtn.entity || "Subpage " + homeSlot;
-      els.breadcrumb.appendChild(cur);
-    }
 
     // Hide hint
     if (els.previewHint) els.previewHint.style.display = "none";
