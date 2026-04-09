@@ -28,9 +28,7 @@ Connect the display to your computer with the USB-C cable, then click the button
 
 **4.3-inch (JC4880P443):**
 
-::: info Coming soon
-Web install for the JC4880P443 is not yet available. Use the [ESPHome Manual Setup](/esphome-manual-setup) guide to flash this device.
-:::
+<EspInstallButton slug="guition-esp32-p4-jc4880p443" />
 
 **4-inch square (4848S040):**
 
