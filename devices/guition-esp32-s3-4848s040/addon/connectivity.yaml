@@ -13,8 +13,9 @@ wifi:
   on_connect:
     - script.stop: setup_screen_dim
     - lambda: |-
+        ESP_LOGI("connectivity", "WiFi connected (%lu ms)", millis());
         lv_label_set_text(id(loading_status_label), "Connected");
-    - delay: 800ms
+    - delay: 200ms
     - if:
         condition:
           lambda: 'return !id(button_order).state.empty();'

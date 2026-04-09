@@ -299,12 +299,12 @@
     "font-size:.75rem;line-height:1.5;color:#b0b0b0;overflow-x:auto;overflow-y:auto;" +
     "max-height:70vh;white-space:pre;word-break:break-all}" +
     ".sp-log-line{padding:1px 0;border-left:3px solid transparent;padding-left:6px}" +
-    ".sp-log-error{color:var(--danger);border-left-color:var(--danger);background:rgba(239,83,80,.08)}" +
+    ".sp-log-error{color:#ef5350;border-left-color:#ef5350;background:rgba(239,83,80,.08)}" +
     ".sp-log-warn{color:#fdd835;border-left-color:#fdd835;background:rgba(255,167,38,.06)}" +
-    ".sp-log-info{color:var(--success)}" +
+    ".sp-log-info{color:#4caf50}" +
     ".sp-log-config{color:#ce93d8}" +
-    ".sp-log-debug{color:#aaa}" +
-    ".sp-log-verbose{color:#666}" +
+    ".sp-log-debug{color:#26c6da}" +
+    ".sp-log-verbose{color:#b0b0b0}" +
 
     ".sp-empty{text-align:center;padding:24px;color:#666;font-size:.85rem}" +
 

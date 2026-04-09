@@ -31,6 +31,7 @@ esphome:
       then:
         # Phase 1: Parse config, position buttons, apply colors/icons/labels
         - lambda: |-
+            ESP_LOGI("sensors", "Phase 1: visual setup start (%lu ms)", millis());
             // Migration check: button_order exists but all configs empty
             std::string order_check = id(button_order).state;
             if (!order_check.empty()) {
@@ -394,10 +395,12 @@ esphome:
               }
             }
 
+        - lambda: 'ESP_LOGI("sensors", "Phase 1: done (%lu ms)", millis());'
         - delay: 100ms
 
         # Phase 2: HA subscriptions + subpage creation
         - lambda: |-
+            ESP_LOGI("sensors", "Phase 2: subscriptions + subpages start (%lu ms)", millis());
             auto cfg_field = [](const std::string &cfg, int idx) -> std::string {
               size_t start = 0;
               for (int i = 0; i < idx; i++) {
@@ -978,11 +981,13 @@ esphome:
 
               lv_obj_set_user_data(slots[si].btn, (void *)sub_scr);
             }
+            ESP_LOGI("sensors", "Phase 2: done (%lu ms)", millis());
 
         - delay: 100ms
 
         # Phase 3: Temperature + presence subscriptions
         - lambda: |-
+            ESP_LOGI("sensors", "Phase 3: temp/presence subscriptions start (%lu ms)", millis());
             bool indoor_on  = id(indoor_temp_enable).state;
             bool outdoor_on = id(outdoor_temp_enable).state;
 
@@ -1058,3 +1063,4 @@ esphome:
                 })
               );
             }
+            ESP_LOGI("sensors", "Phase 3: done (%lu ms)", millis());
