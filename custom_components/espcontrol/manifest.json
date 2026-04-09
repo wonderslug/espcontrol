@@ -1,0 +1,11 @@
+{
+  "domain": "espcontrol",
+  "name": "Espcontrol",
+  "version": "1.0.0",
+  "config_flow": true,
+  "documentation": "https://jtenniswood.github.io/espcontrol/",
+  "issue_tracker": "https://github.com/jtenniswood/espcontrol/issues",
+  "dependencies": ["http"],
+  "codeowners": ["@jtenniswood"],
+  "iot_class": "local_push"
+}

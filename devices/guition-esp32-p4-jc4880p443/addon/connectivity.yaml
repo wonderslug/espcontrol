@@ -9,7 +9,8 @@ captive_portal:
 
 wifi:
   reboot_timeout: 0s
-  ap: {}
+  ap:
+    ssid: "${friendly_name}"
   on_connect:
     - script.stop: setup_screen_dim
     - lambda: |-

@@ -10,5 +10,6 @@ packages:
 
 wifi:
   ap:
+    ssid: "${friendly_name}"
 
 captive_portal:
