@@ -43,6 +43,13 @@ psram:
   speed: 80MHz
 
 # ---------------------------------------------------------------------------
+# Deep sleep (used by OTA to force a full hardware reset on wake)
+# ---------------------------------------------------------------------------
+deep_sleep:
+  id: ota_reboot
+  sleep_duration: 100ms
+
+# ---------------------------------------------------------------------------
 # OTA updates (ESPHome native + HTTP-based)
 # ---------------------------------------------------------------------------
 # ESP32-S3 with octal PSRAM and MIPI RGB display fails to reinitialize
@@ -56,10 +63,9 @@ ota:
         - light.turn_off: display_backlight
     on_end:
       then:
-        - lambda: |-
-            #include "esp_sleep.h"
-            esp_sleep_enable_timer_wakeup(100000);
-            esp_deep_sleep_start();
+        - deep_sleep.enter:
+            id: ota_reboot
+            sleep_duration: 100ms
   - platform: http_request
 
 # ---------------------------------------------------------------------------
