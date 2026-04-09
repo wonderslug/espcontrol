@@ -63,7 +63,7 @@ lvgl:
                         width: 440
                         text_align: center
                     - label:
-                        text: "Settings → Devices & Services"
+                        text: "Settings > Devices & Services"
                         text_font: setup_body_font
                         text_color: 0xFFFFFF
                         width: 440
