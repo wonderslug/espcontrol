@@ -1,20 +1,16 @@
 ---
-title: Setup
+title: Configuration
 description:
   How to use the built-in web page to configure buttons, icons, display settings, screensaver, and brightness on your Espcontrol panel.
 ---
 
-# Setup
+# Device Configuration
 
 Your Espcontrol panel has a built-in web page where you can set everything up. Open it by typing the panel's address into any browser on your phone or computer.
 
 ::: tip Finding the address
 The address is shown on the display screen when no buttons are configured yet. You can also find it in your router's connected devices list, or in Home Assistant under **Settings > Devices & Services > ESPHome**.
 :::
-
-## Buttons
-
-Your panel has a grid of button spaces — **20** on the 7-inch, **15** on the 4.3-inch, or **9** on the 4-inch.
 
 ### Adding a button
 
@@ -42,14 +38,6 @@ Each toggle button has an optional **When Entity On** setting that changes what 
 
 When the device is off, the button reverts to its normal icon.
 
-### Selecting buttons
-
-- **Tap** a button to select it and show its settings.
-- **Shift+click** to select a range.
-- **Ctrl+click** (Cmd+click on Mac) to toggle individual buttons.
-
-When multiple buttons are selected, right-click to cut or delete them all at once.
-
 ### Moving buttons
 
 Drag and drop any button to reposition it. If you drop it onto an occupied space, the existing button shifts to the next available slot.
@@ -58,19 +46,6 @@ Drag and drop any button to reposition it. If you drop it onto an occupied space
 
 Right-click a button and choose **Double Height** to make it span two rows. To revert, right-click and choose **Single Height**. If a button already occupies the space below, it gets moved automatically.
 
-### Right-click menu
-
-Right-click a button to see:
-
-| Option | What it does |
-| --- | --- |
-| **Edit Subpage** | Opens the subpage editor (Subpage buttons only) |
-| **Double Height** / **Single Height** | Toggles between one-row and two-row height |
-| **Duplicate** | Copies the button to the next available space |
-| **Cut** | Removes the button so you can paste it elsewhere |
-| **Delete** | Removes the button permanently |
-
-Right-click an **empty space** to **Paste** a previously cut button. Cut and paste also works between the home screen and subpages.
 
 ## Apply Configuration
 
