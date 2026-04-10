@@ -6,6 +6,8 @@ description:
 
 # Subpages
 
+![Subpage screen showing Back button and cover position buttons](/images/screen-subpage.png)
+
 A subpage works like a folder — tapping it on the panel opens a new page with its own set of buttons. This is great for grouping related controls together (for example, all the lights in one room) without filling up the home screen.
 
 The subpage has one fewer slot than the home screen because the first slot is a **Back** button. Subpage buttons show a small **arrow badge** on the home screen so you can spot them easily.

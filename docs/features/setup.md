@@ -8,6 +8,8 @@ description:
 
 Your Espcontrol panel has a built-in web page where you can set everything up. Open it by typing the panel's address into any browser on your phone or computer.
 
+![Screen setup page](/images/screen-setup.png)
+
 ::: tip Finding the address
 The address is shown on the display screen when no buttons are configured yet. You can also find it in your router's connected devices list, or in Home Assistant under **Settings > Devices & Services > ESPHome**.
 :::
@@ -15,6 +17,8 @@ The address is shown on the display screen when no buttons are configured yet. Y
 ### Adding a button
 
 Tap any empty space in the grid (shown as a dashed outline with a **+** icon). A settings panel appears below the preview where you configure the button:
+
+![Button settings panel](/images/button-settings.png)
 
 1. **Choose a type** — **Toggle** (the default) to control a device, or **Subpage** to create a folder of extra buttons.
 2. **Pick the device** you want to control by entering its Home Assistant entity name (for example, `light.living_room` or `switch.garden_lights`). You can find these under **Settings > Devices & Services** in Home Assistant. Subpage buttons don't need a device name.
