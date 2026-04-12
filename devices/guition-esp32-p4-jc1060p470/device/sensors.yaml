@@ -364,6 +364,8 @@ esphome:
               if (has_on) {
                 lv_obj_set_style_bg_color(s.btn, lv_color_hex(on_val),
                   static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_CHECKED));
+                lv_obj_set_style_bg_color(s.btn, lv_color_hex(on_val),
+                  static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_PRESSED));
               }
               if (has_off) {
                 lv_obj_set_style_bg_color(s.btn, lv_color_hex(off_val),
@@ -440,7 +442,6 @@ esphome:
                   lv_label_set_text(s.icon_lbl, find_icon(icon_name.c_str()));
                 } else if (cfg_field(cfg, 6) == "push") {
                   lv_label_set_text(s.icon_lbl, "\U000F0741");
-                  lv_obj_set_style_bg_color(s.btn, lv_obj_get_style_bg_color(s.btn, LV_PART_MAIN), LV_PART_MAIN | LV_STATE_PRESSED);
                   static const lv_style_prop_t push_props[] = {LV_STYLE_BG_COLOR, LV_STYLE_PROP_INV};
                   static lv_style_transition_dsc_t push_trans;
                   static bool push_trans_inited = false;
@@ -1012,8 +1013,12 @@ esphome:
                 lv_obj_set_style_shadow_width(sb_btn, 0, LV_PART_MAIN);
                 if (has_off) lv_obj_set_style_bg_color(sb_btn, lv_color_hex(off_val),
                   static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_DEFAULT));
-                if (has_on) lv_obj_set_style_bg_color(sb_btn, lv_color_hex(on_val),
-                  static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_CHECKED));
+                if (has_on) {
+                  lv_obj_set_style_bg_color(sb_btn, lv_color_hex(on_val),
+                    static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_CHECKED));
+                  lv_obj_set_style_bg_color(sb_btn, lv_color_hex(on_val),
+                    static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_PRESSED));
+                }
                 lv_obj_set_grid_cell(sb_btn, LV_GRID_ALIGN_STRETCH, col, 1, LV_GRID_ALIGN_STRETCH, row, rs);
 
                 lv_obj_t *sil = lv_label_create(sb_btn);

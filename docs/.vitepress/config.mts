@@ -158,6 +158,7 @@ export default defineConfig({
         items: [
           { text: 'Setup', link: '/features/setup' },
           { text: 'Subpages', link: '/features/subpages' },
+          { text: 'Push Buttons', link: '/features/push-buttons' },
           { text: 'Appearance', link: '/features/appearance' },
           { text: 'Temperature', link: '/features/temperature' },
           { text: 'Screensaver', link: '/features/screensaver' },
