@@ -46,12 +46,13 @@ button:
               id: button_${num}_unit_label
               text: ""
               pad_bottom: 6
-    # Entity name label (bottom of button, clip on single height)
+    # Entity name label (bottom of button, wraps to two lines)
     - label:
         align: bottom_left
         id: button_${num}_text_label
         text: "Configure"
-        long_mode: clip
+        long_mode: wrap
+        width: 100%
   # Fire push event, navigate to subpage, or toggle the bound HA entity
   on_short_click:
     - lambda: |-
