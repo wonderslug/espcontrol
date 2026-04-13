@@ -1141,8 +1141,8 @@ esphome:
                         lv_obj_add_state(btn, LV_STATE_CHECKED);
                       lv_obj_add_state(btn, LV_STATE_USER_1);
                       lv_timer_create([](lv_timer_t *t) {
-                        lv_obj_clear_state((lv_obj_t *)lv_timer_get_user_data(t), LV_STATE_USER_1);
-                        lv_timer_delete(t);
+                        lv_obj_clear_state((lv_obj_t *)t->user_data, LV_STATE_USER_1);
+                        lv_timer_del(t);
                       }, 3000, btn);
                       api::HomeassistantActionRequest req;
                       req.service = decltype(req.service)("homeassistant.toggle");
