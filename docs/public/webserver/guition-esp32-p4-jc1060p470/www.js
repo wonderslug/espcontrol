@@ -203,14 +203,26 @@
           renderPreview();
         }
       ));
+      var displayStateEnabled = b.sensor === "indicator";
+      var displayStateToggle = helpers.toggleRow("Display State", helpers.idPrefix + "whenon-toggle", displayStateEnabled);
+      panel.appendChild(displayStateToggle.row);
+
+      displayStateToggle.input.addEventListener("change", function () {
+        if (this.checked) {
+          b.sensor = "indicator";
+          helpers.saveField("sensor", "indicator");
+        } else {
+          b.sensor = "";
+          helpers.saveField("sensor", "");
+        }
+      });
+
       var hasIconOn = b.icon_on && b.icon_on !== "Auto";
-      var whenOnEnabled = b.sensor === "indicator" || hasIconOn;
+      var iconOnToggle = helpers.toggleRow("Icon When On", helpers.idPrefix + "iconon-toggle", hasIconOn);
+      panel.appendChild(iconOnToggle.row);
 
-      var whenOnToggle = helpers.toggleRow("When Entity On", helpers.idPrefix + "whenon-toggle", whenOnEnabled);
-      panel.appendChild(whenOnToggle.row);
-
-      var whenOnCond = condField();
-      if (whenOnEnabled) whenOnCond.classList.add("sp-visible");
+      var iconOnCond = condField();
+      if (hasIconOn) iconOnCond.classList.add("sp-visible");
 
       var iconOnSection = document.createElement("div");
       iconOnSection.className = "sp-field";
@@ -225,7 +237,7 @@
         'placeholder="Search icons\u2026" value="' + escAttr(iconOnVal) + '" autocomplete="off">' +
         '<div class="sp-icon-dropdown"></div>';
       iconOnSection.appendChild(iconOnPicker);
-      whenOnCond.appendChild(iconOnSection);
+      iconOnCond.appendChild(iconOnSection);
 
       initIconPicker(iconOnPicker, iconOnVal, function (opt) {
         b.icon_on = opt;
@@ -233,19 +245,15 @@
         renderPreview();
       });
 
-      panel.appendChild(whenOnCond);
+      panel.appendChild(iconOnCond);
 
-      whenOnToggle.input.addEventListener("change", function () {
+      iconOnToggle.input.addEventListener("change", function () {
         if (this.checked) {
-          b.sensor = "indicator";
-          helpers.saveField("sensor", "indicator");
-          whenOnCond.classList.add("sp-visible");
+          iconOnCond.classList.add("sp-visible");
         } else {
-          b.sensor = "";
           b.icon_on = "Auto";
-          helpers.saveField("sensor", "");
           helpers.saveField("icon_on", "Auto");
-          whenOnCond.classList.remove("sp-visible");
+          iconOnCond.classList.remove("sp-visible");
           var ionPreview = iconOnPicker.querySelector(".sp-icon-picker-preview");
           if (ionPreview) ionPreview.className = "sp-icon-picker-preview mdi mdi-cog";
           var ionInput = iconOnPicker.querySelector(".sp-icon-picker-input");
