@@ -278,13 +278,9 @@
       });
 
       var configBtn = document.createElement("button");
-      configBtn.className = "sp-action-btn";
-      configBtn.style.background = "var(--accent)";
-      configBtn.style.color = "#fff";
-      configBtn.style.width = "100%";
-      configBtn.style.marginTop = "12px";
-      configBtn.textContent = "Configure Subpage";
-      configBtn.addEventListener("click", function () { enterSubpage(slot); });
+      configBtn.className = "sp-action-btn sp-edit-subpage-btn";
+      configBtn.textContent = "Edit subpage";
+      configBtn.addEventListener("click", function () { closeSettings(); enterSubpage(slot); });
       panel.appendChild(configBtn);
     },
     renderPreview: function (b, helpers) {
@@ -455,6 +451,8 @@
     ".sp-delete-btn{background:var(--danger);color:#fff}" +
     ".sp-save-btn{background:var(--accent);color:#fff}" +
     ".sp-save-btn:hover{background:var(--accent-hover)}" +
+    ".sp-edit-subpage-btn{background:var(--surface2);color:var(--text)}" +
+    ".sp-edit-subpage-btn:hover{background:var(--border)}" +
     ".sp-btn-row--save{margin-top:24px;justify-content:flex-end}" +
 
     ".sp-toggle-row{display:flex;align-items:center;justify-content:space-between;" +
@@ -2116,6 +2114,8 @@
 
     var saveRow = document.createElement("div");
     saveRow.className = "sp-btn-row sp-btn-row--save";
+    var editSubBtn = panel.querySelector(".sp-edit-subpage-btn");
+    if (editSubBtn) saveRow.appendChild(editSubBtn);
     var saveBtn = document.createElement("button");
     saveBtn.className = "sp-action-btn sp-save-btn";
     saveBtn.textContent = "Save";

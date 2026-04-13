@@ -89,13 +89,9 @@ registerButtonType("subpage", {
     });
 
     var configBtn = document.createElement("button");
-    configBtn.className = "sp-action-btn";
-    configBtn.style.background = "var(--accent)";
-    configBtn.style.color = "#fff";
-    configBtn.style.width = "100%";
-    configBtn.style.marginTop = "12px";
-    configBtn.textContent = "Configure Subpage";
-    configBtn.addEventListener("click", function () { enterSubpage(slot); });
+    configBtn.className = "sp-action-btn sp-edit-subpage-btn";
+    configBtn.textContent = "Edit subpage";
+    configBtn.addEventListener("click", function () { closeSettings(); enterSubpage(slot); });
     panel.appendChild(configBtn);
   },
   renderPreview: function (b, helpers) {
