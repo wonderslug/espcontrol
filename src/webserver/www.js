@@ -2698,6 +2698,7 @@
         renderButtonSettings();
       });
 
+      addCtxDivider();
       addCtxItem("content-copy", "Duplicate", function () {
         if (c.isSub) { duplicateSubpageButton(slot); } else { duplicateButton(slot); }
       });
@@ -2713,7 +2714,6 @@
           });
         });
       }
-      addCtxDivider();
       addCtxItem("delete", "Delete", function () { deleteSlot(slot); }, true);
     }
 
