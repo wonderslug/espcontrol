@@ -143,6 +143,7 @@ export default defineConfig({
           { text: 'Overview', link: '/' },
           { text: 'Install', link: '/getting-started/install' },
           { text: 'Home Assistant Actions', link: '/getting-started/home-assistant-actions' },
+          { text: 'Troubleshooting', link: '/getting-started/troubleshooting' },
         ],
       },
       {

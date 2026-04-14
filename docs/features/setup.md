@@ -27,15 +27,15 @@ Tap any empty space in the grid (shown as a dashed outline with a **+** icon). A
 3. **Choose an icon** — type to search, or select **Auto** to let the panel pick one based on the device type.
 4. **Set a label** (optional). If left blank the button uses the device's friendly name from Home Assistant.
 
-**[Subpage](/features/subpages)** — works like a folder that opens a new page of buttons. See [Subpages](/features/subpages) for details.
+**[Subpage](/features/subpages)** — works like a folder that opens a new page of buttons. 
 
-**[Button](/card-types/buttons)** — a momentary button that fires an event to Home Assistant for use as an automation trigger. See [Buttons](/card-types/buttons) for details.
+**[Button](/card-types/buttons)** — a momentary button that fires an event to Home Assistant for use as an automation trigger. 
 
-**[Sensor](/card-types/sensors)** — displays a live reading from a Home Assistant sensor entity. See [Sensors](/card-types/sensors) for details.
+**[Sensor](/card-types/sensors)** — displays a live reading from a Home Assistant sensor entity. 
 
-**[Slider](/card-types/sliders)** — controls light brightness with a draggable fill bar. See [Sliders](/card-types/sliders) for details.
+**[Slider](/card-types/sliders)** — controls light brightness with a draggable fill bar. 
 
-**[Cover](/card-types/covers)** — controls blinds, shutters, and garage doors with a position slider. See [Covers](/card-types/covers) for details.
+**[Cover](/card-types/covers)** — controls blinds, shutters, and garage doors with a position slider. 
 
 ### When Entity On
 

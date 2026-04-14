@@ -7,6 +7,8 @@
 #include <functional>
 #include "icons.h"
 
+constexpr uint32_t DEFAULT_SLIDER_COLOR = 0xFF8C00;
+
 struct BtnSlot {
   esphome::text::Text *config;
   lv_obj_t *btn;
@@ -26,6 +28,28 @@ inline std::string cfg_field(const std::string &cfg, int idx) {
   }
   size_t end = cfg.find(';', start);
   return (end == std::string::npos) ? cfg.substr(start) : cfg.substr(start, end - start);
+}
+
+struct ParsedCfg {
+  std::string entity;   // 0
+  std::string label;    // 1
+  std::string icon;     // 2
+  std::string icon_on;  // 3
+  std::string sensor;   // 4 -- sensor entity for toggle; orientation "h"|"" for slider/cover
+  std::string unit;     // 5
+  std::string type;     // 6
+};
+
+inline ParsedCfg parse_cfg(const std::string &cfg) {
+  ParsedCfg p;
+  p.entity  = cfg_field(cfg, 0);
+  p.label   = cfg_field(cfg, 1);
+  p.icon    = cfg_field(cfg, 2);
+  p.icon_on = cfg_field(cfg, 3);
+  p.sensor  = cfg_field(cfg, 4);
+  p.unit    = cfg_field(cfg, 5);
+  p.type    = cfg_field(cfg, 6);
+  return p;
 }
 
 inline uint32_t parse_hex_color(const std::string &hex, bool &valid) {
@@ -110,7 +134,7 @@ inline void apply_button_colors(lv_obj_t *btn, bool has_on, uint32_t on_val,
   }
 }
 
-inline void setup_sensor_card(BtnSlot &s, const std::string &cfg,
+inline void setup_sensor_card(BtnSlot &s, const ParsedCfg &p,
                               bool has_sensor_color, uint32_t sensor_val) {
   if (has_sensor_color) {
     lv_obj_set_style_bg_color(s.btn, lv_color_hex(sensor_val),
@@ -119,49 +143,40 @@ inline void setup_sensor_card(BtnSlot &s, const std::string &cfg,
   lv_obj_clear_flag(s.btn, LV_OBJ_FLAG_CLICKABLE);
   lv_obj_add_flag(s.icon_lbl, LV_OBJ_FLAG_HIDDEN);
   lv_obj_clear_flag(s.sensor_container, LV_OBJ_FLAG_HIDDEN);
-  std::string unit_str = cfg_field(cfg, 5);
-  if (!unit_str.empty()) {
-    lv_label_set_text(s.unit_lbl, unit_str.c_str());
+  if (!p.unit.empty()) {
+    lv_label_set_text(s.unit_lbl, p.unit.c_str());
   }
-  std::string custom_label = cfg_field(cfg, 1);
-  if (!custom_label.empty()) {
-    lv_label_set_text(s.text_lbl, custom_label.c_str());
+  if (!p.label.empty()) {
+    lv_label_set_text(s.text_lbl, p.label.c_str());
   }
 }
 
-inline void setup_toggle_visual(BtnSlot &s, const std::string &cfg) {
-  std::string entity_id = cfg_field(cfg, 0);
-  if (!entity_id.empty()) {
-    std::string custom_label = cfg_field(cfg, 1);
-    if (!custom_label.empty()) {
-      lv_label_set_text(s.text_lbl, custom_label.c_str());
+inline void setup_toggle_visual(BtnSlot &s, const ParsedCfg &p) {
+  if (!p.entity.empty()) {
+    if (!p.label.empty()) {
+      lv_label_set_text(s.text_lbl, p.label.c_str());
     }
-    std::string icon_name = cfg_field(cfg, 2);
     const char* icon_cp = "\U000F0493";
-    if (icon_name.empty() || icon_name == "Auto") {
-      std::string domain = entity_id.substr(0, entity_id.find('.'));
+    if (p.icon.empty() || p.icon == "Auto") {
+      std::string domain = p.entity.substr(0, p.entity.find('.'));
       icon_cp = domain_default_icon(domain);
     } else {
-      icon_cp = find_icon(icon_name.c_str());
+      icon_cp = find_icon(p.icon.c_str());
     }
     lv_label_set_text(s.icon_lbl, icon_cp);
 
-    std::string sensor_id = cfg_field(cfg, 4);
-    if (!sensor_id.empty()) {
-      std::string unit_str = cfg_field(cfg, 5);
-      if (!unit_str.empty()) {
-        lv_label_set_text(s.unit_lbl, unit_str.c_str());
+    if (!p.sensor.empty()) {
+      if (!p.unit.empty()) {
+        lv_label_set_text(s.unit_lbl, p.unit.c_str());
       }
     }
   } else {
-    std::string custom_label = cfg_field(cfg, 1);
-    if (!custom_label.empty()) {
-      lv_label_set_text(s.text_lbl, custom_label.c_str());
+    if (!p.label.empty()) {
+      lv_label_set_text(s.text_lbl, p.label.c_str());
     }
-    std::string icon_name = cfg_field(cfg, 2);
-    if (!icon_name.empty() && icon_name != "Auto") {
-      lv_label_set_text(s.icon_lbl, find_icon(icon_name.c_str()));
-    } else if (cfg_field(cfg, 6) == "push") {
+    if (!p.icon.empty() && p.icon != "Auto") {
+      lv_label_set_text(s.icon_lbl, find_icon(p.icon.c_str()));
+    } else if (p.type == "push") {
       lv_label_set_text(s.icon_lbl, "\U000F0741");
       static const lv_style_prop_t push_props[] = {LV_STYLE_BG_COLOR, LV_STYLE_PROP_INV};
       static lv_style_transition_dsc_t push_trans;
@@ -359,10 +374,10 @@ inline lv_obj_t *setup_slider_widget(lv_obj_t *btn, uint32_t on_color, bool hori
   return slider;
 }
 
-inline void setup_slider_visual(BtnSlot &s, const std::string &cfg, uint32_t on_color) {
-  setup_toggle_visual(s, cfg);
+inline void setup_slider_visual(BtnSlot &s, const ParsedCfg &p, uint32_t on_color) {
+  setup_toggle_visual(s, p);
 
-  bool horizontal = cfg_field(cfg, 4) == "h";
+  bool horizontal = p.sensor == "h";
   lv_obj_t *slider = setup_slider_widget(s.btn, on_color, horizontal);
   lv_coord_t pad = lv_obj_get_style_radius(s.btn, LV_PART_MAIN) + 4;
   lv_obj_align(s.icon_lbl, LV_ALIGN_TOP_LEFT, pad, pad);
@@ -370,11 +385,12 @@ inline void setup_slider_visual(BtnSlot &s, const std::string &cfg, uint32_t on_
   lv_obj_set_user_data(s.sensor_container, (void *)slider);
 
   lv_obj_t *fill = lv_obj_get_child(s.btn, 0);
+  // Intentionally leaked -- lives for the lifetime of the display
   SliderCtx *ctx = new SliderCtx();
-  ctx->entity_id = cfg_field(cfg, 0);
+  ctx->entity_id = p.entity;
   ctx->fill = fill;
   ctx->horizontal = horizontal;
-  ctx->inverted = is_cover_entity(cfg_field(cfg, 0));
+  ctx->inverted = is_cover_entity(p.entity);
   ctx->radius = lv_obj_get_style_radius(s.btn, LV_PART_MAIN);
   lv_obj_set_user_data(slider, (void *)ctx);
 
@@ -467,10 +483,67 @@ struct SubpageBtn {
   std::string label;
   std::string icon;
   std::string icon_on;
-  std::string sensor;
+  std::string sensor;  // sensor entity for toggle; orientation "h"|"" for slider/cover
   std::string unit;
   std::string type;
 };
+
+inline lv_obj_t *setup_subpage_slider(lv_obj_t *btn, lv_obj_t *icon_lbl, lv_obj_t *text_lbl,
+                                       const SubpageBtn &sb, uint32_t on_color, lv_coord_t radius) {
+  if (!sb.label.empty()) lv_label_set_text(text_lbl, sb.label.c_str());
+  else subscribe_friendly_name(text_lbl, sb.entity);
+
+  bool horiz = sb.sensor == "h";
+  lv_obj_t *sl = setup_slider_widget(btn, on_color, horiz);
+  lv_coord_t pad = radius + 4;
+  lv_obj_align(icon_lbl, LV_ALIGN_TOP_LEFT, pad, pad);
+  lv_obj_align(text_lbl, LV_ALIGN_BOTTOM_LEFT, pad, -pad);
+
+  lv_obj_t *fill = lv_obj_get_child(btn, 0);
+  // Intentionally leaked -- lives for the lifetime of the display
+  SliderCtx *ctx = new SliderCtx();
+  ctx->entity_id = sb.entity;
+  ctx->fill = fill;
+  ctx->horizontal = horiz;
+  ctx->inverted = is_cover_entity(sb.entity);
+  ctx->radius = radius;
+  lv_obj_set_user_data(sl, (void *)ctx);
+
+  lv_obj_add_event_cb(sl, [](lv_event_t *e) {
+    lv_obj_t *s = lv_event_get_target(e);
+    SliderCtx *c = (SliderCtx *)lv_obj_get_user_data(s);
+    if (!c) return;
+    int val = lv_slider_get_value(s);
+    int fv = c->inverted ? 100 - val : val;
+    slider_update_fill(c->fill, lv_obj_get_parent(s), fv, c->horizontal, c->inverted, c->radius);
+  }, LV_EVENT_VALUE_CHANGED, nullptr);
+
+  lv_obj_add_event_cb(sl, [](lv_event_t *e) {
+    lv_obj_t *s = lv_event_get_target(e);
+    SliderCtx *c = (SliderCtx *)lv_obj_get_user_data(s);
+    if (c && !c->entity_id.empty())
+      send_slider_action(c->entity_id, lv_slider_get_value(s));
+  }, LV_EVENT_RELEASED, nullptr);
+
+  bool has_icon_on = !sb.icon_on.empty() && sb.icon_on != "Auto";
+  const char *sl_icon_on = has_icon_on ? find_icon(sb.icon_on.c_str()) : nullptr;
+  const char *sl_icon_off = nullptr;
+  if (has_icon_on) {
+    sl_icon_off = (sb.icon.empty() || sb.icon == "Auto")
+      ? domain_default_icon(sb.entity.substr(0, sb.entity.find('.')))
+      : find_icon(sb.icon.c_str());
+  }
+  subscribe_slider_state(btn, icon_lbl, sl, has_icon_on, sl_icon_off, sl_icon_on, sb.entity);
+
+  // Intentionally leaked -- lives for the lifetime of the display
+  std::string *eid = new std::string(sb.entity);
+  lv_obj_add_event_cb(btn, [](lv_event_t *e) {
+    std::string *en = (std::string *)lv_event_get_user_data(e);
+    if (en && !en->empty()) send_slider_action(*en, -1);
+  }, LV_EVENT_CLICKED, eid);
+
+  return sl;
+}
 
 inline std::vector<SubpageBtn> parse_subpage_config(const std::string &sp_cfg) {
   std::vector<SubpageBtn> btns;

@@ -11,9 +11,9 @@ Flash the Espcontrol firmware to your Guition ESP32 display directly from your b
 ## What you need
 
 - **A supported Guition ESP32 panel:**
-  - **JC1060P470** — 7-inch, 1024x600, landscape
-  - **JC4880P443** — 4.3-inch, 480x800, portrait
-  - **4848S040** — 4-inch, 480x480, square
+  - **[JC1060P470](/screens/jc1060p470)** — 7-inch, 1024x600, landscape
+  - **[JC4880P443](/screens/jc4880p443)** — 4.3-inch, 480x800, portrait
+  - **[4848S040](/screens/4848s040)** — 4-inch, 480x480, square
 - **USB-C cable** — must be a data cable, not a charge-only cable
 - **A computer** running Chrome or Edge (desktop). Safari and Firefox are not supported for flashing.
 - **Home Assistant** running on your network
@@ -80,37 +80,4 @@ With the display connected to WiFi and paired with Home Assistant, you're ready 
 
 That's it — your panel is ready to use. See the [Setup](/features/setup) guide for a full walkthrough of every setting.
 
-## Troubleshooting
-
-### The install button doesn't detect my device
-
-- Make sure you're using **Chrome or Edge** on a desktop computer. Mobile browsers and Safari/Firefox don't support the required browser feature (WebSerial).
-- Try a **different USB-C cable**. Charge-only cables won't work.
-- Try a **different USB port** on your computer.
-- On Windows, you may need to install drivers — check Device Manager for an unrecognised device.
-
-### The display is stuck on the loading screen
-
-- Give it up to 60 seconds after first boot. It needs time to connect to WiFi and download resources.
-- If it stays on the loading screen, power-cycle it and check whether the WiFi hotspot appears. If it does, the display couldn't connect to your network — go through the WiFi setup again.
-
-### Home Assistant doesn't discover the device
-
-- Make sure the display and Home Assistant are on the **same WiFi network** (not a guest network or a different VLAN).
-- In Home Assistant, go to **Settings > Devices & Services > Add Integration** and search for **ESPHome**. Enter the device's IP address manually.
-
-### The web page looks broken or unstyled
-
-- The device's web page loads some resources from the internet. Make sure the display has a working internet connection (not just local network access).
-- Try clearing your browser cache and reloading.
-
-### I want to start over
-
-- To re-flash the firmware, connect via USB-C and use the install button at the top of this page again.
-- To clear WiFi settings and start fresh, re-flash the device. It will create the setup hotspot again.
-
-## Advanced: ESPHome package install
-
-If you already use ESPHome and prefer to compile firmware yourself, each [screen page](/screens/jc1060p470#esphome-manual-setup) has a ready-to-use YAML snippet you can drop into your own ESPHome config.
-
-Next: [Setup](/features/setup)
+Next: [Troubleshooting](/getting-started/troubleshooting)
