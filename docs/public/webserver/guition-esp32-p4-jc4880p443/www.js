@@ -204,13 +204,13 @@
     labelPlaceholder: "e.g. Living Room",
     onSelect: function (b) {
       b.sensor = ""; b.unit = ""; b.icon_on = "Auto";
-      b.icon = "Lightbulb";
+      b.icon = "Auto";
     },
     renderSettings: function (panel, b, slot, helpers) {
       var ef = document.createElement("div");
       ef.className = "sp-field";
       ef.appendChild(helpers.fieldLabel("Entity ID", helpers.idPrefix + "entity"));
-      var entityInp = helpers.textInput(helpers.idPrefix + "entity", b.entity, "e.g. light.living_room");
+      var entityInp = helpers.textInput(helpers.idPrefix + "entity", b.entity, "e.g. light.living_room or cover.blinds");
       ef.appendChild(entityInp);
       panel.appendChild(ef);
       helpers.bindField(entityInp, "entity", true);
@@ -254,6 +254,13 @@
         b.sensor = "h";
         helpers.saveField("sensor", "h");
         renderPreview();
+      });
+
+      var invertToggle = helpers.toggleRow("Invert Slider", helpers.idPrefix + "invert-toggle", b.invert === "1");
+      panel.appendChild(invertToggle.row);
+      invertToggle.input.addEventListener("change", function () {
+        b.invert = this.checked ? "1" : "";
+        helpers.saveField("invert", b.invert);
       });
 
       var hasIconOn = b.icon_on && b.icon_on !== "Auto";
@@ -303,7 +310,8 @@
     },
     renderPreview: function (b, helpers) {
       var label = b.label || b.entity || "Slider";
-      var iconName = b.icon && b.icon !== "Auto" ? iconSlug(b.icon) : "lightbulb";
+      var autoIcon = (b.entity && b.entity.indexOf("cover.") === 0) ? "blinds-horizontal" : "lightbulb";
+      var iconName = b.icon && b.icon !== "Auto" ? iconSlug(b.icon) : autoIcon;
       var horizClass = b.sensor === "h" ? " sp-slider-horiz" : "";
       return {
         iconHtml:
@@ -998,7 +1006,7 @@
   function saveButtonConfig(slot) {
     var b = state.buttons[slot - 1];
     var cfg = [b.entity || "", b.label || "", b.icon || "Auto", b.icon_on || "Auto",
-               b.sensor || "", b.unit || "", b.type || ""].join(";");
+               b.sensor || "", b.unit || "", b.type || "", b.invert || ""].join(";");
     postText("Button " + slot + " Config", cfg);
   }
 
@@ -2804,7 +2812,9 @@
     postText("Button Order", serializeGrid(state.grid));
     saveButtonConfig(newSlot);
     saveSubpageEntity(newSlot);
-    selectButton(newSlot);
+    state.selectedSlots = [newSlot];
+    state.lastClickedSlot = newSlot;
+    renderPreview();
   }
 
   function duplicateSubpageButton(srcSlot) {
@@ -2850,7 +2860,6 @@
     state.subpageSelectedSlots = [newSlot];
     state.subpageLastClicked = newSlot;
     renderPreview();
-    renderButtonSettings();
   }
 
   function deleteSlot(slot) {
@@ -3719,6 +3728,7 @@
           b.sensor = parts[4] || "";
           b.unit = parts[5] || "";
           b.type = parts[6] || "";
+          b.invert = parts[7] || "";
           scheduleRender();
         },
       },
