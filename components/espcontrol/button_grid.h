@@ -239,6 +239,122 @@ inline void send_toggle_action(const std::string &entity_id) {
   esphome::api::global_api_server->send_homeassistant_action(req);
 }
 
+// ── Light slider helpers ───────────────────────────────────────────────
+
+inline void send_light_action(const std::string &entity_id, int brightness_pct) {
+  esphome::api::HomeassistantActionRequest req;
+  req.is_event = false;
+  if (brightness_pct < 0) {
+    req.service = decltype(req.service)("homeassistant.toggle");
+    req.data.init(1);
+    auto &kv = req.data.emplace_back();
+    kv.key = decltype(kv.key)("entity_id");
+    kv.value = decltype(kv.value)(entity_id.c_str());
+  } else {
+    req.service = decltype(req.service)("light.turn_on");
+    req.data.init(2);
+    auto &kv1 = req.data.emplace_back();
+    kv1.key = decltype(kv1.key)("entity_id");
+    kv1.value = decltype(kv1.value)(entity_id.c_str());
+    auto &kv2 = req.data.emplace_back();
+    kv2.key = decltype(kv2.key)("brightness_pct");
+    char buf[8];
+    snprintf(buf, sizeof(buf), "%d", brightness_pct);
+    kv2.value = decltype(kv2.value)(buf);
+  }
+  esphome::api::global_api_server->send_homeassistant_action(req);
+}
+
+struct LightSliderCtx {
+  std::string entity_id;
+};
+
+inline lv_obj_t *setup_light_slider(lv_obj_t *btn, uint32_t on_color) {
+  lv_obj_t *slider = lv_slider_create(btn);
+  lv_slider_set_range(slider, 1, 100);
+  lv_slider_set_value(slider, 50, LV_ANIM_OFF);
+  lv_obj_set_width(slider, lv_pct(85));
+  lv_obj_set_height(slider, 20);
+  lv_obj_align(slider, LV_ALIGN_CENTER, 0, -4);
+
+  lv_obj_set_style_bg_color(slider, lv_color_hex(0x555555),
+    static_cast<lv_style_selector_t>(LV_PART_MAIN));
+  lv_obj_set_style_radius(slider, 10,
+    static_cast<lv_style_selector_t>(LV_PART_MAIN));
+  lv_obj_set_style_bg_opa(slider, LV_OPA_COVER,
+    static_cast<lv_style_selector_t>(LV_PART_MAIN));
+
+  lv_obj_set_style_bg_color(slider, lv_color_hex(on_color),
+    static_cast<lv_style_selector_t>(LV_PART_INDICATOR));
+  lv_obj_set_style_radius(slider, 10,
+    static_cast<lv_style_selector_t>(LV_PART_INDICATOR));
+
+  lv_obj_set_style_bg_color(slider, lv_color_white(),
+    static_cast<lv_style_selector_t>(LV_PART_KNOB));
+  lv_obj_set_style_radius(slider, LV_RADIUS_CIRCLE,
+    static_cast<lv_style_selector_t>(LV_PART_KNOB));
+  lv_obj_set_style_pad_all(slider, 4,
+    static_cast<lv_style_selector_t>(LV_PART_KNOB));
+
+  lv_obj_add_flag(slider, LV_OBJ_FLAG_HIDDEN);
+  return slider;
+}
+
+inline void setup_light_visual(BtnSlot &s, const std::string &cfg, uint32_t on_color) {
+  setup_toggle_visual(s, cfg);
+
+  lv_obj_t *slider = setup_light_slider(s.btn, on_color);
+  lv_obj_set_user_data(s.sensor_container, (void *)slider);
+
+  LightSliderCtx *ctx = new LightSliderCtx();
+  ctx->entity_id = cfg_field(cfg, 0);
+  lv_obj_set_user_data(slider, (void *)ctx);
+
+  lv_obj_add_event_cb(slider, [](lv_event_t *e) {
+    lv_obj_t *sl = lv_event_get_target(e);
+    LightSliderCtx *c = (LightSliderCtx *)lv_obj_get_user_data(sl);
+    if (c && !c->entity_id.empty()) {
+      int val = lv_slider_get_value(sl);
+      send_light_action(c->entity_id, val);
+    }
+  }, LV_EVENT_RELEASED, nullptr);
+}
+
+inline void subscribe_light_state(lv_obj_t *btn_ptr, lv_obj_t *icon_lbl,
+                                  lv_obj_t *slider,
+                                  const std::string &entity_id) {
+  esphome::api::global_api_server->subscribe_home_assistant_state(
+    entity_id, {},
+    std::function<void(const std::string &)>(
+      [btn_ptr, icon_lbl, slider](const std::string &state) {
+        bool on = is_entity_on(state);
+        if (on) {
+          lv_obj_add_state(btn_ptr, LV_STATE_CHECKED);
+          lv_obj_add_flag(icon_lbl, LV_OBJ_FLAG_HIDDEN);
+          lv_obj_clear_flag(slider, LV_OBJ_FLAG_HIDDEN);
+        } else {
+          lv_obj_clear_state(btn_ptr, LV_STATE_CHECKED);
+          lv_obj_clear_flag(icon_lbl, LV_OBJ_FLAG_HIDDEN);
+          lv_obj_add_flag(slider, LV_OBJ_FLAG_HIDDEN);
+        }
+      })
+  );
+  esphome::api::global_api_server->subscribe_home_assistant_state(
+    entity_id, std::string("brightness"),
+    std::function<void(const std::string &)>(
+      [slider](const std::string &val) {
+        char *end;
+        float bri = strtof(val.c_str(), &end);
+        if (end != val.c_str()) {
+          int pct = (int)((bri * 100.0f + 127.0f) / 255.0f);
+          if (pct < 1) pct = 1;
+          if (pct > 100) pct = 100;
+          lv_slider_set_value(slider, pct, LV_ANIM_ON);
+        }
+      })
+  );
+}
+
 struct SubpageBtn {
   std::string entity;
   std::string label;

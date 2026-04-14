@@ -177,6 +177,11 @@
     ".sp-sensor-preview{display:flex;align-items:baseline;gap:1px;color:#fff}" +
     ".sp-sensor-value{font-size:var(--btn-icon);line-height:1;font-weight:300}" +
     ".sp-sensor-unit{font-size:var(--btn-label);line-height:1;opacity:.7}" +
+    ".sp-slider-preview{position:absolute;left:var(--pad);right:var(--pad);top:50%;transform:translateY(-50%)}" +
+    ".sp-slider-track{display:block;height:6px;border-radius:3px;background:rgba(255,255,255,.18);position:relative}" +
+    ".sp-slider-fill{position:absolute;left:0;top:0;height:100%;width:60%;border-radius:3px;background:var(--accent)}" +
+    ".sp-slider-knob{position:absolute;top:50%;left:60%;width:14px;height:14px;border-radius:50%;" +
+    "background:#fff;transform:translate(-50%,-50%);box-shadow:0 1px 3px rgba(0,0,0,.4)}" +
     ".sp-btn-double{grid-row:span 2}" +
     ".sp-btn-double .sp-btn-label{-webkit-line-clamp:var(--btn-lines-dbl)}" +
     ".sp-btn-double .sp-btn-label-row .sp-btn-label{-webkit-line-clamp:var(--btn-lines-dbl)}" +

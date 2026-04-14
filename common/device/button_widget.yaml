@@ -85,6 +85,12 @@ button:
         } else if (t == "subpage") {
           lv_obj_t *sub_scr = (lv_obj_t *)lv_obj_get_user_data(id(button_${num}));
           if (sub_scr) lv_scr_load_anim(sub_scr, LV_SCR_LOAD_ANIM_NONE, 0, 0, false);
+        } else if (t == "light") {
+          size_t sp = cfg.find(';');
+          std::string eid = (sp != std::string::npos) ? cfg.substr(0, sp) : cfg;
+          if (!eid.empty()) {
+            send_light_action(eid, -1);
+          }
         } else if (t == "sensor") {
           return;
         } else {

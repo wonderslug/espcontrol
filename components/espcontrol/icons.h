@@ -219,15 +219,15 @@ inline const char* find_icon(const char* name) {
 
 inline const char* domain_default_icon(const std::string &domain) {
   // --- GENERATED:DOMAIN_ICONS START ---
-  if (domain == "light")         return "\U000F0335";  // Lightbulb
-  if (domain == "switch")        return "\U000F0654";  // Power Plug
-  if (domain == "fan")           return "\U000F0210";  // Fan
-  if (domain == "lock")          return "\U000F033E";  // Lock
-  if (domain == "cover")         return "\U000F1A2B";  // Blinds Horizontal
-  if (domain == "climate")       return "\U000F001B";  // Air Conditioner
-  if (domain == "media_player")  return "\U000F04C3";  // Speaker
-  if (domain == "camera")        return "\U000F0100";  // Camera
-  if (domain == "binary_sensor") return "\U000F0D91";  // Motion Sensor
+  if (domain == "light")                      return "\U000F0335";  // Lightbulb
+  if (domain == "switch")                     return "\U000F0654";  // Power Plug
+  if (domain == "fan")                        return "\U000F0210";  // Fan
+  if (domain == "lock")                       return "\U000F033E";  // Lock
+  if (domain == "cover")                      return "\U000F1A2B";  // Blinds Horizontal
+  if (domain == "climate")                    return "\U000F001B";  // Air Conditioner
+  if (domain == "media_player")               return "\U000F04C3";  // Speaker
+  if (domain == "camera")                     return "\U000F0100";  // Camera
+  if (domain == "binary_sensor")              return "\U000F0D91";  // Motion Sensor
   // --- GENERATED:DOMAIN_ICONS END ---
   return "\U000F0493";
 }

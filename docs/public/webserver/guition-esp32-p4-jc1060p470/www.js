@@ -124,6 +124,48 @@
     }, def);
   }
   // __BUTTON_TYPES_START__
+  // --- type: light ---
+  registerButtonType("light", {
+    label: "Light",
+    allowInSubpage: true,
+    labelPlaceholder: "e.g. Living Room",
+    onSelect: function (b) {
+      b.sensor = ""; b.unit = ""; b.icon_on = "Auto";
+      b.icon = "Lightbulb";
+    },
+    renderSettings: function (panel, b, slot, helpers) {
+      var ef = document.createElement("div");
+      ef.className = "sp-field";
+      ef.appendChild(helpers.fieldLabel("Entity ID", helpers.idPrefix + "entity"));
+      var entityInp = helpers.textInput(helpers.idPrefix + "entity", b.entity, "e.g. light.living_room");
+      ef.appendChild(entityInp);
+      panel.appendChild(ef);
+      helpers.bindField(entityInp, "entity", true);
+
+      panel.appendChild(helpers.makeIconPicker(
+        helpers.idPrefix + "icon-picker", helpers.idPrefix + "icon",
+        b.icon || "Auto", function (opt) {
+          b.icon = opt;
+          helpers.saveField("icon", opt);
+          renderPreview();
+        }
+      ));
+    },
+    renderPreview: function (b, helpers) {
+      var label = b.label || b.entity || "Light";
+      var iconName = b.icon && b.icon !== "Auto" ? iconSlug(b.icon) : "lightbulb";
+      return {
+        iconHtml:
+          '<span class="sp-btn-icon mdi mdi-' + iconName + '"></span>' +
+          '<span class="sp-slider-preview"><span class="sp-slider-track">' +
+            '<span class="sp-slider-fill"></span>' +
+            '<span class="sp-slider-knob"></span>' +
+          '</span></span>',
+        labelHtml:
+          '<span class="sp-btn-label">' + helpers.escHtml(label) + '</span>',
+      };
+    },
+  });
   // --- type: push ---
   registerButtonType("push", {
     label: "Button",
@@ -353,6 +395,11 @@
     ".sp-sensor-preview{display:flex;align-items:baseline;gap:1px;color:#fff}" +
     ".sp-sensor-value{font-size:var(--btn-icon);line-height:1;font-weight:300}" +
     ".sp-sensor-unit{font-size:var(--btn-label);line-height:1;opacity:.7}" +
+    ".sp-slider-preview{position:absolute;left:var(--pad);right:var(--pad);top:50%;transform:translateY(-50%)}" +
+    ".sp-slider-track{display:block;height:6px;border-radius:3px;background:rgba(255,255,255,.18);position:relative}" +
+    ".sp-slider-fill{position:absolute;left:0;top:0;height:100%;width:60%;border-radius:3px;background:var(--accent)}" +
+    ".sp-slider-knob{position:absolute;top:50%;left:60%;width:14px;height:14px;border-radius:50%;" +
+    "background:#fff;transform:translate(-50%,-50%);box-shadow:0 1px 3px rgba(0,0,0,.4)}" +
     ".sp-btn-double{grid-row:span 2}" +
     ".sp-btn-double .sp-btn-label{-webkit-line-clamp:var(--btn-lines-dbl)}" +
     ".sp-btn-double .sp-btn-label-row .sp-btn-label{-webkit-line-clamp:var(--btn-lines-dbl)}" +
