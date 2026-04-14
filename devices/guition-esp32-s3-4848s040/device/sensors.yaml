@@ -62,13 +62,13 @@ esphome:
             for (int i = 0; i < NUM_SLOTS; i++)
               lv_obj_add_flag(slots[i].btn, LV_OBJ_FLAG_HIDDEN);
 
-            for (int p = 0; p < NUM_SLOTS; p++) {
-              int idx = order.positions[p];
+            for (int pos = 0; pos < NUM_SLOTS; pos++) {
+              int idx = order.positions[pos];
               if (idx < 1 || idx > NUM_SLOTS) continue;
               auto &s = slots[idx - 1];
               std::string cfg = s.config->state;
               lv_obj_clear_flag(s.btn, LV_OBJ_FLAG_HIDDEN);
-              int col = p % COLS, row = p / COLS;
+              int col = pos % COLS, row = pos / COLS;
               int row_span = order.is_double[idx - 1] ? 2 : 1;
               int col_span = order.is_wide[idx - 1] ? 2 : 1;
               lv_obj_set_grid_cell(s.btn,
@@ -124,8 +124,8 @@ esphome:
             OrderResult parsed;
             parse_order_string(id(button_order).state, NUM_SLOTS, parsed);
 
-            for (int p = 0; p < NUM_SLOTS; p++) {
-              int idx = parsed.positions[p];
+            for (int pos = 0; pos < NUM_SLOTS; pos++) {
+              int idx = parsed.positions[pos];
               if (idx < 1 || idx > NUM_SLOTS) continue;
               auto &s = slots[idx - 1];
               std::string cfg = s.config->state;
