@@ -293,15 +293,11 @@ inline lv_obj_t *setup_light_slider(lv_obj_t *btn, uint32_t on_color) {
   lv_obj_set_style_radius(slider, btn_radius,
     static_cast<lv_style_selector_t>(LV_PART_INDICATOR));
 
-  lv_obj_set_style_bg_color(slider, lv_color_white(),
+  lv_obj_set_style_bg_opa(slider, LV_OPA_TRANSP,
     static_cast<lv_style_selector_t>(LV_PART_KNOB));
-  lv_obj_set_style_bg_opa(slider, LV_OPA_COVER,
+  lv_obj_set_style_width(slider, 0,
     static_cast<lv_style_selector_t>(LV_PART_KNOB));
-  lv_obj_set_style_width(slider, 20,
-    static_cast<lv_style_selector_t>(LV_PART_KNOB));
-  lv_obj_set_style_height(slider, 4,
-    static_cast<lv_style_selector_t>(LV_PART_KNOB));
-  lv_obj_set_style_radius(slider, 2,
+  lv_obj_set_style_height(slider, 0,
     static_cast<lv_style_selector_t>(LV_PART_KNOB));
   lv_obj_set_style_pad_all(slider, 0,
     static_cast<lv_style_selector_t>(LV_PART_KNOB));

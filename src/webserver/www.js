@@ -181,8 +181,7 @@
     ".sp-slider-track{width:100%;height:100%;position:relative}" +
     ".sp-slider-fill{position:absolute;left:0;bottom:0;width:100%;height:55%;background:var(--accent);" +
     "border-radius:0 0 var(--r) var(--r)}" +
-    ".sp-slider-knob{position:absolute;left:15%;right:15%;bottom:55%;height:3px;border-radius:1px;" +
-    "background:#fff;transform:translateY(50%)}" +
+    ".sp-slider-knob{display:none}" +
     ".sp-btn-double{grid-row:span 2}" +
     ".sp-btn-double .sp-btn-label{-webkit-line-clamp:var(--btn-lines-dbl)}" +
     ".sp-btn-double .sp-btn-label-row .sp-btn-label{-webkit-line-clamp:var(--btn-lines-dbl)}" +
