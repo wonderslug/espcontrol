@@ -130,8 +130,9 @@
     allowInSubpage: true,
     labelPlaceholder: "e.g. Office Blind",
     onSelect: function (b) {
-      b.sensor = ""; b.unit = ""; b.icon_on = "Auto";
-      b.icon = "Auto";
+      b.sensor = ""; b.unit = "";
+      b.icon = "Blinds Open";
+      b.icon_on = "Blinds";
     },
     renderSettings: function (panel, b, slot, helpers) {
       var ef = document.createElement("div");
@@ -184,7 +185,7 @@
       });
 
       var hasIconOn = b.icon_on && b.icon_on !== "Auto";
-      var iconOnToggle = helpers.toggleRow("Change Icon When On", helpers.idPrefix + "iconon-toggle", hasIconOn);
+      var iconOnToggle = helpers.toggleRow("Change Icon When Closed", helpers.idPrefix + "iconon-toggle", hasIconOn);
       panel.appendChild(iconOnToggle.row);
 
       var iconOnCond = condField();
@@ -192,7 +193,7 @@
 
       var iconOnSection = document.createElement("div");
       iconOnSection.className = "sp-field";
-      iconOnSection.appendChild(helpers.fieldLabel("Icon When On", helpers.idPrefix + "icon-on"));
+      iconOnSection.appendChild(helpers.fieldLabel("Icon When Closed", helpers.idPrefix + "icon-on"));
       var iconOnVal = hasIconOn ? b.icon_on : "Auto";
       var iconOnPicker = document.createElement("div");
       iconOnPicker.className = "sp-icon-picker";
@@ -230,7 +231,7 @@
     },
     renderPreview: function (b, helpers) {
       var label = b.label || b.entity || "Cover";
-      var iconName = b.icon && b.icon !== "Auto" ? iconSlug(b.icon) : "blinds-horizontal";
+      var iconName = b.icon && b.icon !== "Auto" ? iconSlug(b.icon) : "blinds-open";
       var horizClass = b.sensor === "h" ? " sp-slider-horiz" : "";
       return {
         iconHtml:

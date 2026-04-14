@@ -409,13 +409,13 @@ inline void subscribe_slider_state(lv_obj_t *btn_ptr, lv_obj_t *icon_lbl,
   esphome::api::global_api_server->subscribe_home_assistant_state(
     entity_id, {},
     std::function<void(const std::string &)>(
-      [slider, btn_ptr, fill, horiz, inv, rad, icon_lbl, has_icon_on, icon_off, icon_on](const std::string &state) {
+      [slider, btn_ptr, fill, horiz, inv, rad, icon_lbl, has_icon_on, icon_off, icon_on, is_cover](const std::string &state) {
         bool on = is_entity_on(state);
         if (!on) {
           lv_slider_set_value(slider, 0, LV_ANIM_OFF);
           if (fill) slider_update_fill(fill, btn_ptr, inv ? 100 : 0, horiz, inv, rad);
         }
-        if (has_icon_on) {
+        if (has_icon_on && !is_cover) {
           lv_label_set_text(icon_lbl, on ? icon_on : icon_off);
         }
       })
@@ -424,7 +424,7 @@ inline void subscribe_slider_state(lv_obj_t *btn_ptr, lv_obj_t *icon_lbl,
     esphome::api::global_api_server->subscribe_home_assistant_state(
       entity_id, std::string("current_position"),
       std::function<void(const std::string &)>(
-        [slider, btn_ptr, fill, horiz, inv, rad](const std::string &val) {
+        [slider, btn_ptr, fill, horiz, inv, rad, icon_lbl, has_icon_on, icon_off, icon_on](const std::string &val) {
           char *end;
           float pos = strtof(val.c_str(), &end);
           if (end != val.c_str()) {
@@ -434,6 +434,9 @@ inline void subscribe_slider_state(lv_obj_t *btn_ptr, lv_obj_t *icon_lbl,
             lv_slider_set_value(slider, pct, LV_ANIM_OFF);
             int fill_pct = inv ? 100 - pct : pct;
             if (fill) slider_update_fill(fill, btn_ptr, fill_pct, horiz, inv, rad);
+            if (has_icon_on) {
+              lv_label_set_text(icon_lbl, pct < 100 ? icon_on : icon_off);
+            }
           }
         })
     );
