@@ -302,7 +302,7 @@ inline lv_obj_t *setup_slider_widget(lv_obj_t *btn, uint32_t on_color, bool hori
   lv_obj_set_size(fill, 0, 0);
   lv_obj_set_style_bg_color(fill, lv_color_hex(on_color), LV_PART_MAIN);
   lv_obj_set_style_bg_opa(fill, LV_OPA_COVER, LV_PART_MAIN);
-  lv_obj_set_style_radius(fill, 0, LV_PART_MAIN);
+  lv_obj_set_style_radius(fill, btn_radius, LV_PART_MAIN);
   lv_obj_set_style_border_width(fill, 0, LV_PART_MAIN);
   lv_obj_set_style_pad_all(fill, 0, LV_PART_MAIN);
   lv_obj_clear_flag(fill, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
