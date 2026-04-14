@@ -28,8 +28,8 @@ font:
     bpp: 4
     glyphs: "0123456789.-°/%kWhVA "
 
-  # Top bar clock and temperature (27px)
+  # Top bar clock and temperature (25px)
   - file: "gfonts://Roboto"
     id: clockbar_font_lg
-    size: 27
+    size: 25
     bpp: 4

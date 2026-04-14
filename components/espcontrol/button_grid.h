@@ -101,6 +101,8 @@ inline void apply_button_colors(lv_obj_t *btn, bool has_on, uint32_t on_val,
   if (has_on) {
     lv_obj_set_style_bg_color(btn, lv_color_hex(on_val),
       static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_CHECKED));
+    lv_obj_set_style_bg_color(btn, lv_color_hex(on_val),
+      static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_PRESSED));
   }
   if (has_off) {
     lv_obj_set_style_bg_color(btn, lv_color_hex(off_val),
