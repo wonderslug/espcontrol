@@ -7,15 +7,22 @@
 # =============================================================================
 
 font:
-  # Button labels (22px)
+  # Button icons (64px)
+  - file: 'https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf'
+    id: icon_font_lg
+    size: 64
+    bpp: 4
+    glyphs: !include ../../../common/assets/icon_glyphs.yaml
+
+  # Button labels (29px)
   - file: "gfonts://Roboto"
     id: label_font_lg
-    size: 22
+    size: 29
     bpp: 4
     glyphs: !include ../../../common/assets/text_glyphs.yaml
 
-  # Top bar clock and temperature (20px)
+  # Top bar clock and temperature (27px)
   - file: "gfonts://Roboto"
     id: clockbar_font_lg
-    size: 20
+    size: 27
     bpp: 4

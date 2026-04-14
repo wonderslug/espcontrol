@@ -12,10 +12,10 @@ substitutions:
   screen_width: "480"
   screen_height: "800"
   content_width: "440"
-  icon_font: icon_font
+  icon_font: icon_font_lg
   label_font: label_font_lg
   unit_font: label_font_lg
-  padding: 16px
+  padding: 21px
   radius: 10px
 
 packages:
