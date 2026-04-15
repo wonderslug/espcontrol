@@ -33,10 +33,6 @@ esphome:
             GridConfig cfg = {};
             cfg.num_slots = 9;
             cfg.cols = 3;
-            cfg.sp_pad_top = 38;
-            cfg.sp_pad_bottom = 4;
-            cfg.sp_pad_side = 5;
-            cfg.sp_pad_gap = 10;
             cfg.sp_sensor_font = id(statistics_font)->get_lv_font();
             grid_phase1(slots, cfg,
               id(button_order).state,
@@ -71,10 +67,6 @@ esphome:
             GridConfig cfg = {};
             cfg.num_slots = 9;
             cfg.cols = 3;
-            cfg.sp_pad_top = 38;
-            cfg.sp_pad_bottom = 4;
-            cfg.sp_pad_side = 5;
-            cfg.sp_pad_gap = 10;
             cfg.sp_sensor_font = id(statistics_font)->get_lv_font();
             grid_phase2(slots, cfg, sp_cfgs, sp_ext,
               id(button_order).state,

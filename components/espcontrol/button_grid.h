@@ -733,10 +733,6 @@ struct GridConfig {
   int cols;
   bool color_correction;
   bool wrap_tall_labels;
-  lv_coord_t sp_pad_top;
-  lv_coord_t sp_pad_bottom;
-  lv_coord_t sp_pad_side;
-  lv_coord_t sp_pad_gap;
   const lv_font_t *sp_sensor_font;
 };
 
@@ -929,6 +925,13 @@ inline void grid_phase2(
   const lv_font_t *sp_btn_fnt = lv_obj_get_style_text_font(ref_btn, LV_PART_MAIN);
   lv_color_t sp_txt_color = lv_obj_get_style_text_color(ref_btn, LV_PART_MAIN);
 
+  lv_coord_t mp_pad_top = lv_obj_get_style_pad_top(main_page_obj, LV_PART_MAIN);
+  lv_coord_t mp_pad_bottom = lv_obj_get_style_pad_bottom(main_page_obj, LV_PART_MAIN);
+  lv_coord_t mp_pad_left = lv_obj_get_style_pad_left(main_page_obj, LV_PART_MAIN);
+  lv_coord_t mp_pad_right = lv_obj_get_style_pad_right(main_page_obj, LV_PART_MAIN);
+  lv_coord_t mp_pad_row = lv_obj_get_style_pad_row(main_page_obj, LV_PART_MAIN);
+  lv_coord_t mp_pad_col = lv_obj_get_style_pad_column(main_page_obj, LV_PART_MAIN);
+
   static int sp_on_count[25] = {};
 
   for (int si = 0; si < NS; si++) {
@@ -959,12 +962,12 @@ inline void grid_phase2(
     lv_obj_set_style_bg_opa(sub_scr, LV_OPA_COVER, LV_PART_MAIN);
     lv_obj_set_layout(sub_scr, LV_LAYOUT_GRID);
     lv_obj_set_grid_dsc_array(sub_scr, sp_col_dsc, sp_row_dsc);
-    lv_obj_set_style_pad_top(sub_scr, cfg.sp_pad_top, LV_PART_MAIN);
-    lv_obj_set_style_pad_bottom(sub_scr, cfg.sp_pad_bottom, LV_PART_MAIN);
-    lv_obj_set_style_pad_left(sub_scr, cfg.sp_pad_side, LV_PART_MAIN);
-    lv_obj_set_style_pad_right(sub_scr, cfg.sp_pad_side, LV_PART_MAIN);
-    lv_obj_set_style_pad_row(sub_scr, cfg.sp_pad_gap, LV_PART_MAIN);
-    lv_obj_set_style_pad_column(sub_scr, cfg.sp_pad_gap, LV_PART_MAIN);
+    lv_obj_set_style_pad_top(sub_scr, mp_pad_top, LV_PART_MAIN);
+    lv_obj_set_style_pad_bottom(sub_scr, mp_pad_bottom, LV_PART_MAIN);
+    lv_obj_set_style_pad_left(sub_scr, mp_pad_left, LV_PART_MAIN);
+    lv_obj_set_style_pad_right(sub_scr, mp_pad_right, LV_PART_MAIN);
+    lv_obj_set_style_pad_row(sub_scr, mp_pad_row, LV_PART_MAIN);
+    lv_obj_set_style_pad_column(sub_scr, mp_pad_col, LV_PART_MAIN);
     lv_obj_clear_flag(sub_scr, LV_OBJ_FLAG_SCROLLABLE);
 
     lv_obj_t *back_btn = lv_btn_create(sub_scr);
