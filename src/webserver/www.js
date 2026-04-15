@@ -540,7 +540,7 @@
 
   for (var i = 0; i < NUM_SLOTS; i++) {
     state.grid.push(0);
-    state.buttons.push({ entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "", type: "" });
+    state.buttons.push({ entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "", type: "", precision: "" });
   }
 
   var els = {};
@@ -745,9 +745,10 @@
 
   function saveButtonConfig(slot) {
     var b = state.buttons[slot - 1];
-    var cfg = [b.entity || "", b.label || "", b.icon || "Auto", b.icon_on || "Auto",
-               b.sensor || "", b.unit || "", b.type || ""].join(";");
-    postText("Button " + slot + " Config", cfg);
+    var fields = [b.entity || "", b.label || "", b.icon || "Auto", b.icon_on || "Auto",
+               b.sensor || "", b.unit || "", b.type || "", b.precision || ""];
+    while (fields.length > 1 && !fields[fields.length - 1]) fields.pop();
+    postText("Button " + slot + " Config", fields.join(";"));
   }
 
   function saveSubpageEntity(slot) {
@@ -817,6 +818,7 @@
         sensor: f[4] || "",
         unit: f[5] || "",
         type: f[6] || "",
+        precision: f[7] || "",
       });
     }
     return { order: order, buttons: buttons };
@@ -827,7 +829,7 @@
     var out = sp.order.join(",");
     for (var i = 0; i < sp.buttons.length; i++) {
       var b = sp.buttons[i];
-      var fields = [b.entity || "", b.label || "", b.icon || "Auto", b.icon_on || "Auto", b.sensor || "", b.unit || "", b.type || ""];
+      var fields = [b.entity || "", b.label || "", b.icon || "Auto", b.icon_on || "Auto", b.sensor || "", b.unit || "", b.type || "", b.precision || ""];
       while (fields.length > 1 && !fields[fields.length - 1]) fields.pop();
       if (fields.length > 1 && fields[fields.length - 1] === "Auto") {
         while (fields.length > 1 && (fields[fields.length - 1] === "Auto" || !fields[fields.length - 1])) fields.pop();
@@ -2023,6 +2025,23 @@
       sensorHint.className = "sp-field-hint";
       sensorHint.textContent = "Show sensor value instead of icon when on";
       sensorSection.appendChild(sensorHint);
+      sensorSection.appendChild(fieldLabel("Display precision", idPrefix + "precision"));
+      var precSel = document.createElement("select");
+      precSel.className = "sp-input sp-input--narrow";
+      precSel.id = idPrefix + "precision";
+      var precOpts = [["0", "10"], ["1", "10.3"], ["2", "10.35"]];
+      for (var pi = 0; pi < precOpts.length; pi++) {
+        var po = document.createElement("option");
+        po.value = precOpts[pi][0];
+        po.textContent = precOpts[pi][1];
+        if ((b.precision || "0") === precOpts[pi][0]) po.selected = true;
+        precSel.appendChild(po);
+      }
+      precSel.addEventListener("change", function () {
+        b.precision = this.value === "0" ? "" : this.value;
+        saveField("precision", b.precision);
+      });
+      sensorSection.appendChild(precSel);
       whenOnCond.appendChild(sensorSection);
 
       panel.appendChild(whenOnCond);
@@ -2041,10 +2060,13 @@
         if (mode === "icon") {
           sensorInp.value = "";
           unitInp.value = "";
+          precSel.value = "0";
           b.sensor = "";
           b.unit = "";
+          b.precision = "";
           saveField("sensor", "");
           saveField("unit", "");
+          saveField("precision", "");
         } else {
           b.icon_on = "Auto";
           saveField("icon_on", "Auto");
@@ -2069,11 +2091,14 @@
           whenOnCond.classList.remove("sp-visible");
           sensorInp.value = "";
           unitInp.value = "";
+          precSel.value = "0";
           b.sensor = "";
           b.unit = "";
+          b.precision = "";
           b.icon_on = "Auto";
           saveField("sensor", "");
           saveField("unit", "");
+          saveField("precision", "");
           saveField("icon_on", "Auto");
           renderPreview();
         }
@@ -2571,7 +2596,7 @@
       var sp = getSubpage(state.editingSubpage);
       var newSlot = subpageFirstFreeSlot(sp);
       while (sp.buttons.length < newSlot) {
-        sp.buttons.push({ entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "", type: "" });
+        sp.buttons.push({ entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "", type: "", precision: "" });
       }
       sp.grid[pos] = newSlot;
       sp.order = serializeSubpageGrid(sp);
@@ -2597,7 +2622,7 @@
     state.buttons[newSlot - 1] = {
       entity: src.entity, label: src.label, icon: src.icon,
       icon_on: src.icon_on, sensor: src.sensor, unit: src.unit,
-      type: src.type || "",
+      type: src.type || "", precision: src.precision || "",
     };
 
     var srcSz = state.sizes[srcSlot];
@@ -2640,14 +2665,14 @@
     var sp = getSubpage(homeSlot);
     var newSlot = subpageFirstFreeSlot(sp);
     while (sp.buttons.length < newSlot) {
-      sp.buttons.push({ entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "", type: "" });
+      sp.buttons.push({ entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "", type: "", precision: "" });
     }
 
     var src = sp.buttons[srcSlot - 1];
     sp.buttons[newSlot - 1] = {
       entity: src.entity, label: src.label, icon: src.icon,
       icon_on: src.icon_on, sensor: src.sensor, unit: src.unit,
-      type: src.type || "",
+      type: src.type || "", precision: src.precision || "",
     };
 
     var srcSz = sp.sizes[srcSlot];
@@ -2705,14 +2730,14 @@
     if (c.isSub) {
       var sp = getSubpage(state.editingSubpage);
       if (slot >= 1 && slot <= sp.buttons.length) {
-        sp.buttons[slot - 1] = { entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "", type: "" };
+        sp.buttons[slot - 1] = { entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "", type: "", precision: "" };
       }
       sp.order = serializeSubpageGrid(sp);
       state.subpageLastClicked = -1;
       saveSubpageConfig(state.editingSubpage);
     } else {
       postText("Button Order", serializeGrid(state.grid));
-      state.buttons[slot - 1] = { entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "", type: "" };
+      state.buttons[slot - 1] = { entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "", type: "", precision: "" };
       delete state.subpages[slot];
       saveButtonConfig(slot);
       saveSubpageEntity(slot);
@@ -2745,14 +2770,14 @@
       var sp = getSubpage(state.editingSubpage);
       slots.forEach(function (slot) {
         if (slot >= 1 && slot <= sp.buttons.length) {
-          sp.buttons[slot - 1] = { entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "", type: "" };
+          sp.buttons[slot - 1] = { entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "", type: "", precision: "" };
         }
       });
       sp.order = serializeSubpageGrid(sp);
       saveSubpageConfig(state.editingSubpage);
     } else {
       slots.forEach(function (slot) {
-        state.buttons[slot - 1] = { entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "", type: "" };
+        state.buttons[slot - 1] = { entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "", type: "", precision: "" };
         delete state.subpages[slot];
         saveButtonConfig(slot);
         saveSubpageEntity(slot);
@@ -2973,8 +2998,8 @@
     var entry = {
       entity: src.entity, label: src.label, icon: src.icon,
       icon_on: src.icon_on, sensor: src.sensor, unit: src.unit,
-      type: src.type || "", subpageConfig: null,
-      size: c.sizes[slot] || 1,
+      type: src.type || "", precision: src.precision || "",
+      subpageConfig: null, size: c.sizes[slot] || 1,
     };
     if (!c.isSub && src.type === "subpage" && state.subpages[slot]) {
       entry.subpageConfig = serializeSubpageConfig(state.subpages[slot]);
@@ -3014,7 +3039,8 @@
       var e = entries[i];
       state.buttons[newSlot - 1] = {
         entity: e.entity, label: e.label, icon: e.icon,
-        icon_on: e.icon_on, sensor: e.sensor, unit: e.unit, type: e.type || "",
+        icon_on: e.icon_on, sensor: e.sensor, unit: e.unit,
+        type: e.type || "", precision: e.precision || "",
       };
       if (e.size === 4) state.sizes[newSlot] = 4;
       else if (e.size === 2) state.sizes[newSlot] = 2;
@@ -3063,13 +3089,13 @@
       if (cell < 0) break;
       var newSlot = subpageFirstFreeSlot(sp);
       while (sp.buttons.length < newSlot) {
-        sp.buttons.push({ entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "", type: "" });
+        sp.buttons.push({ entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "", type: "", precision: "" });
       }
       var e = entries[i];
       sp.buttons[newSlot - 1] = {
         entity: e.entity, label: e.label, icon: e.icon,
         icon_on: e.icon_on, sensor: e.sensor, unit: e.unit,
-        type: e.type || "",
+        type: e.type || "", precision: e.precision || "",
       };
       if (e.size === 4) sp.sizes[newSlot] = 4;
       else if (e.size === 2) sp.sizes[newSlot] = 2;
@@ -3111,7 +3137,7 @@
         return {
           entity: b.entity, label: b.label, icon: b.icon,
           icon_on: b.icon_on, sensor: b.sensor, unit: b.unit,
-          type: b.type || "",
+          type: b.type || "", precision: b.precision || "",
         };
       }),
       subpages: (function () {
@@ -3185,7 +3211,7 @@
         postText("Button Off Color", data.button_off_color || "313131");
         postText("Sensor Card Color", data.sensor_card_color || "212121");
 
-        var empty = { entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "", type: "" };
+        var empty = { entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "", type: "", precision: "" };
         var buttons, orderStr, spKeyMap;
 
         if (importedCount !== NUM_SLOTS) {
@@ -3297,7 +3323,7 @@
             entity: b.entity || "", label: b.label || "",
             icon: b.icon || "Auto", icon_on: b.icon_on || "Auto",
             sensor: b.sensor || "", unit: b.unit || "",
-            type: b.type || "",
+            type: b.type || "", precision: b.precision || "",
           };
           saveButtonConfig(n);
         }
@@ -3609,6 +3635,7 @@
           b.sensor = parts[4] || "";
           b.unit = parts[5] || "";
           b.type = parts[6] || "";
+          b.precision = parts[7] || "";
           scheduleRender();
         },
       },

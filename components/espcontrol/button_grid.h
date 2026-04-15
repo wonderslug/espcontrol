@@ -43,27 +43,35 @@ inline std::string cfg_field(const std::string &cfg, int idx) {
   return (end == std::string::npos) ? cfg.substr(start) : cfg.substr(start, end - start);
 }
 
-// Structured view of a button config string: entity;label;icon;icon_on;sensor;unit;type
+// Structured view of a button config string: entity;label;icon;icon_on;sensor;unit;type;precision
 struct ParsedCfg {
-  std::string entity;   // 0  HA entity_id (e.g. light.kitchen)
-  std::string label;    // 1  display name (blank = use HA friendly_name)
-  std::string icon;     // 2  icon name for off/default state
-  std::string icon_on;  // 3  icon name for on state (blank = no swap)
-  std::string sensor;   // 4  sensor entity for toggle overlay; "h" for horizontal slider
-  std::string unit;     // 5  unit suffix for sensor display
-  std::string type;     // 6  button type: "" (toggle), sensor, slider, cover, push, subpage
+  std::string entity;      // 0  HA entity_id (e.g. light.kitchen)
+  std::string label;       // 1  display name (blank = use HA friendly_name)
+  std::string icon;        // 2  icon name for off/default state
+  std::string icon_on;     // 3  icon name for on state (blank = no swap)
+  std::string sensor;      // 4  sensor entity for toggle overlay; "h" for horizontal slider
+  std::string unit;        // 5  unit suffix for sensor display
+  std::string type;        // 6  button type: "" (toggle), sensor, slider, cover, push, subpage
+  std::string precision;   // 7  decimal places for sensor display ("" or "0" = integer)
 };
 
 inline ParsedCfg parse_cfg(const std::string &cfg) {
   ParsedCfg p;
-  p.entity  = cfg_field(cfg, 0);
-  p.label   = cfg_field(cfg, 1);
-  p.icon    = cfg_field(cfg, 2);
-  p.icon_on = cfg_field(cfg, 3);
-  p.sensor  = cfg_field(cfg, 4);
-  p.unit    = cfg_field(cfg, 5);
-  p.type    = cfg_field(cfg, 6);
+  p.entity    = cfg_field(cfg, 0);
+  p.label     = cfg_field(cfg, 1);
+  p.icon      = cfg_field(cfg, 2);
+  p.icon_on   = cfg_field(cfg, 3);
+  p.sensor    = cfg_field(cfg, 4);
+  p.unit      = cfg_field(cfg, 5);
+  p.type      = cfg_field(cfg, 6);
+  p.precision = cfg_field(cfg, 7);
   return p;
+}
+
+inline int parse_precision(const std::string &s) {
+  if (s.empty()) return 0;
+  int v = atoi(s.c_str());
+  return (v < 0) ? 0 : (v > 3) ? 3 : v;
 }
 
 // Parse a 6-char hex color string (no # prefix) into a uint32_t RGB value
@@ -220,15 +228,17 @@ inline void setup_toggle_visual(BtnSlot &s, const ParsedCfg &p) {
 // ── Home Assistant subscriptions ──────────────────────────────────────
 
 // Subscribe to a HA sensor entity and update an LVGL label with its value
-inline void subscribe_sensor_value(lv_obj_t *sensor_lbl, const std::string &sensor_id) {
+inline void subscribe_sensor_value(lv_obj_t *sensor_lbl, const std::string &sensor_id, int precision = 0) {
   esphome::api::global_api_server->subscribe_home_assistant_state(
     sensor_id, {},
-    std::function<void(const std::string &)>([sensor_lbl](const std::string &state) {
+    std::function<void(const std::string &)>([sensor_lbl, precision](const std::string &state) {
       char *end;
       float val = strtof(state.c_str(), &end);
       if (end != state.c_str()) {
+        char fmt[8];
+        snprintf(fmt, sizeof(fmt), "%%.%df", precision);
         char buf[16];
-        snprintf(buf, sizeof(buf), "%.0f", val);
+        snprintf(buf, sizeof(buf), fmt, val);
         lv_label_set_text(sensor_lbl, buf);
       } else {
         lv_label_set_text(sensor_lbl, state.c_str());
@@ -567,9 +577,10 @@ struct SubpageBtn {
   std::string label;
   std::string icon;
   std::string icon_on;
-  std::string sensor;  // sensor entity for toggle; orientation "h"|"" for slider/cover
+  std::string sensor;     // sensor entity for toggle; orientation "h"|"" for slider/cover
   std::string unit;
   std::string type;
+  std::string precision;  // decimal places for sensor display ("" or "0" = integer)
 };
 
 // Create a slider button inside a subpage screen (reuses main grid slider logic)
@@ -663,7 +674,8 @@ inline std::vector<SubpageBtn> parse_subpage_config(const std::string &sp_cfg) {
     std::string sn = flds.size() > 4 ? flds[4] : "";
     std::string un = flds.size() > 5 ? flds[5] : "";
     std::string tp = flds.size() > 6 ? flds[6] : "";
-    btns.push_back({e, l, ic, io, sn, un, tp});
+    std::string pr = flds.size() > 7 ? flds[7] : "";
+    btns.push_back({e, l, ic, io, sn, un, tp, pr});
   }
   return btns;
 }
@@ -860,7 +872,7 @@ inline void grid_phase2(
     ParsedCfg p = parse_cfg(scfg);
     if (p.type == "sensor") {
       if (p.sensor.empty()) continue;
-      subscribe_sensor_value(s.sensor_lbl, p.sensor);
+      subscribe_sensor_value(s.sensor_lbl, p.sensor, parse_precision(p.precision));
       if (p.label.empty())
         subscribe_friendly_name(s.text_lbl, p.sensor);
       continue;
@@ -907,7 +919,7 @@ inline void grid_phase2(
       &icon_off_cp[idx - 1], &icon_on_cp[idx - 1], p.entity);
 
     if (has_sensor[idx - 1])
-      subscribe_sensor_value(s.sensor_lbl, p.sensor);
+      subscribe_sensor_value(s.sensor_lbl, p.sensor, parse_precision(p.precision));
   }
 
   // --- Subpage creation ---
@@ -920,6 +932,13 @@ inline void grid_phase2(
   const lv_font_t *sp_icon_fnt = lv_obj_get_style_text_font(slots[0].icon_lbl, LV_PART_MAIN);
 
   lv_obj_t *ref_btn = slots[0].btn;
+  for (int i = 0; i < NS; i++) {
+    ParsedCfg pc = parse_cfg(slots[i].config->state);
+    if (pc.type != "slider" && pc.type != "cover") {
+      ref_btn = slots[i].btn;
+      break;
+    }
+  }
   lv_coord_t sp_radius = lv_obj_get_style_radius(ref_btn, LV_PART_MAIN);
   lv_coord_t sp_pad = lv_obj_get_style_pad_top(ref_btn, LV_PART_MAIN);
   const lv_font_t *sp_btn_fnt = lv_obj_get_style_text_font(ref_btn, LV_PART_MAIN);
@@ -1061,7 +1080,7 @@ inline void grid_phase2(
         if (!sb.unit.empty())
           lv_label_set_text(sul, sb.unit.c_str());
 
-        subscribe_sensor_value(svl, sb.sensor);
+        subscribe_sensor_value(svl, sb.sensor, parse_precision(sb.precision));
         if (!sb.label.empty()) {
           lv_label_set_text(stl, sb.label.c_str());
         } else {
