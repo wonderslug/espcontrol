@@ -3278,30 +3278,32 @@
 
   // ── Clock (minute-aligned) ─────────────────────────────────────────────
 
-  function parseTzOffset(tz) {
-    var match = tz.match(/GMT([+-]?\d+(?::\d+)?)\)?$/);
-    if (!match) return 0;
-    var parts = match[1].split(":");
-    var hours = parseFloat(parts[0]);
-    var mins = parts.length > 1 ? parseFloat(parts[1]) : 0;
-    return hours * 60 + (hours < 0 ? -mins : mins);
+  function getTzId(tz) {
+    var idx = tz.indexOf(" (");
+    return idx > 0 ? tz.substring(0, idx) : tz;
   }
 
   function updateClock() {
     if (!els.clock) return;
     var now = new Date();
-    var offsetMin = parseTzOffset(state.timezone);
-    var utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
-    var tzDate = new Date(utcMs + offsetMin * 60000);
-    var h = tzDate.getHours();
-    var m = String(tzDate.getMinutes()).padStart(2, "0");
-    if (state.clockFormat === "12h") {
-      var suffix = h >= 12 ? " PM" : " AM";
-      h = h % 12;
-      if (h === 0) h = 12;
-      els.clock.textContent = h + ":" + m + suffix;
-    } else {
-      els.clock.textContent = String(h).padStart(2, "0") + ":" + m;
+    var tzId = getTzId(state.timezone);
+    try {
+      var parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: tzId, hour: "numeric", minute: "2-digit",
+        hour12: state.clockFormat === "12h"
+      }).formatToParts(now);
+      var h = "", m = "", dp = "";
+      for (var i = 0; i < parts.length; i++) {
+        if (parts[i].type === "hour") h = parts[i].value;
+        else if (parts[i].type === "minute") m = parts[i].value;
+        else if (parts[i].type === "dayPeriod") dp = " " + parts[i].value;
+      }
+      els.clock.textContent = (state.clockFormat === "24h"
+        ? h.padStart(2, "0") : h) + ":" + m + dp;
+    } catch (_) {
+      var hr = now.getUTCHours();
+      var mn = String(now.getUTCMinutes()).padStart(2, "0");
+      els.clock.textContent = String(hr).padStart(2, "0") + ":" + mn;
     }
     var msToNext = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
     setTimeout(updateClock, msToNext + 50);

@@ -25,7 +25,7 @@ inline SunCalcResult recalc_sunrise_sunset(
   SunCalcResult r = {};
 
   std::string tz_id = tz_option.substr(0, tz_option.find(" ("));
-  float tz_offset = parse_tz_offset(tz_option);
+  float tz_offset = current_utc_offset_hours();
 
   float lat, lon;
   if (!lookup_tz_coords(tz_id, lat, lon)) {
