@@ -1409,7 +1409,12 @@
       timerPanel.style.display = mode === "timer" ? "" : "none";
       sensorPanel.style.display = mode === "sensor" ? "" : "none";
     }
-    timerBtn.addEventListener("click", function () { setSsMode("timer"); });
+    timerBtn.addEventListener("click", function () {
+      setSsMode("timer");
+      state.presenceEntity = "";
+      syncInput(els.setPresence, "");
+      postText("Presence Sensor Entity", "");
+    });
     sensorBtn.addEventListener("click", function () { setSsMode("sensor"); });
     els.setSsMode = setSsMode;
     setSsMode(ssMode);
