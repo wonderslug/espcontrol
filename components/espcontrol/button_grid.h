@@ -75,14 +75,6 @@ inline int parse_precision(const std::string &s) {
   return (v < 0) ? 0 : (v > 3) ? 3 : v;
 }
 
-inline bool parse_complete_float(const std::string &s, float &out) {
-  char *end;
-  out = strtof(s.c_str(), &end);
-  if (end == s.c_str()) return false;
-  while (*end != '\0' && isspace(static_cast<unsigned char>(*end))) end++;
-  return *end == '\0';
-}
-
 inline const char* weather_icon_for_state(const std::string &state) {
   if (state == "sunny") return find_icon("Weather Sunny");
   if (state == "clear-night") return find_icon("Weather Night");
@@ -299,8 +291,9 @@ inline void subscribe_sensor_value(lv_obj_t *sensor_lbl, const std::string &sens
   esphome::api::global_api_server->subscribe_home_assistant_state(
     sensor_id, {},
     std::function<void(const std::string &)>([sensor_lbl, precision](const std::string &state) {
-      float val;
-      if (parse_complete_float(state, val)) {
+      char *end;
+      float val = strtof(state.c_str(), &end);
+      if (end != state.c_str()) {
         char fmt[8];
         snprintf(fmt, sizeof(fmt), "%%.%df", precision);
         char buf[16];

@@ -8,7 +8,7 @@ font:
     id: statistics_font
     size: 48
     bpp: 4
-    glyphs: !include text_glyphs.yaml
+    glyphs: "0123456789.-°/%kWhVA "
 
   # Main page: button labels
   - file: "gfonts://Roboto"
