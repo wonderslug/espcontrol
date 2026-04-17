@@ -225,17 +225,36 @@
     },
   });
   // --- type: sensor ---
-  // Read-only numeric sensor card: displays a HA sensor value and unit (non-clickable)
+  // Read-only sensor card: displays either numeric data or a text state.
   registerButtonType("sensor", {
-    label: "Numeric Sensor",
+    label: "Sensor",
     allowInSubpage: true,
-    labelPlaceholder: "e.g. Living Room",
+    hideLabel: true,
     onSelect: function (b) {
       b.entity = "";
-      b.icon = "Auto";
       b.icon_on = "Auto";
+      if (!b.precision) b.precision = "";
+      if (b.precision !== "text") b.icon = "Auto";
     },
     renderSettings: function (panel, b, slot, helpers) {
+      var isTextMode = b.precision === "text";
+
+      var modeField = document.createElement("div");
+      modeField.className = "sp-field";
+      modeField.appendChild(helpers.fieldLabel("Mode"));
+      var modeSeg = document.createElement("div");
+      modeSeg.className = "sp-segment";
+      var numericBtn = document.createElement("button");
+      numericBtn.type = "button";
+      numericBtn.textContent = "Numeric";
+      var textBtn = document.createElement("button");
+      textBtn.type = "button";
+      textBtn.textContent = "Text";
+      modeSeg.appendChild(numericBtn);
+      modeSeg.appendChild(textBtn);
+      modeField.appendChild(modeSeg);
+      panel.appendChild(modeField);
+
       var sf = document.createElement("div");
       sf.className = "sp-field";
       sf.appendChild(helpers.fieldLabel("Sensor Entity", helpers.idPrefix + "sensor"));
@@ -244,13 +263,23 @@
       panel.appendChild(sf);
       helpers.bindField(sensorInp, "sensor", true);
 
+      var numericSection = condField();
+
+      var lf = document.createElement("div");
+      lf.className = "sp-field";
+      lf.appendChild(helpers.fieldLabel("Label", helpers.idPrefix + "label"));
+      var labelInp = helpers.textInput(helpers.idPrefix + "label", b.label, "e.g. Living Room");
+      lf.appendChild(labelInp);
+      numericSection.appendChild(lf);
+      helpers.bindField(labelInp, "label", true);
+
       var uf = document.createElement("div");
       uf.className = "sp-field";
       uf.appendChild(helpers.fieldLabel("Unit", helpers.idPrefix + "unit"));
       var unitInp = helpers.textInput(helpers.idPrefix + "unit", b.unit, "e.g. \u00B0C");
       unitInp.className = "sp-input";
       uf.appendChild(unitInp);
-      panel.appendChild(uf);
+      numericSection.appendChild(uf);
       helpers.bindField(unitInp, "unit", true);
 
       var pf = document.createElement("div");
@@ -264,22 +293,84 @@
           var btn = document.createElement("button");
           btn.type = "button";
           btn.textContent = label;
-          if ((b.precision || "0") === val) btn.classList.add("active");
+          if (!isTextMode && (b.precision || "0") === val) btn.classList.add("active");
           btn.addEventListener("click", function () {
             b.precision = val === "0" ? "" : val;
             helpers.saveField("precision", b.precision);
             var btns = precSeg.querySelectorAll("button");
             for (var j = 0; j < btns.length; j++) btns[j].classList.remove("active");
             btn.classList.add("active");
+            renderPreview();
           });
           precSeg.appendChild(btn);
         })(precOpts[i][0], precOpts[i][1]);
       }
       pf.appendChild(precSeg);
-      panel.appendChild(pf);
+      numericSection.appendChild(pf);
+      panel.appendChild(numericSection);
+
+      var textSection = condField();
+      var textIconPicker = helpers.makeIconPicker(
+        helpers.idPrefix + "icon-picker", helpers.idPrefix + "icon",
+        b.icon || "Auto", function (opt) {
+          b.icon = opt;
+          helpers.saveField("icon", opt);
+          renderPreview();
+        }
+      );
+      textSection.appendChild(textIconPicker);
+      panel.appendChild(textSection);
+
+      function setMode(mode, persist) {
+        isTextMode = mode === "text";
+        numericBtn.classList.toggle("active", !isTextMode);
+        textBtn.classList.toggle("active", isTextMode);
+        numericSection.classList.toggle("sp-visible", !isTextMode);
+        textSection.classList.toggle("sp-visible", isTextMode);
+        if (!persist) return;
+        if (isTextMode) {
+          b.precision = "text";
+          b.label = "";
+          b.unit = "";
+          b.icon_on = "Auto";
+          labelInp.value = "";
+          unitInp.value = "";
+          helpers.saveField("precision", "text");
+          helpers.saveField("label", "");
+          helpers.saveField("unit", "");
+          helpers.saveField("icon_on", "Auto");
+        } else {
+          b.precision = "";
+          b.icon = "Auto";
+          helpers.saveField("precision", "");
+          helpers.saveField("icon", "Auto");
+          var iconPreview = textIconPicker.querySelector(".sp-icon-picker-preview");
+          if (iconPreview) iconPreview.className = "sp-icon-picker-preview mdi mdi-cog";
+          var iconInput = textIconPicker.querySelector(".sp-icon-picker-input");
+          if (iconInput) iconInput.value = "Auto";
+          var pbs = precSeg.querySelectorAll("button");
+          for (var j = 0; j < pbs.length; j++) pbs[j].classList.toggle("active", j === 0);
+        }
+        renderPreview();
+      }
+
+      numericBtn.addEventListener("click", function () { setMode("numeric", true); });
+      textBtn.addEventListener("click", function () { setMode("text", true); });
+      setMode(isTextMode ? "text" : "numeric", false);
     },
     renderPreview: function (b, helpers) {
-      var label = b.label || b.sensor || "Numeric Sensor";
+      if (b.precision === "text") {
+        var text = b.sensor || "Text Sensor";
+        var iconName = b.icon && b.icon !== "Auto" ? iconSlug(b.icon) : "cog";
+        return {
+          iconHtml: '<span class="sp-btn-icon mdi mdi-' + iconName + '"></span>',
+          labelHtml:
+            '<span class="sp-btn-label-row"><span class="sp-btn-label">' + helpers.escHtml(text) + '</span>' +
+            '<span class="sp-type-badge mdi mdi-format-text"></span></span>',
+        };
+      }
+
+      var label = b.label || b.sensor || "Sensor";
       var unit = b.unit ? helpers.escHtml(b.unit) : "";
       var prec = parseInt(b.precision || "0", 10) || 0;
       var sampleVal = (0).toFixed(prec);
@@ -568,49 +659,6 @@
         labelHtml:
           '<span class="sp-btn-label-row"><span class="sp-btn-label">' + helpers.escHtml(label) + '</span>' +
           '<span class="sp-type-badge mdi mdi-toggle-switch-variant-off"></span></span>',
-      };
-    },
-  });
-  // --- type: text_sensor ---
-  // Read-only text sensor card: displays a HA state string in the label area.
-  registerButtonType("text_sensor", {
-    label: "Text Sensor",
-    allowInSubpage: true,
-    hideLabel: true,
-    onSelect: function (b) {
-      b.entity = "";
-      b.label = "";
-      b.icon_on = "Auto";
-      b.unit = "";
-      b.precision = "";
-      if (!b.icon) b.icon = "Auto";
-    },
-    renderSettings: function (panel, b, slot, helpers) {
-      var sf = document.createElement("div");
-      sf.className = "sp-field";
-      sf.appendChild(helpers.fieldLabel("Text Sensor Entity", helpers.idPrefix + "sensor"));
-      var sensorInp = helpers.textInput(helpers.idPrefix + "sensor", b.sensor, "e.g. text_sensor.washing_machine_status");
-      sf.appendChild(sensorInp);
-      panel.appendChild(sf);
-      helpers.bindField(sensorInp, "sensor", true);
-
-      panel.appendChild(helpers.makeIconPicker(
-        helpers.idPrefix + "icon-picker", helpers.idPrefix + "icon",
-        b.icon || "Auto", function (opt) {
-          b.icon = opt;
-          helpers.saveField("icon", opt);
-          renderPreview();
-        }
-      ));
-    },
-    renderPreview: function (b, helpers) {
-      var text = b.sensor || "Text Sensor";
-      var iconName = b.icon && b.icon !== "Auto" ? iconSlug(b.icon) : "cog";
-      return {
-        iconHtml: '<span class="sp-btn-icon mdi mdi-' + iconName + '"></span>',
-        labelHtml:
-          '<span class="sp-btn-label-row"><span class="sp-btn-label">' + helpers.escHtml(text) + '</span>' +
-          '<span class="sp-type-badge mdi mdi-format-text"></span></span>',
       };
     },
   });
@@ -1302,6 +1350,19 @@
 
   // ── Subpage helpers ────────────────────────────────────────────────────
 
+  function normalizeButtonConfig(b) {
+    if (b && b.type === "text_sensor") {
+      b.type = "sensor";
+      b.precision = "text";
+      b.entity = "";
+      b.label = "";
+      b.unit = "";
+      b.icon_on = "Auto";
+      if (!b.icon) b.icon = "Auto";
+    }
+    return b;
+  }
+
   function parseSubpageConfig(str) {
     if (!str || !str.trim()) return { order: [], buttons: [] };
     var parts = str.split("|");
@@ -1316,7 +1377,7 @@
     var buttons = [];
     for (var i = 1; i < parts.length; i++) {
       var f = parts[i].split(":");
-      buttons.push({
+      buttons.push(normalizeButtonConfig({
         entity: f[0] || "",
         label: f[1] || "",
         icon: f[2] || "Auto",
@@ -1325,7 +1386,7 @@
         unit: f[5] || "",
         type: f[6] || "",
         precision: f[7] || "",
-      });
+      }));
     }
     return { order: order, buttons: buttons };
   }
@@ -2283,7 +2344,7 @@
         var b = c.buttons[bIdx];
         var iconName = resolveIcon(b);
         var label = b.label || b.entity || "Configure";
-        var color = (b.type === "sensor" || b.type === "weather") ? state.sensorColor : state.offColor;
+        var color = ((b.type === "sensor" && b.precision !== "text") || b.type === "weather") ? state.sensorColor : state.offColor;
         var previewTypeDef = BUTTON_TYPES[b.type || ""] || null;
         if (previewTypeDef && c.isSub && !previewTypeDef.allowInSubpage) previewTypeDef = null;
         var typePreview = previewTypeDef && previewTypeDef.renderPreview
@@ -3851,12 +3912,12 @@
         for (var i = 0; i < NUM_SLOTS; i++) {
           var b = buttons[i];
           var n = i + 1;
-          state.buttons[i] = {
+          state.buttons[i] = normalizeButtonConfig({
             entity: b.entity || "", label: b.label || "",
             icon: b.icon || "Auto", icon_on: b.icon_on || "Auto",
             sensor: b.sensor || "", unit: b.unit || "",
             type: b.type || "", precision: b.precision || "",
-          };
+          });
           saveButtonConfig(n);
         }
 
@@ -4167,6 +4228,7 @@
           b.unit = parts[5] || "";
           b.type = parts[6] || "";
           b.precision = parts[7] || "";
+          normalizeButtonConfig(b);
           scheduleRender();
         },
       },

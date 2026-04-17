@@ -797,6 +797,19 @@
 
   // ── Subpage helpers ────────────────────────────────────────────────────
 
+  function normalizeButtonConfig(b) {
+    if (b && b.type === "text_sensor") {
+      b.type = "sensor";
+      b.precision = "text";
+      b.entity = "";
+      b.label = "";
+      b.unit = "";
+      b.icon_on = "Auto";
+      if (!b.icon) b.icon = "Auto";
+    }
+    return b;
+  }
+
   function parseSubpageConfig(str) {
     if (!str || !str.trim()) return { order: [], buttons: [] };
     var parts = str.split("|");
@@ -811,7 +824,7 @@
     var buttons = [];
     for (var i = 1; i < parts.length; i++) {
       var f = parts[i].split(":");
-      buttons.push({
+      buttons.push(normalizeButtonConfig({
         entity: f[0] || "",
         label: f[1] || "",
         icon: f[2] || "Auto",
@@ -820,7 +833,7 @@
         unit: f[5] || "",
         type: f[6] || "",
         precision: f[7] || "",
-      });
+      }));
     }
     return { order: order, buttons: buttons };
   }
@@ -1778,7 +1791,7 @@
         var b = c.buttons[bIdx];
         var iconName = resolveIcon(b);
         var label = b.label || b.entity || "Configure";
-        var color = (b.type === "sensor" || b.type === "weather") ? state.sensorColor : state.offColor;
+        var color = ((b.type === "sensor" && b.precision !== "text") || b.type === "weather") ? state.sensorColor : state.offColor;
         var previewTypeDef = BUTTON_TYPES[b.type || ""] || null;
         if (previewTypeDef && c.isSub && !previewTypeDef.allowInSubpage) previewTypeDef = null;
         var typePreview = previewTypeDef && previewTypeDef.renderPreview
@@ -3346,12 +3359,12 @@
         for (var i = 0; i < NUM_SLOTS; i++) {
           var b = buttons[i];
           var n = i + 1;
-          state.buttons[i] = {
+          state.buttons[i] = normalizeButtonConfig({
             entity: b.entity || "", label: b.label || "",
             icon: b.icon || "Auto", icon_on: b.icon_on || "Auto",
             sensor: b.sensor || "", unit: b.unit || "",
             type: b.type || "", precision: b.precision || "",
-          };
+          });
           saveButtonConfig(n);
         }
 
@@ -3662,6 +3675,7 @@
           b.unit = parts[5] || "";
           b.type = parts[6] || "";
           b.precision = parts[7] || "";
+          normalizeButtonConfig(b);
           scheduleRender();
         },
       },
