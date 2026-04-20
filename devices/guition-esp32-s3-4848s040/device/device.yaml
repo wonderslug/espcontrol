@@ -119,6 +119,37 @@ light:
               - script.execute: screensaver_wake
 
 # ---------------------------------------------------------------------------
+# Built-in relays (4848S040C relay variant)
+# ---------------------------------------------------------------------------
+switch:
+  - platform: gpio
+    name: Relay 1
+    id: relay_1
+    icon: mdi:electric-switch
+    pin:
+      number: GPIO40
+      inverted: true
+    restore_mode: RESTORE_DEFAULT_OFF
+
+  - platform: gpio
+    name: Relay 2
+    id: relay_2
+    icon: mdi:electric-switch
+    pin:
+      number: GPIO2
+      inverted: true
+    restore_mode: RESTORE_DEFAULT_OFF
+
+  - platform: gpio
+    name: Relay 3
+    id: relay_3
+    icon: mdi:electric-switch
+    pin:
+      number: GPIO1
+      inverted: true
+    restore_mode: RESTORE_DEFAULT_OFF
+
+# ---------------------------------------------------------------------------
 # SPI bus (used by MIPI RGB driver for ST7701S init sequence)
 # ---------------------------------------------------------------------------
 spi:
