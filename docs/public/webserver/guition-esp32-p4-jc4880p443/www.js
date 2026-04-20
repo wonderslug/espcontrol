@@ -1497,7 +1497,7 @@
       on404: function () {
         if (value === "dim" && !_screensaverActionMissingWarned) {
           _screensaverActionMissingWarned = true;
-          showBanner("Display Dimmed needs updated firmware before it can take effect.", "warning");
+          showBanner("Device is missing /text/screensaver_action. Hard-refresh this page, then reflash if it remains.", "warning");
         }
       },
     });
