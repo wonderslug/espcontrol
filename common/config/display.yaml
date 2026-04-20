@@ -111,9 +111,15 @@ text:
       then:
         - if:
             condition:
-              lambda: 'return !id(display_asleep) && lv_scr_act() == id(main_page)->obj;'
+              lambda: 'return id(display_asleep);'
             then:
-              - script.execute: screensaver_idle_check
+              - script.execute: screensaver_apply_sleep_state
+            else:
+              - if:
+                  condition:
+                    lambda: 'return lv_scr_act() == id(main_page)->obj;'
+                  then:
+                    - script.execute: screensaver_idle_check
 
   - platform: template
     name: "Screensaver Action"
@@ -134,9 +140,15 @@ text:
       then:
         - if:
             condition:
-              lambda: 'return !id(display_asleep) && lv_scr_act() == id(main_page)->obj;'
+              lambda: 'return id(display_asleep);'
             then:
-              - script.execute: screensaver_idle_check
+              - script.execute: screensaver_apply_sleep_state
+            else:
+              - if:
+                  condition:
+                    lambda: 'return lv_scr_act() == id(main_page)->obj;'
+                  then:
+                    - script.execute: screensaver_idle_check
 
   # Optional presence sensor for screensaver (e.g. mmWave)
   - platform: template
@@ -171,6 +183,13 @@ number:
     icon: "mdi:clock-outline"
     web_server:
       sorting_group_id: sg_screensaver
+    on_value:
+      then:
+        - if:
+            condition:
+              lambda: 'return id(display_asleep) && (id(screensaver_action).state == "dim" || id(is_clock_showing));'
+            then:
+              - script.execute: screensaver_apply_sleep_state
 
   # Screensaver idle timeout
   - platform: template
