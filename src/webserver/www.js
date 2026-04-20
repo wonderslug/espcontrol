@@ -937,21 +937,17 @@
     return _postQueue;
   }
 
-  function entityId(name) {
-    return String(name).toLowerCase().replace(/[^a-z0-9]/g, "_").replace(/^_+|_+$/g, "");
-  }
-
   function postText(name, value) {
-    post("/text/" + encodeURIComponent(entityId(name)) + "/set?value=" + encodeURIComponent(value));
+    post("/text/" + encodeURIComponent(name) + "/set?value=" + encodeURIComponent(value));
   }
 
   function postScreensaverAction(value) {
-    post("/text/" + encodeURIComponent(entityId("Screensaver Action")) + "/set?value=" + encodeURIComponent(value), {
+    post("/text/" + encodeURIComponent("Screensaver Action") + "/set?value=" + encodeURIComponent(value), {
       ignore404: true,
       on404: function () {
         if (value === "dim" && !_screensaverActionMissingWarned) {
           _screensaverActionMissingWarned = true;
-          showBanner("Request failed: 404 (/text/screensaver_action)", "warning");
+          showBanner("Request failed: 404 (/text/Screensaver Action)", "warning");
         }
       },
     });
@@ -993,23 +989,23 @@
   }
 
   function postSelect(name, option) {
-    post("/select/" + encodeURIComponent(entityId(name)) + "/set?option=" + encodeURIComponent(option));
+    post("/select/" + encodeURIComponent(name) + "/set?option=" + encodeURIComponent(option));
   }
 
   function postButtonPress(name) {
-    post("/button/" + encodeURIComponent(entityId(name)) + "/press");
+    post("/button/" + encodeURIComponent(name) + "/press");
   }
 
   function postUpdateInstall(name) {
-    post("/update/" + encodeURIComponent(entityId(name)) + "/install");
+    post("/update/" + encodeURIComponent(name) + "/install");
   }
 
   function postSwitch(name, on) {
-    post("/switch/" + encodeURIComponent(entityId(name)) + "/" + (on ? "turn_on" : "turn_off"));
+    post("/switch/" + encodeURIComponent(name) + "/" + (on ? "turn_on" : "turn_off"));
   }
 
   function postNumber(name, value) {
-    post("/number/" + encodeURIComponent(entityId(name)) + "/set?value=" + encodeURIComponent(value));
+    post("/number/" + encodeURIComponent(name) + "/set?value=" + encodeURIComponent(value));
   }
 
   function getJsonQuietly(path, callback) {
