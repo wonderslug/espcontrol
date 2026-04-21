@@ -2,6 +2,7 @@
   "name": "espcontrol",
   "private": true,
   "scripts": {
+    "check:config": "node scripts/check_config_formats.js",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs"

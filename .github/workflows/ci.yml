@@ -54,6 +54,7 @@ jobs:
 
       - run: python3 scripts/build.py --check
       - run: python3 scripts/check_icon_groups.py
+      - run: npm run check:config
 
   docs:
     name: Build Docs

@@ -51,6 +51,43 @@ inline std::string cfg_field(const std::string &cfg, int idx) {
   return (end == std::string::npos) ? cfg.substr(start) : cfg.substr(start, end - start);
 }
 
+inline std::vector<std::string> split_config_fields(const std::string &value, char delim) {
+  std::vector<std::string> out;
+  size_t start = 0;
+  while (start <= value.length()) {
+    size_t end = value.find(delim, start);
+    if (end == std::string::npos) end = value.length();
+    out.push_back(value.substr(start, end - start));
+    start = end + 1;
+  }
+  return out;
+}
+
+inline int hex_digit(char c) {
+  if (c >= '0' && c <= '9') return c - '0';
+  if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+  if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+  return -1;
+}
+
+inline std::string decode_compact_field(const std::string &value) {
+  std::string out;
+  out.reserve(value.size());
+  for (size_t i = 0; i < value.size(); i++) {
+    if (value[i] == '%' && i + 2 < value.size()) {
+      int hi = hex_digit(value[i + 1]);
+      int lo = hex_digit(value[i + 2]);
+      if (hi >= 0 && lo >= 0) {
+        out.push_back(static_cast<char>((hi << 4) | lo));
+        i += 2;
+        continue;
+      }
+    }
+    out.push_back(value[i]);
+  }
+  return out;
+}
+
 // Structured view of a button config string: entity;label;icon;icon_on;sensor;unit;type;precision
 struct ParsedCfg {
   std::string entity;      // 0  HA entity_id (e.g. light.kitchen)
@@ -65,6 +102,18 @@ struct ParsedCfg {
 
 inline ParsedCfg parse_cfg(const std::string &cfg) {
   ParsedCfg p;
+  if (!cfg.empty() && cfg[0] == '~') {
+    std::vector<std::string> f = split_config_fields(cfg.substr(1), ',');
+    p.entity    = f.size() > 0 ? decode_compact_field(f[0]) : "";
+    p.label     = f.size() > 1 ? decode_compact_field(f[1]) : "";
+    p.icon      = f.size() > 2 ? decode_compact_field(f[2]) : "";
+    p.icon_on   = f.size() > 3 ? decode_compact_field(f[3]) : "";
+    p.sensor    = f.size() > 4 ? decode_compact_field(f[4]) : "";
+    p.unit      = f.size() > 5 ? decode_compact_field(f[5]) : "";
+    p.type      = f.size() > 6 ? decode_compact_field(f[6]) : "";
+    p.precision = f.size() > 7 ? decode_compact_field(f[7]) : "";
+    return p;
+  }
   p.entity    = cfg_field(cfg, 0);
   p.label     = cfg_field(cfg, 1);
   p.icon      = cfg_field(cfg, 2);
@@ -747,29 +796,8 @@ inline std::string compact_subpage_type(const std::string &code) {
   return code;
 }
 
-inline int hex_digit(char c) {
-  if (c >= '0' && c <= '9') return c - '0';
-  if (c >= 'A' && c <= 'F') return c - 'A' + 10;
-  if (c >= 'a' && c <= 'f') return c - 'a' + 10;
-  return -1;
-}
-
 inline std::string decode_compact_subpage_field(const std::string &value) {
-  std::string out;
-  out.reserve(value.size());
-  for (size_t i = 0; i < value.size(); i++) {
-    if (value[i] == '%' && i + 2 < value.size()) {
-      int hi = hex_digit(value[i + 1]);
-      int lo = hex_digit(value[i + 2]);
-      if (hi >= 0 && lo >= 0) {
-        out.push_back(static_cast<char>((hi << 4) | lo));
-        i += 2;
-        continue;
-      }
-    }
-    out.push_back(value[i]);
-  }
-  return out;
+  return decode_compact_field(value);
 }
 
 // Create a slider button inside a subpage screen (reuses main grid slider logic)

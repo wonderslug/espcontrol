@@ -1099,10 +1099,7 @@
 
   function saveButtonConfig(slot) {
     var b = state.buttons[slot - 1];
-    var fields = [b.entity || "", b.label || "", b.icon || "Auto", b.icon_on || "Auto",
-               b.sensor || "", b.unit || "", b.type || "", b.precision || ""];
-    while (fields.length > 1 && !fields[fields.length - 1]) fields.pop();
-    postText("Button " + slot + " Config", fields.join(";"));
+    postText("Button " + slot + " Config", serializeButtonConfig(b));
   }
 
   function saveSubpageEntity(slot) {
@@ -1282,6 +1279,67 @@
     return b;
   }
 
+  function trimConfigFields(fields) {
+    while (fields.length > 1 && !fields[fields.length - 1]) fields.pop();
+    return fields;
+  }
+
+  function buttonConfigFields(b) {
+    return trimConfigFields([
+      b && b.entity || "",
+      b && b.label || "",
+      b && b.icon || "Auto",
+      b && b.icon_on || "Auto",
+      b && b.sensor || "",
+      b && b.unit || "",
+      b && b.type || "",
+      b && b.precision || "",
+    ]);
+  }
+
+  function encodeConfigField(value) {
+    return String(value || "").replace(/[%,;|:]/g, function (ch) {
+      var hex = ch.charCodeAt(0).toString(16).toUpperCase();
+      return "%" + (hex.length < 2 ? "0" : "") + hex;
+    });
+  }
+
+  function decodeConfigField(value) {
+    return String(value || "").replace(/%([0-9a-fA-F]{2})/g, function (_, hex) {
+      return String.fromCharCode(parseInt(hex, 16));
+    });
+  }
+
+  function legacyButtonConfigSafe(fields) {
+    return fields.join(";").charAt(0) !== "~" && fields.every(function (field) {
+      return String(field || "").indexOf(";") < 0;
+    });
+  }
+
+  function serializeButtonConfig(b) {
+    var fields = buttonConfigFields(b || {});
+    if (legacyButtonConfigSafe(fields)) return fields.join(";");
+    return "~" + fields.map(encodeConfigField).join(",");
+  }
+
+  function parseButtonConfig(str) {
+    var compact = str && str.charAt(0) === "~";
+    var parts = compact ? str.substring(1).split(",") : (str || "").split(";");
+    if (compact) {
+      parts = parts.map(decodeConfigField);
+    }
+    return normalizeButtonConfig({
+      entity: parts[0] || "",
+      label: parts[1] || "",
+      icon: parts[2] || "Auto",
+      icon_on: parts[3] || "Auto",
+      sensor: parts[4] || "",
+      unit: parts[5] || "",
+      type: parts[6] || "",
+      precision: parts[7] || "",
+    });
+  }
+
   function parseSubpageConfig(str) {
     if (str && str.charAt(0) === "~") return parseCompactSubpageConfig(str);
     if (!str || !str.trim()) return { order: [], buttons: [] };
@@ -1336,17 +1394,11 @@
   }
 
   function encodeSubpageField(value) {
-    return String(value || "")
-      .replace(/%/g, "%25")
-      .replace(/\|/g, "%7C")
-      .replace(/,/g, "%2C");
+    return encodeConfigField(value);
   }
 
   function decodeSubpageField(value) {
-    return String(value || "")
-      .replace(/%2C/gi, ",")
-      .replace(/%7C/gi, "|")
-      .replace(/%25/g, "%");
+    return decodeConfigField(value);
   }
 
   function parseCompactSubpageConfig(str) {
@@ -1375,11 +1427,25 @@
   }
 
   function serializeSubpageConfig(sp) {
-    var legacy = serializeLegacySubpageConfig(sp);
+    var legacy = legacySubpageConfigSafe(sp) ? serializeLegacySubpageConfig(sp) : "";
     var compact = serializeCompactSubpageConfig(sp);
     if (!compact) return legacy;
     if (!legacy) return compact;
     return compact.length < legacy.length ? compact : legacy;
+  }
+
+  function legacySubpageConfigSafe(sp) {
+    if (!sp || !sp.buttons) return true;
+    for (var i = 0; i < sp.buttons.length; i++) {
+      var b = sp.buttons[i];
+      var fields = [b.entity || "", b.label || "", b.icon || "Auto", b.icon_on || "Auto", b.sensor || "", b.unit || "", b.type || "", b.precision || ""];
+      for (var j = 0; j < fields.length; j++) {
+        if (String(fields[j] || "").indexOf("|") >= 0 || String(fields[j] || "").indexOf(":") >= 0) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 
   function serializeLegacySubpageConfig(sp) {
@@ -4993,17 +5059,16 @@
         fn: function (m, val) {
           var slot = parseInt(m[1], 10);
           if (slot < 1 || slot > NUM_SLOTS) return;
-          var parts = (val || "").split(";");
           var b = state.buttons[slot - 1];
-          b.entity = parts[0] || "";
-          b.label = parts[1] || "";
-          b.icon = parts[2] || "Auto";
-          b.icon_on = parts[3] || "Auto";
-          b.sensor = parts[4] || "";
-          b.unit = parts[5] || "";
-          b.type = parts[6] || "";
-          b.precision = parts[7] || "";
-          normalizeButtonConfig(b);
+          var parsed = parseButtonConfig(val || "");
+          b.entity = parsed.entity;
+          b.label = parsed.label;
+          b.icon = parsed.icon;
+          b.icon_on = parsed.icon_on;
+          b.sensor = parsed.sensor;
+          b.unit = parsed.unit;
+          b.type = parsed.type;
+          b.precision = parsed.precision;
           scheduleRender();
         },
       },
@@ -5179,6 +5244,15 @@
         els.logOutput.removeChild(els.logOutput.firstChild);
     }
     if (atBottom) els.logOutput.scrollTop = els.logOutput.scrollHeight;
+  }
+
+  if (typeof globalThis !== "undefined" && globalThis.__ESPCONTROL_TEST_HOOKS__) {
+    globalThis.__ESPCONTROL_TEST_HOOKS__.config = {
+      parseButtonConfig: parseButtonConfig,
+      serializeButtonConfig: serializeButtonConfig,
+      parseSubpageConfig: parseSubpageConfig,
+      serializeSubpageConfig: serializeSubpageConfig,
+    };
   }
 
   // ── Start ──────────────────────────────────────────────────────────────
