@@ -166,6 +166,7 @@ export default defineConfig({
           { text: 'Clock', link: '/features/clock' },
           { text: 'Screensaver', link: '/features/screensaver' },
           { text: 'Backlight', link: '/features/backlight' },
+          { text: 'Screen Schedule', link: '/features/screen-schedule' },
           { text: 'Built-in Relays', link: '/features/relays' },
           { text: 'Backup', link: '/features/backup' },
           { text: 'Firmware Updates', link: '/features/firmware-updates' },

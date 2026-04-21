@@ -53,7 +53,68 @@ text_sensor:
 # USER-CONFIGURABLE ENTITIES
 # =============================================================================
 
+switch:
+  - platform: template
+    name: "Screen: Schedule Enabled"
+    id: schedule_enabled
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    entity_category: config
+    icon: "mdi:calendar-clock"
+    web_server:
+      sorting_group_id: sg_brightness
+    on_turn_on:
+      - script.execute: screen_schedule_check
+    on_turn_off:
+      - globals.set:
+          id: backlight_manual_off
+          value: 'false'
+      - globals.set:
+          id: manual_wake_ms
+          value: '0'
+      - if:
+          condition:
+            lambda: 'return id(screen_schedule_asleep);'
+          then:
+            - script.execute: screen_schedule_wake
+          else:
+            - script.execute: backlight_apply_brightness
+
 number:
+  - platform: template
+    name: "Screen: Schedule On Hour"
+    id: schedule_on_hour
+    min_value: 0
+    max_value: 23
+    step: 1
+    initial_value: 6
+    optimistic: true
+    restore_value: true
+    entity_category: config
+    icon: "mdi:weather-sunset-up"
+    web_server:
+      sorting_group_id: sg_brightness
+    on_value:
+      then:
+        - script.execute: screen_schedule_check
+
+  - platform: template
+    name: "Screen: Schedule Off Hour"
+    id: schedule_off_hour
+    min_value: 0
+    max_value: 23
+    step: 1
+    initial_value: 23
+    optimistic: true
+    restore_value: true
+    entity_category: config
+    icon: "mdi:weather-night"
+    web_server:
+      sorting_group_id: sg_brightness
+    on_value:
+      then:
+        - script.execute: screen_schedule_check
+
   - platform: template
     name: "Screen: Daytime Brightness"
     id: brightness_day
@@ -95,6 +156,103 @@ number:
 # =============================================================================
 
 script:
+  # ---------------------------------------------------------------------------
+  # Force the screen asleep because it is outside schedule hours
+  # ---------------------------------------------------------------------------
+  - id: screen_schedule_sleep
+    mode: restart
+    then:
+      - script.stop: screensaver_idle_check
+      - script.stop: home_screen_idle_check
+      - globals.set:
+          id: display_asleep
+          value: 'true'
+      - globals.set:
+          id: screensaver_display_off_active
+          value: 'true'
+      - globals.set:
+          id: screen_schedule_asleep
+          value: 'true'
+      - globals.set:
+          id: backlight_manual_off
+          value: 'false'
+      - globals.set:
+          id: manual_wake_ms
+          value: '0'
+      - script.execute: backlight_sleep_display_off
+
+  # ---------------------------------------------------------------------------
+  # Wake automatically at the start of the schedule window
+  # ---------------------------------------------------------------------------
+  - id: screen_schedule_wake
+    mode: restart
+    then:
+      - globals.set:
+          id: screen_schedule_asleep
+          value: 'false'
+      - globals.set:
+          id: screensaver_display_off_active
+          value: 'false'
+      - globals.set:
+          id: backlight_manual_off
+          value: 'false'
+      - globals.set:
+          id: manual_wake_ms
+          value: '0'
+      - lvgl.resume:
+      - script.execute: hide_clock_view
+      - delay: 100ms
+      - globals.set:
+          id: display_asleep
+          value: 'false'
+      - script.execute: backlight_apply_brightness
+      - script.execute: screensaver_idle_check
+      - script.execute: home_screen_idle_check
+
+  # ---------------------------------------------------------------------------
+  # Apply the saved screen schedule if local time is valid
+  # ---------------------------------------------------------------------------
+  - id: screen_schedule_check
+    mode: restart
+    then:
+      - lambda: |-
+          if (!id(schedule_enabled).state) return;
+
+          auto now = id(ha_time).now();
+          if (!now.is_valid()) return;
+
+          int on_hour = (int) id(schedule_on_hour).state;
+          int off_hour = (int) id(schedule_off_hour).state;
+          if (on_hour < 0) on_hour = 0;
+          if (on_hour > 23) on_hour = 23;
+          if (off_hour < 0) off_hour = 0;
+          if (off_hour > 23) off_hour = 23;
+          bool in_window = true;
+          if (on_hour < off_hour) {
+            in_window = now.hour >= on_hour && now.hour < off_hour;
+          } else if (on_hour > off_hour) {
+            in_window = now.hour >= on_hour || now.hour < off_hour;
+          }
+
+          if (in_window) {
+            id(manual_wake_ms) = 0;
+            if (id(display_asleep) && id(screen_schedule_asleep) &&
+                !id(backlight_manual_off)) {
+              id(screen_schedule_wake).execute();
+            }
+            return;
+          }
+
+          if (id(manual_wake_ms) != 0) {
+            uint32_t elapsed = (uint32_t) (millis() - id(manual_wake_ms));
+            if (elapsed < 120000UL) return;
+            id(manual_wake_ms) = 0;
+          }
+
+          if (!id(screen_schedule_asleep)) {
+            id(screen_schedule_sleep).execute();
+          }
+
   # ---------------------------------------------------------------------------
   # Determine correct brightness and apply it
   # ---------------------------------------------------------------------------
@@ -148,6 +306,7 @@ script:
 interval:
   - interval: 60s
     then:
+      - script.execute: screen_schedule_check
       - if:
           condition:
             lambda: |-

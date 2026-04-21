@@ -37,3 +37,7 @@ Switching back to Timer keeps the sensor name saved, so you can return to Sensor
 ::: tip
 Touching the screen always wakes it up, no matter which mode you're using.
 :::
+
+## Screen Schedule
+
+The [screen schedule](/features/screen-schedule) is separate from the screensaver. Use it when you want the panel to be fully dark during fixed hours, such as overnight.

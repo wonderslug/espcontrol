@@ -56,3 +56,5 @@ button:
   # Fire push event, navigate to subpage, or toggle the bound HA entity
   on_short_click:
     - lambda: 'handle_button_click(id(button_${num}_config).state, ${num}, id(button_${num}));'
+  on_long_press:
+    - script.execute: screen_schedule_manual_sleep

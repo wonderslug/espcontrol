@@ -833,6 +833,9 @@
     ".card.collapsed .card-chevron{transform:rotate(-90deg)}" +
     ".card.collapsed .card-body{display:none}" +
     ".card-header-right{display:flex;align-items:center;gap:8px}" +
+    ".sp-card-badge{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;" +
+    "padding:3px 7px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}" +
+    ".sp-card-badge.sp-hidden{display:none}" +
 
     ".sp-panel{background:var(--surface);border-radius:var(--radius);padding:24px;" +
     "margin-bottom:var(--gap);border:1px solid var(--border)}" +
@@ -912,6 +915,7 @@
 
     ".sp-cond-field{padding:0 0 4px;display:none}" +
     ".sp-cond-field.sp-visible{display:block}" +
+    ".sp-schedule-times.sp-hidden{display:none}" +
 
     ".sp-range-row{display:flex;align-items:center;gap:12px;margin-bottom:16px}" +
     ".sp-range-row:last-child{margin-bottom:0}" +
@@ -1098,6 +1102,9 @@
     homeScreenTimeout: 60,
     brightnessDayVal: 100,
     brightnessNightVal: 75,
+    scheduleEnabled: false,
+    scheduleOnHour: 6,
+    scheduleOffHour: 23,
     timezone: "UTC (GMT+0)",
     timezoneOptions: [],
     clockFormat: "24h",
@@ -1155,6 +1162,36 @@
     o.value = opt;
     o.textContent = displayScreenRotation(opt) + " deg";
     select.appendChild(o);
+  }
+
+  function normalizeHour(value, fallback) {
+    var n = parseInt(value, 10);
+    if (!isFinite(n)) return fallback;
+    if (n < 0) return 0;
+    if (n > 23) return 23;
+    return n;
+  }
+
+  function formatHour(hour) {
+    hour = normalizeHour(hour, 0);
+    var suffix = hour < 12 ? "AM" : "PM";
+    var h = hour % 12;
+    if (h === 0) h = 12;
+    return h + ":00 " + suffix;
+  }
+
+  function syncScreenScheduleUi() {
+    state.scheduleOnHour = normalizeHour(state.scheduleOnHour, 6);
+    state.scheduleOffHour = normalizeHour(state.scheduleOffHour, 23);
+    if (els.setScheduleToggle) els.setScheduleToggle.checked = !!state.scheduleEnabled;
+    if (els.setScheduleOnHour) els.setScheduleOnHour.value = String(state.scheduleOnHour);
+    if (els.setScheduleOffHour) els.setScheduleOffHour.value = String(state.scheduleOffHour);
+    if (els.setScheduleTimes) {
+      els.setScheduleTimes.className = "sp-schedule-times" + (state.scheduleEnabled ? "" : " sp-hidden");
+    }
+    if (els.setScheduleBadge) {
+      els.setScheduleBadge.className = "sp-card-badge" + (state.scheduleEnabled ? "" : " sp-hidden");
+    }
   }
 
   var els = {};
@@ -2123,6 +2160,45 @@
 
     config.appendChild(makeCollapsibleCard("Backlight", blBody, true));
 
+    var scheduleBody = document.createElement("div");
+    var scheduleToggle = toggleRow("Enable Schedule", "sp-set-schedule-enabled", state.scheduleEnabled);
+    scheduleBody.appendChild(scheduleToggle.row);
+    els.setScheduleToggle = scheduleToggle.input;
+
+    var scheduleTimes = document.createElement("div");
+    scheduleTimes.className = "sp-schedule-times";
+
+    var onHour = createHourSelect("On Time", "sp-set-schedule-on-hour", state.scheduleOnHour, function (hour) {
+      state.scheduleOnHour = hour;
+      postNumber("Screen: Schedule On Hour", hour);
+      syncScreenScheduleUi();
+    });
+    scheduleTimes.appendChild(onHour.wrap);
+    els.setScheduleOnHour = onHour.select;
+
+    var offHour = createHourSelect("Off Time", "sp-set-schedule-off-hour", state.scheduleOffHour, function (hour) {
+      state.scheduleOffHour = hour;
+      postNumber("Screen: Schedule Off Hour", hour);
+      syncScreenScheduleUi();
+    });
+    scheduleTimes.appendChild(offHour.wrap);
+    els.setScheduleOffHour = offHour.select;
+
+    scheduleBody.appendChild(scheduleTimes);
+    els.setScheduleTimes = scheduleTimes;
+
+    scheduleToggle.input.addEventListener("change", function () {
+      state.scheduleEnabled = this.checked;
+      postSwitch("Screen: Schedule Enabled", state.scheduleEnabled);
+      syncScreenScheduleUi();
+    });
+
+    var scheduleBadge = document.createElement("span");
+    scheduleBadge.textContent = "Active";
+    els.setScheduleBadge = scheduleBadge;
+    syncScreenScheduleUi();
+    config.appendChild(makeCollapsibleCard("Screen schedule", scheduleBody, true, scheduleBadge));
+
     var clockBody = document.createElement("div");
 
     var tzField = document.createElement("div");
@@ -2463,7 +2539,7 @@
 
   // ── Settings helpers ───────────────────────────────────────────────────
 
-  function makeCollapsibleCard(title, bodyElement, defaultCollapsed) {
+  function makeCollapsibleCard(title, bodyElement, defaultCollapsed, badgeElement) {
     var card = document.createElement("div");
     card.className = "card";
     var header = document.createElement("div");
@@ -2475,6 +2551,7 @@
     var chevron = document.createElement("span");
     chevron.className = "card-chevron";
     chevron.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+    if (badgeElement) rightWrap.appendChild(badgeElement);
     rightWrap.appendChild(chevron);
     header.appendChild(h3);
     header.appendChild(rightWrap);
@@ -2603,6 +2680,27 @@
     row.appendChild(val);
     wrap.appendChild(row);
     return { wrap: wrap, range: range, val: val };
+  }
+
+  function createHourSelect(label, id, initial, onChange) {
+    var wrap = document.createElement("div");
+    wrap.className = "sp-field";
+    wrap.appendChild(fieldLabel(label, id));
+    var select = document.createElement("select");
+    select.className = "sp-select";
+    select.id = id;
+    for (var h = 0; h < 24; h++) {
+      var o = document.createElement("option");
+      o.value = String(h);
+      o.textContent = formatHour(h);
+      select.appendChild(o);
+    }
+    select.value = String(normalizeHour(initial, 0));
+    select.addEventListener("change", function () {
+      onChange(normalizeHour(this.value, 0));
+    });
+    wrap.appendChild(select);
+    return { wrap: wrap, select: select };
   }
 
   function createEntityToggleSection(label, id, checked, switchName, entityLabel, entityPostName, placeholder) {
@@ -4472,6 +4570,13 @@
         home_screen_timeout: state.homeScreenTimeout,
         screen_rotation: state.screenRotation,
       },
+      screen: {
+        brightness_day: Math.round(state.brightnessDayVal),
+        brightness_night: Math.round(state.brightnessNightVal),
+        schedule_enabled: !!state.scheduleEnabled,
+        schedule_on_hour: normalizeHour(state.scheduleOnHour, 6),
+        schedule_off_hour: normalizeHour(state.scheduleOffHour, 23),
+      },
     };
 
     var json = JSON.stringify(data, null, 2);
@@ -4716,6 +4821,33 @@
 
         }
 
+        var screenSettings = data.screen || (data.settings && data.settings.screen);
+        if (screenSettings) {
+          state.brightnessDayVal = parseFloat(screenSettings.brightness_day);
+          if (!isFinite(state.brightnessDayVal)) state.brightnessDayVal = 100;
+          state.brightnessNightVal = parseFloat(screenSettings.brightness_night);
+          if (!isFinite(state.brightnessNightVal)) state.brightnessNightVal = 75;
+          state.scheduleEnabled = !!screenSettings.schedule_enabled;
+          state.scheduleOnHour = normalizeHour(screenSettings.schedule_on_hour, 6);
+          state.scheduleOffHour = normalizeHour(screenSettings.schedule_off_hour, 23);
+
+          postNumber("Screen: Daytime Brightness", state.brightnessDayVal);
+          postNumber("Screen: Nighttime Brightness", state.brightnessNightVal);
+          postNumber("Screen: Schedule On Hour", state.scheduleOnHour);
+          postNumber("Screen: Schedule Off Hour", state.scheduleOffHour);
+          postSwitch("Screen: Schedule Enabled", state.scheduleEnabled);
+
+          if (els.setDayBrightness) {
+            els.setDayBrightness.value = state.brightnessDayVal;
+            els.setDayBrightnessVal.textContent = Math.round(state.brightnessDayVal) + "%";
+          }
+          if (els.setNightBrightness) {
+            els.setNightBrightness.value = state.brightnessNightVal;
+            els.setNightBrightnessVal.textContent = Math.round(state.brightnessNightVal) + "%";
+          }
+          syncScreenScheduleUi();
+        }
+
         state.selectedSlots = [];
         state.lastClickedSlot = -1;
         renderPreview();
@@ -4889,6 +5021,18 @@
           els.setNightBrightness.value = state.brightnessNightVal;
           els.setNightBrightnessVal.textContent = Math.round(state.brightnessNightVal) + "%";
         }
+      },
+      "switch-screen__schedule_enabled": function (val, d) {
+        state.scheduleEnabled = d.value === true || val === "ON";
+        syncScreenScheduleUi();
+      },
+      "number-screen__schedule_on_hour": function (val) {
+        state.scheduleOnHour = normalizeHour(val, 6);
+        syncScreenScheduleUi();
+      },
+      "number-screen__schedule_off_hour": function (val) {
+        state.scheduleOffHour = normalizeHour(val, 23);
+        syncScreenScheduleUi();
       },
       "select-screen__timezone": function (val, d) {
         state.timezone = d.value || val || state.timezone;

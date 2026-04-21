@@ -221,7 +221,9 @@ lvgl:
   buffer_size: 25%
   displays: my_display
   rotation: 180
-  touchscreens: my_touchscreen
+  touchscreens:
+    - touchscreen_id: my_touchscreen
+      long_press_time: 3s
 
 script:
   - id: apply_screen_rotation

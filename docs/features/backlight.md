@@ -25,6 +25,10 @@ Sunrise and sunset times are derived from the timezone set in the [Clock](/featu
 
 When the screensaver is active, the backlight turns off. On wake (touch or presence sensor), brightness returns to the correct level for the current time.
 
+## Screen Schedule
+
+The [screen schedule](/features/screen-schedule) can also turn the physical backlight off at set hours. Brightness is only applied while the screen is awake.
+
 ## Before clock sync
 
 If the panel hasn't synced its clock yet, it defaults to daytime brightness. Once synced, sunrise and sunset are calculated immediately.

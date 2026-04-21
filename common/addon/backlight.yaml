@@ -4,6 +4,8 @@
 # Two screensaver mechanisms that coexist:
 #   1. Idle timer: configurable timeout (default 5 min), sleeps after inactivity
 #   2. Presence sensor: optional HA binary_sensor, wakes display on detection
+# Screen schedule can also force the physical backlight off outside configured
+# hours. It shares the same display sleep/wake plumbing but tracks its own state.
 # When the clock screensaver is enabled, the idle timer shows a drifting clock
 # instead of turning off the display. The label repositions each update for
 # burn-in prevention.
@@ -15,6 +17,15 @@ globals:
   - id: display_asleep
     type: bool
     initial_value: 'false'
+  - id: screen_schedule_asleep
+    type: bool
+    initial_value: 'false'
+  - id: backlight_manual_off
+    type: bool
+    initial_value: 'false'
+  - id: manual_wake_ms
+    type: uint32_t
+    initial_value: '0'
   - id: screensaver_display_off_active
     type: bool
     initial_value: 'false'
@@ -73,10 +84,45 @@ script:
       - globals.set:
           id: screensaver_display_off_active
           value: 'true'
+      - globals.set:
+          id: screen_schedule_asleep
+          value: 'false'
+      - script.execute: backlight_sleep_display_off
+
+  - id: backlight_sleep_display_off
+    mode: restart
+    then:
       - script.execute: hide_clock_view
+      - light.turn_off:
+          id: display_backlight
+          transition_length: 1s
+      - delay: 1100ms
       - light.turn_off: display_backlight
       - lvgl.pause:
           show_snow: true
+
+  # Touchscreen long-press sleep. This is stronger than the automatic schedule;
+  # the next tap wakes it.
+  - id: screen_schedule_manual_sleep
+    mode: restart
+    then:
+      - script.stop: screensaver_idle_check
+      - globals.set:
+          id: display_asleep
+          value: 'true'
+      - globals.set:
+          id: screensaver_display_off_active
+          value: 'true'
+      - globals.set:
+          id: screen_schedule_asleep
+          value: 'false'
+      - globals.set:
+          id: backlight_manual_off
+          value: 'true'
+      - globals.set:
+          id: manual_wake_ms
+          value: '0'
+      - script.execute: backlight_sleep_display_off
 
   # Setup screen burn-in protection
   - id: setup_screen_dim
@@ -114,6 +160,26 @@ script:
   - id: screensaver_wake
     mode: restart
     then:
+      - lambda: |-
+          id(backlight_manual_off) = false;
+          if (id(schedule_enabled).state) {
+            auto now = id(ha_time).now();
+            if (now.is_valid()) {
+              int on_hour = (int) id(schedule_on_hour).state;
+              int off_hour = (int) id(schedule_off_hour).state;
+              if (on_hour < 0) on_hour = 0;
+              if (on_hour > 23) on_hour = 23;
+              if (off_hour < 0) off_hour = 0;
+              if (off_hour > 23) off_hour = 23;
+              bool in_window = true;
+              if (on_hour < off_hour) {
+                in_window = now.hour >= on_hour && now.hour < off_hour;
+              } else if (on_hour > off_hour) {
+                in_window = now.hour >= on_hour || now.hour < off_hour;
+              }
+              id(manual_wake_ms) = in_window ? 0 : millis();
+            }
+          }
       - if:
           condition:
             lambda: 'return id(display_asleep);'
@@ -121,6 +187,9 @@ script:
             - script.stop: screensaver_idle_check
             - globals.set:
                 id: screensaver_display_off_active
+                value: 'false'
+            - globals.set:
+                id: screen_schedule_asleep
                 value: 'false'
             - lvgl.resume:
             - if:
