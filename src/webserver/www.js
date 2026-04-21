@@ -648,6 +648,30 @@
     }
   }
 
+  function syncTemperatureUi() {
+    if (els.setIndoorToggle) els.setIndoorToggle.checked = !!state._indoorOn;
+    if (els.setIndoorField) {
+      els.setIndoorField.className = "sp-cond-field" + (state._indoorOn ? " sp-visible" : "");
+    }
+    if (els.setOutdoorToggle) els.setOutdoorToggle.checked = !!state._outdoorOn;
+    if (els.setOutdoorField) {
+      els.setOutdoorField.className = "sp-cond-field" + (state._outdoorOn ? " sp-visible" : "");
+    }
+    if (els.setTemperatureBadge) {
+      els.setTemperatureBadge.className = "sp-card-badge" +
+        (state._indoorOn || state._outdoorOn ? "" : " sp-hidden");
+    }
+  }
+
+  function syncIdleUi() {
+    state.homeScreenTimeout = parseFloat(state.homeScreenTimeout) || 0;
+    if (els.setHSTimeout) els.setHSTimeout.value = String(state.homeScreenTimeout);
+    if (els.setIdleBadge) {
+      els.setIdleBadge.className = "sp-card-badge" +
+        (state.homeScreenTimeout > 0 ? "" : " sp-hidden");
+    }
+  }
+
   var els = {};
   var dragSrcPos = -1;
   var didDrag = false;
@@ -1771,6 +1795,11 @@
     els.setOutdoorToggle = outdoor.toggle.input;
     els.setOutdoorField = outdoor.field;
     els.setOutdoorEntity = outdoor.input;
+    outdoor.toggle.input.addEventListener("change", function () {
+      state._outdoorOn = this.checked;
+      syncTemperatureUi();
+      updateTempPreview();
+    });
 
     var indoor = createEntityToggleSection("Indoor Temperature", "sp-set-indoor-toggle", state._indoorOn,
       "Indoor Temp Enable", "Indoor Temp Entity", "Indoor Temp Entity", "sensor.indoor_temperature");
@@ -1779,8 +1808,18 @@
     els.setIndoorToggle = indoor.toggle.input;
     els.setIndoorField = indoor.field;
     els.setIndoorEntity = indoor.input;
+    indoor.toggle.input.addEventListener("change", function () {
+      state._indoorOn = this.checked;
+      syncTemperatureUi();
+      updateTempPreview();
+    });
 
-    config.appendChild(makeCollapsibleCard("Temperature", tempBody, true));
+    var tempBadge = document.createElement("span");
+    tempBadge.setAttribute("aria-label", "Temperature on");
+    tempBadge.innerHTML = '<span class="sp-card-badge-dot"></span><span>ON</span>';
+    els.setTemperatureBadge = tempBadge;
+    syncTemperatureUi();
+    config.appendChild(makeCollapsibleCard("Temperature", tempBody, true, tempBadge));
 
     var ssBody = document.createElement("div");
     var ssMode = getActiveScreensaverMode();
@@ -1923,11 +1962,18 @@
       hsSelect.appendChild(o);
     });
     hsSelect.addEventListener("change", function () {
+      state.homeScreenTimeout = parseFloat(this.value) || 0;
+      syncIdleUi();
       postNumber("Home Screen Timeout", this.value);
     });
     idleBody.appendChild(hsSelect);
     els.setHSTimeout = hsSelect;
-    config.appendChild(makeCollapsibleCard("Idle", idleBody, true));
+    var idleBadge = document.createElement("span");
+    idleBadge.setAttribute("aria-label", "Idle on");
+    idleBadge.innerHTML = '<span class="sp-card-badge-dot"></span><span>ON</span>';
+    els.setIdleBadge = idleBadge;
+    syncIdleUi();
+    config.appendChild(makeCollapsibleCard("Idle", idleBody, true, idleBadge));
 
     var backupBody = document.createElement("div");
 
@@ -4368,16 +4414,13 @@
           state.homeScreenTimeout = s.home_screen_timeout != null ? s.home_screen_timeout : 60;
           state.screenRotation = importedScreenRotation;
 
-          els.setIndoorToggle.checked = state._indoorOn;
-          els.setIndoorField.className = "sp-cond-field" + (state._indoorOn ? " sp-visible" : "");
+          syncTemperatureUi();
           syncInput(els.setIndoorEntity, state.indoorEntity);
-          els.setOutdoorToggle.checked = state._outdoorOn;
-          els.setOutdoorField.className = "sp-cond-field" + (state._outdoorOn ? " sp-visible" : "");
           syncInput(els.setOutdoorEntity, state.outdoorEntity);
           syncInput(els.setPresence, state.presenceEntity);
           syncClockScreensaverControls();
           if (els.setSSTimeout) els.setSSTimeout.value = String(state.screensaverTimeout);
-          if (els.setHSTimeout) els.setHSTimeout.value = String(state.homeScreenTimeout);
+          syncIdleUi();
           if (els.setScreenRotation) els.setScreenRotation.value = state.screenRotation;
           if (els.setSsMode) els.setSsMode(getActiveScreensaverMode());
           updateTempPreview();
@@ -4518,14 +4561,12 @@
       },
       "switch-indoor_temp_enable": function (val, d) {
         state._indoorOn = d.value === true || val === "ON";
-        els.setIndoorToggle.checked = state._indoorOn;
-        els.setIndoorField.className = "sp-cond-field" + (state._indoorOn ? " sp-visible" : "");
+        syncTemperatureUi();
         updateTempPreview();
       },
       "switch-outdoor_temp_enable": function (val, d) {
         state._outdoorOn = d.value === true || val === "ON";
-        els.setOutdoorToggle.checked = state._outdoorOn;
-        els.setOutdoorField.className = "sp-cond-field" + (state._outdoorOn ? " sp-visible" : "");
+        syncTemperatureUi();
         updateTempPreview();
       },
       "text-indoor_temp_entity": function (val) {
@@ -4542,7 +4583,7 @@
       },
       "number-home_screen_timeout": function (val) {
         state.homeScreenTimeout = parseFloat(val) || 0;
-        if (els.setHSTimeout) els.setHSTimeout.value = String(state.homeScreenTimeout);
+        syncIdleUi();
       },
       "switch-screen_saver__clock": function (val, d) {
         state.clockScreensaverOn = d.value === true || val === "ON";
