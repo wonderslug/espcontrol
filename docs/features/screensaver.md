@@ -6,7 +6,7 @@ description:
 
 # Screensaver
 
-The panel can use a screensaver when it's not being used. When active, the screen shows a gentle snow animation and the backlight turns off. Touch the screen to wake it up.
+The panel can use a screensaver when it's not being used. When active, it can show a dim clock or turn the backlight off so the panel goes dark. Touch the screen to wake it up.
 
 There are three screen saver modes, configured in the **Settings** tab on the [Setup](/features/setup) page:
 
