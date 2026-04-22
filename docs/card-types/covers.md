@@ -39,4 +39,4 @@ A cover card lets you control a Home Assistant cover entity — blinds, shutters
 
 ## Cover Icons
 
-Cover cards always use two icons: one for the closed state and one for the open or partially open state.
+Cover cards always use two icons. In slider mode, the open icon is shown when the cover position is 0%, and the closed icon is shown for any other position.

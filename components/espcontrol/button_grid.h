@@ -1440,14 +1440,18 @@ inline void subscribe_slider_state(lv_obj_t *btn_ptr, lv_obj_t *icon_lbl,
   esphome::api::global_api_server->subscribe_home_assistant_state(
     entity_id, {},
     std::function<void(const std::string &)>(
-      [slider, btn_ptr, fill, horiz, inv, rad, icon_lbl, has_icon_on, icon_off, icon_on](const std::string &state) {
+      [slider, btn_ptr, fill, horiz, inv, rad, icon_lbl, has_icon_on, icon_off, icon_on, is_cover](const std::string &state) {
         bool on = is_entity_on(state);
         if (!on) {
           lv_slider_set_value(slider, 0, LV_ANIM_OFF);
           if (fill) slider_update_fill(fill, btn_ptr, inv ? 100 : 0, horiz, inv, rad);
         }
-        if (has_icon_on)
-          lv_label_set_text(icon_lbl, on ? icon_on : icon_off);
+        if (has_icon_on) {
+          if (is_cover)
+            lv_label_set_text(icon_lbl, state == "closed" ? icon_on : icon_off);
+          else
+            lv_label_set_text(icon_lbl, on ? icon_on : icon_off);
+        }
       })
   );
   if (is_cover) {
@@ -1465,7 +1469,7 @@ inline void subscribe_slider_state(lv_obj_t *btn_ptr, lv_obj_t *icon_lbl,
             int fill_pct = inv ? 100 - pct : pct;
             if (fill) slider_update_fill(fill, btn_ptr, fill_pct, horiz, inv, rad);
             if (has_icon_on) {
-              lv_label_set_text(icon_lbl, pct > 0 ? icon_on : icon_off);
+              lv_label_set_text(icon_lbl, pct == 0 ? icon_on : icon_off);
             }
           }
         })
