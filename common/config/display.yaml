@@ -5,7 +5,55 @@
 # All values persist across reboots and are editable via the webserver v3 UI.
 # =============================================================================
 
+esphome:
+  on_boot:
+    # Apply restored clock-bar layout before subpages copy main-page padding.
+    priority: -150
+    then:
+      - script.execute: clock_bar_apply
+
+script:
+  - id: clock_bar_apply
+    mode: restart
+    then:
+      - lambda: |-
+          bool enabled = id(clock_bar_enabled).state;
+          lv_obj_set_style_pad_top(
+            id(main_page)->obj,
+            enabled ? ${main_page_pad_top} : ${main_page_compact_pad_top},
+            LV_PART_MAIN);
+
+          if (!enabled) {
+            lv_obj_add_flag(id(display_time), LV_OBJ_FLAG_HIDDEN);
+            lv_obj_add_flag(id(temperatures), LV_OBJ_FLAG_HIDDEN);
+            return;
+          }
+
+          if (lv_scr_act() == id(main_page)->obj) {
+            lv_obj_clear_flag(id(display_time), LV_OBJ_FLAG_HIDDEN);
+            if (id(indoor_temp_enable).state || id(outdoor_temp_enable).state) {
+              lv_obj_clear_flag(id(temperatures), LV_OBJ_FLAG_HIDDEN);
+            } else {
+              lv_obj_add_flag(id(temperatures), LV_OBJ_FLAG_HIDDEN);
+            }
+          }
+
 switch:
+  - platform: template
+    name: "Screen: Clock Bar"
+    internal: true
+    id: clock_bar_enabled
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    entity_category: config
+    icon: "mdi:clock-digital"
+    web_server:
+      sorting_group_id: sg_display
+    on_turn_on:
+      - script.execute: clock_bar_apply
+    on_turn_off:
+      - script.execute: clock_bar_apply
+
   - platform: template
     name: "Indoor Temp Enable"
     internal: true
@@ -17,9 +65,19 @@ switch:
     web_server:
       sorting_group_id: sg_display
     on_turn_on:
-      - lambda: 'update_temp_label(id(temperatures), id(main_page)->obj, true, id(outdoor_temp_enable).state);'
+      - lambda: |-
+          if (id(clock_bar_enabled).state) {
+            update_temp_label(id(temperatures), id(main_page)->obj, true, id(outdoor_temp_enable).state);
+          } else {
+            lv_obj_add_flag(id(temperatures), LV_OBJ_FLAG_HIDDEN);
+          }
     on_turn_off:
-      - lambda: 'update_temp_label(id(temperatures), id(main_page)->obj, false, id(outdoor_temp_enable).state);'
+      - lambda: |-
+          if (id(clock_bar_enabled).state) {
+            update_temp_label(id(temperatures), id(main_page)->obj, false, id(outdoor_temp_enable).state);
+          } else {
+            lv_obj_add_flag(id(temperatures), LV_OBJ_FLAG_HIDDEN);
+          }
 
   - platform: template
     name: "Outdoor Temp Enable"
@@ -32,9 +90,19 @@ switch:
     web_server:
       sorting_group_id: sg_display
     on_turn_on:
-      - lambda: 'update_temp_label(id(temperatures), id(main_page)->obj, true, id(indoor_temp_enable).state);'
+      - lambda: |-
+          if (id(clock_bar_enabled).state) {
+            update_temp_label(id(temperatures), id(main_page)->obj, true, id(indoor_temp_enable).state);
+          } else {
+            lv_obj_add_flag(id(temperatures), LV_OBJ_FLAG_HIDDEN);
+          }
     on_turn_off:
-      - lambda: 'update_temp_label(id(temperatures), id(main_page)->obj, false, id(indoor_temp_enable).state);'
+      - lambda: |-
+          if (id(clock_bar_enabled).state) {
+            update_temp_label(id(temperatures), id(main_page)->obj, false, id(indoor_temp_enable).state);
+          } else {
+            lv_obj_add_flag(id(temperatures), LV_OBJ_FLAG_HIDDEN);
+          }
 
   - platform: template
     name: "Screen Saver: Clock"

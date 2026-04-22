@@ -12,3 +12,5 @@ The top bar of your panel can show indoor and outdoor temperatures from any temp
 - **Outdoor Temperature** — works the same way. Use a weather sensor or outdoor thermometer.
 
 When both are turned on, the top bar shows two temperatures side by side. When only one is turned on, it shows a single value.
+
+If you turn off **Show Clock Bar** in the [Clock](/features/clock) settings, the temperature display is hidden along with the top bar.

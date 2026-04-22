@@ -456,14 +456,21 @@ script:
     then:
       - lambda: 'id(is_clock_showing) = false;'
       - lvgl.widget.hide: clock_screensaver
-      - lvgl.widget.show: display_time
       - if:
           condition:
-            or:
-              - switch.is_on: indoor_temp_enable
-              - switch.is_on: outdoor_temp_enable
+            switch.is_on: clock_bar_enabled
           then:
-            - lvgl.widget.show: temperatures
+            - lvgl.widget.show: display_time
+            - if:
+                condition:
+                  or:
+                    - switch.is_on: indoor_temp_enable
+                    - switch.is_on: outdoor_temp_enable
+                then:
+                  - lvgl.widget.show: temperatures
+          else:
+            - lvgl.widget.hide: display_time
+            - lvgl.widget.hide: temperatures
 
 # -----------------------------------------------------------------------------
 # Clock screensaver drift update (repositions label for burn-in prevention)

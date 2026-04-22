@@ -18,6 +18,8 @@ substitutions:
   sensor_value_font: statistics_font
   padding: 16px
   radius: 10px
+  main_page_pad_top: "42"
+  main_page_compact_pad_top: "5"
   clock_font_size: "200"
   clock_cx: "512"
   clock_cy: "300"

@@ -84,16 +84,27 @@ script:
             - lvgl.page.show: main_page
             - if:
                 condition:
-                  or:
-                    - switch.is_on: indoor_temp_enable
-                    - switch.is_on: outdoor_temp_enable
+                  switch.is_on: clock_bar_enabled
                 then:
+                  - if:
+                      condition:
+                        or:
+                          - switch.is_on: indoor_temp_enable
+                          - switch.is_on: outdoor_temp_enable
+                      then:
+                        - lvgl.widget.update:
+                            id: temperatures
+                            hidden: false
+                  - lvgl.widget.update:
+                      id: display_time
+                      hidden: false
+                else:
                   - lvgl.widget.update:
                       id: temperatures
-                      hidden: false
-            - lvgl.widget.update:
-                id: display_time
-                hidden: false
+                      hidden: true
+                  - lvgl.widget.update:
+                      id: display_time
+                      hidden: true
             - script.execute: screensaver_idle_check
           else:
             - lambda: |-

@@ -175,6 +175,7 @@
     "container-type:inline-size;font-family:Roboto,sans-serif;user-select:none}" +
     ".sp-topbar{position:absolute;top:0;left:0;right:0;height:var(--topbar-h);" +
     "display:flex;align-items:center;padding:var(--topbar-pad);z-index:1}" +
+    ".sp-topbar.sp-hidden{display:none}" +
     ".sp-temp{color:#fff;font-size:var(--topbar-fs);white-space:nowrap;opacity:0;transition:opacity .3s;margin-left:1cqw}" +
     ".sp-temp.sp-visible{opacity:1}" +
     ".sp-clock{position:absolute;left:50%;transform:translateX(-50%);" +
@@ -541,6 +542,7 @@
     _outdoorVal: null,
     indoorEntity: "",
     outdoorEntity: "",
+    clockBarOn: true,
     presenceEntity: "",
     screensaverMode: "disabled",
     _screensaverModeReceived: false,
@@ -772,6 +774,18 @@
       els.setTemperatureBadge.className = "sp-card-badge" +
         (state._indoorOn || state._outdoorOn ? "" : " sp-hidden");
     }
+  }
+
+  function syncClockBarUi() {
+    var compactTop = CFG.grid.compactTop != null ? CFG.grid.compactTop : CFG.grid.bottom;
+    var gridTop = state.clockBarOn ? CFG.grid.top : compactTop;
+    document.documentElement.style.setProperty("--grid-top", gridTop + "cqw");
+    if (els.topbar) els.topbar.className = "sp-topbar" + (state.clockBarOn ? "" : " sp-hidden");
+    if (els.setClockBarToggle) els.setClockBarToggle.checked = !!state.clockBarOn;
+    if (els.setClockBarBadge) {
+      els.setClockBarBadge.className = "sp-card-badge" + (state.clockBarOn ? "" : " sp-hidden");
+    }
+    updateTempPreview();
   }
 
   function syncIdleUi() {
@@ -1196,6 +1210,10 @@
 
   function postSwitchWithObjectId(name, objectId, on, errorMessage) {
     postWithObjectId("switch", name, objectId, on ? "turn_on" : "turn_off", errorMessage);
+  }
+
+  function postClockBar(on) {
+    postSwitchWithObjectId("Screen: Clock Bar", "screen__clock_bar", on);
   }
 
   var SCREEN_SCHEDULE_UNAVAILABLE =
@@ -1709,6 +1727,7 @@
     document.head.appendChild(fonts);
 
     buildUI();
+    syncClockBarUi();
     setupPreviewEvents();
     renderPreview();
     renderButtonSettings();
@@ -1817,6 +1836,7 @@
       "</div>";
     page.appendChild(wrap);
 
+    els.topbar = wrap.querySelector(".sp-topbar");
     els.temp = wrap.querySelector(".sp-temp");
     els.clock = wrap.querySelector(".sp-clock");
     els.previewMain = wrap.querySelector(".sp-main");
@@ -1999,6 +2019,15 @@
 
     var clockBody = document.createElement("div");
 
+    var clockBar = toggleRow("Show Clock Bar", "sp-set-clock-bar", state.clockBarOn);
+    clockBody.appendChild(clockBar.row);
+    els.setClockBarToggle = clockBar.input;
+    clockBar.input.addEventListener("change", function () {
+      state.clockBarOn = this.checked;
+      syncClockBarUi();
+      postClockBar(state.clockBarOn);
+    });
+
     var tzField = document.createElement("div");
     tzField.className = "sp-field";
     tzField.appendChild(fieldLabel("Timezone", "sp-set-timezone"));
@@ -2043,7 +2072,12 @@
     clockBody.appendChild(cfField);
     els.setClockFormat = cfSelect;
 
-    config.appendChild(makeCollapsibleCard("Clock", clockBody, true));
+    var clockBarBadge = document.createElement("span");
+    clockBarBadge.setAttribute("aria-label", "Clock bar on");
+    clockBarBadge.innerHTML = '<span class="sp-card-badge-dot"></span><span>ON</span>';
+    els.setClockBarBadge = clockBarBadge;
+    syncClockBarUi();
+    config.appendChild(makeCollapsibleCard("Clock", clockBody, true, clockBarBadge));
 
     if (CFG.features && CFG.features.screenRotation) {
       var rotationBody = document.createElement("div");
@@ -4464,6 +4498,7 @@
         outdoor_temp_enable: state._outdoorOn,
         indoor_temp_entity: state.indoorEntity,
         outdoor_temp_entity: state.outdoorEntity,
+        clock_bar: state.clockBarOn,
         screensaver_mode: getActiveScreensaverMode(),
         presence_sensor_entity: state.presenceEntity,
         clock_screensaver: state.clockScreensaverOn,
@@ -4682,6 +4717,7 @@
           postSwitch("Outdoor Temp Enable", !!s.outdoor_temp_enable);
           postText("Indoor Temp Entity", s.indoor_temp_entity || "");
           postText("Outdoor Temp Entity", s.outdoor_temp_entity || "");
+          postClockBar(s.clock_bar != null ? !!s.clock_bar : true);
           var importedScreensaverMode = s.screensaver_mode || "disabled";
           if (importedScreensaverMode !== "sensor" &&
               importedScreensaverMode !== "timer" &&
@@ -4708,6 +4744,7 @@
           state._outdoorOn = !!s.outdoor_temp_enable;
           state.indoorEntity = s.indoor_temp_entity || "";
           state.outdoorEntity = s.outdoor_temp_entity || "";
+          state.clockBarOn = s.clock_bar != null ? !!s.clock_bar : true;
           state.screensaverMode = importedScreensaverMode;
           state._screensaverModeReceived = true;
           state.presenceEntity = s.presence_sensor_entity || "";
@@ -4719,6 +4756,7 @@
           state.screenRotation = importedScreenRotation;
 
           syncTemperatureUi();
+          syncClockBarUi();
           syncInput(els.setIndoorEntity, state.indoorEntity);
           syncInput(els.setOutdoorEntity, state.outdoorEntity);
           syncInput(els.setPresence, state.presenceEntity);
@@ -4880,6 +4918,10 @@
         state._outdoorOn = d.value === true || val === "ON";
         syncTemperatureUi();
         updateTempPreview();
+      },
+      "switch-screen__clock_bar": function (val, d) {
+        state.clockBarOn = d.value === true || val === "ON";
+        syncClockBarUi();
       },
       "text-indoor_temp_entity": function (val) {
         state.indoorEntity = val;
@@ -5193,7 +5235,8 @@
   }
 
   function updateTempPreview() {
-    var show = state._indoorOn || state._outdoorOn;
+    if (!els.temp) return;
+    var show = state.clockBarOn && (state._indoorOn || state._outdoorOn);
     els.temp.className = "sp-temp" + (show ? " sp-visible" : "");
     var indoor = state._indoorVal != null ? state._indoorVal + "\u00B0" : "24\u00B0";
     var outdoor = state._outdoorVal != null ? state._outdoorVal + "\u00B0" : "17\u00B0";

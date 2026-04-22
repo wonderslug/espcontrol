@@ -51,7 +51,7 @@ lvgl:
       width: 100%
       bg_color: Black
       bg_opa: cover
-      pad_top: 38
+      pad_top: ${main_page_pad_top}
       pad_bottom: 4
       pad_left: 5
       pad_right: 5
