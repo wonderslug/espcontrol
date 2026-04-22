@@ -3159,6 +3159,9 @@
         if (c.isSub && !td.allowInSubpage) continue;
         typeOpts.push([td.key, td.label]);
       }
+      typeOpts.sort(function (a, b) {
+        return a[1].localeCompare(b[1]);
+      });
       var tf = document.createElement("div");
       tf.className = "sp-field";
       tf.appendChild(fieldLabel("Type", "sp-inp-type"));

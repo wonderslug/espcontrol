@@ -22,24 +22,26 @@ Tap any empty space in the grid (shown as a dashed outline with a **+** icon). A
 
 ![Toggle card showing a Heater icon](/images/card-toggle.png)
 
-1. **Choose a type** — **Toggle** (the default) to control a device, **Subpage** to create a folder of extra cards, **[Button](/card-types/buttons)** to trigger Home Assistant automations with a single tap, **[Sensor](/card-types/sensors)** to display a live numeric reading or text state, **[Calendar](/card-types/calendar)** to show today's date, **[Weather](/card-types/weather)** to show the current weather condition, **[Slider](/card-types/sliders)** to control light brightness, or **[Cover](/card-types/covers)** to control blinds and shutters.
+1. **Choose a type** — **[Button](/card-types/buttons)** to trigger Home Assistant automations with a single tap, **[Calendar](/card-types/calendar)** to show today's date, **[Cover](/card-types/covers)** to control blinds and shutters, **[Sensor](/card-types/sensors)** to display a live numeric reading or text state, **[Slider](/card-types/sliders)** to control light brightness, **Subpage** to create a folder of extra cards, **Toggle** (the default) to control a device, or **[Weather](/card-types/weather)** to show the current weather condition.
 2. **Pick the device** you want to control by entering its Home Assistant entity name (for example, `light.living_room` or `switch.garden_lights`). You can find these under **Settings > Devices & Services** in Home Assistant. Subpage buttons don't need a device name.
 3. **Choose an icon** — type to search, or select **Auto** to let the panel pick one based on the device type.
 4. **Set a label** (optional). If left blank the button uses the device's friendly name from Home Assistant.
 
-**[Subpage](/features/subpages)** — works like a folder that opens a new page of buttons. 
-
 **[Button](/card-types/buttons)** — a momentary button that fires an event to Home Assistant for use as an automation trigger. 
-
-**[Sensor](/card-types/sensors)** — displays a live reading from a Home Assistant sensor entity. Use the mode tabs to choose **Numeric** or **Text**.
 
 **[Calendar](/card-types/calendar)** — displays today's day number with the month underneath.
 
-**[Weather](/card-types/weather)** — displays the current condition from a Home Assistant weather entity.
+**[Cover](/card-types/covers)** — controls blinds, shutters, and garage doors with a position slider. 
+
+**[Sensor](/card-types/sensors)** — displays a live reading from a Home Assistant sensor entity. Use the mode tabs to choose **Numeric** or **Text**.
 
 **[Slider](/card-types/sliders)** — controls light brightness with a draggable fill bar. 
 
-**[Cover](/card-types/covers)** — controls blinds, shutters, and garage doors with a position slider. 
+**[Subpage](/features/subpages)** — works like a folder that opens a new page of buttons. 
+
+**Toggle** — controls a device directly and shows whether it is on or off.
+
+**[Weather](/card-types/weather)** — displays the current condition from a Home Assistant weather entity.
 
 ### When Entity On
 
