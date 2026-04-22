@@ -2048,7 +2048,7 @@
     var scheduleTimes = document.createElement("div");
     scheduleTimes.className = "sp-schedule-times";
 
-    var onHour = createHourSelect("On Time", "sp-set-schedule-on-hour", state.scheduleOnHour, function (hour) {
+    var onHour = createHourSelect("Daytime", "sp-set-schedule-on-hour", state.scheduleOnHour, function (hour) {
       state.scheduleOnHour = hour;
       postScreenScheduleOnHour(hour);
       syncScreenScheduleUi();
@@ -2056,7 +2056,7 @@
     scheduleTimes.appendChild(onHour.wrap);
     els.setScheduleOnHour = onHour.select;
 
-    var offHour = createHourSelect("Off Time", "sp-set-schedule-off-hour", state.scheduleOffHour, function (hour) {
+    var offHour = createHourSelect("Night Time", "sp-set-schedule-off-hour", state.scheduleOffHour, function (hour) {
       state.scheduleOffHour = hour;
       postScreenScheduleOffHour(hour);
       syncScreenScheduleUi();
@@ -2066,7 +2066,7 @@
 
     var scheduleModeField = document.createElement("div");
     scheduleModeField.className = "sp-field";
-    scheduleModeField.appendChild(fieldLabel("At Off Time", "sp-set-schedule-mode"));
+    scheduleModeField.appendChild(fieldLabel("At Night Time", "sp-set-schedule-mode"));
     var scheduleModeSelect = document.createElement("select");
     scheduleModeSelect.className = "sp-select";
     scheduleModeSelect.id = "sp-set-schedule-mode";
