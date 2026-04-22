@@ -12,7 +12,7 @@ You will find it in the **Settings** tab on the [Setup](/features/setup) page, u
 
 ## Settings
 
-- **Schedule Screen Off** - turns automatic screen sleep and wake on or off.
+- **Night Schedule** - turns automatic night schedule behavior on or off.
 - **On Time** - the first hour when the screen should be awake. The default is **6:00 AM**.
 - **Off Time** - the first hour when the night schedule starts. The default is **11:00 PM**.
 - **At Off Time** - what the panel should do overnight. **Screen Off** is the default, **Screen Dimmed** keeps the panel usable at a set brightness, and **Clock** shows the clock instead.

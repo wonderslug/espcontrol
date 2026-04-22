@@ -2041,7 +2041,7 @@
     config.appendChild(makeCollapsibleCard("Backlight", blBody, true));
 
     var scheduleBody = document.createElement("div");
-    var scheduleToggle = toggleRow("Schedule Screen Off", "sp-set-schedule-enabled", state.scheduleEnabled);
+    var scheduleToggle = toggleRow("Night Schedule", "sp-set-schedule-enabled", state.scheduleEnabled);
     scheduleBody.appendChild(scheduleToggle.row);
     els.setScheduleToggle = scheduleToggle.input;
 
