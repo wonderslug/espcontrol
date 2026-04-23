@@ -167,12 +167,13 @@
     ".sp-page{display:none}.sp-page.active{display:block}" +
 
     ".sp-support-btn{position:fixed;right:18px;bottom:18px;z-index:150;display:inline-flex;" +
-    "align-items:center;gap:8px;min-height:44px;padding:0 16px;border-radius:999px;" +
-    "background:#ffdd00;color:#111;text-decoration:none;font-size:.875rem;font-weight:700;" +
+    "align-items:center;justify-content:center;gap:10px;min-height:56px;padding:8px 20px 8px 16px;" +
+    "border:1px solid #000;border-radius:6px;background:#ffdd00;color:#000;text-decoration:none;" +
+    "font-family:'Cookie',cursive;font-size:28px;font-weight:400;line-height:1;letter-spacing:0;" +
     "box-shadow:0 6px 18px rgba(0,0,0,.32);transition:transform .2s,box-shadow .2s,filter .2s}" +
     ".sp-support-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,0,0,.38);filter:brightness(1.03)}" +
     ".sp-support-btn:active{transform:translateY(0);filter:brightness(.96)}" +
-    ".sp-support-btn .mdi{font-size:18px;line-height:1}" +
+    ".sp-support-btn svg{width:30px;height:30px;flex-shrink:0;display:block}" +
 
     ".fade-in{animation:fadeIn .3s ease}" +
     "@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}" +
@@ -528,7 +529,8 @@
     ":root{--gap:10px}" +
     ".sp-header{padding:0 10px}" +
     ".sp-tab{padding:0 10px;font-size:.75rem}" +
-    ".sp-support-btn{right:12px;bottom:12px;min-height:40px;padding:0 12px;font-size:.8rem}" +
+    ".sp-support-btn{right:12px;bottom:12px;min-height:48px;padding:7px 16px 7px 12px;font-size:24px}" +
+    ".sp-support-btn svg{width:26px;height:26px}" +
     ".sp-color-row{flex-wrap:wrap}" +
     ".sp-backup-btns{flex-direction:column}" +
     ".sp-fw-row{flex-direction:column;align-items:flex-start;gap:12px}" +
@@ -1915,7 +1917,7 @@
 
     var fonts = document.createElement("link");
     fonts.rel = "stylesheet";
-    fonts.href = "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500&display=swap";
+    fonts.href = "https://fonts.googleapis.com/css2?family=Cookie&family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500&display=swap";
     document.head.appendChild(fonts);
 
     buildUI();
@@ -1980,7 +1982,12 @@
     support.target = "_blank";
     support.rel = "noopener";
     support.setAttribute("aria-label", "Buy me a coffee");
-    support.innerHTML = '<span class="mdi mdi-coffee"></span><span>Buy me a coffee</span>';
+    support.innerHTML =
+      '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+      '<path fill="#fff" stroke="#000" stroke-width="1.4" stroke-linejoin="round" d="M4 8h12v5.5A4.5 4.5 0 0 1 11.5 18h-3A4.5 4.5 0 0 1 4 13.5V8z"/>' +
+      '<path fill="none" stroke="#000" stroke-width="1.4" stroke-linecap="round" d="M16 10h1.2a2.3 2.3 0 0 1 0 4.6H16M7 4.5c-.6.6-.6 1.2 0 1.8M10 4.5c-.6.6-.6 1.2 0 1.8M13 4.5c-.6.6-.6 1.2 0 1.8"/>' +
+      '<path fill="#fff" d="M5 18h10v1.2H5z"/>' +
+      '</svg><span>Buy me a coffee</span>';
     parent.appendChild(support);
   }
 
