@@ -2158,7 +2158,7 @@ inline void grid_phase2(
         lv_label_set_text(sul, "");
 
         lv_label_set_text(stl, "Date");
-        register_calendar_card(svl, stl);
+        register_calendar_card(svl, sul, stl, sb.precision == "datetime");
         subscribe_calendar_date_source(sb.entity);
 
       } else if (sb.type == "weather") {
