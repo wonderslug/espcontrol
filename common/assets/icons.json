@@ -600,6 +600,16 @@
       "mdi": "message-video"
     },
     {
+      "name": "Medication",
+      "codepoint": "F1B14",
+      "mdi": "medication"
+    },
+    {
+      "name": "Medication Outline",
+      "codepoint": "F1B15",
+      "mdi": "medication-outline"
+    },
+    {
       "name": "Meter Electric",
       "codepoint": "F1A57",
       "mdi": "meter-electric"
@@ -658,6 +668,16 @@
       "name": "Package Closed",
       "codepoint": "F03D7",
       "mdi": "package-variant-closed"
+    },
+    {
+      "name": "Pill",
+      "codepoint": "F0402",
+      "mdi": "pill"
+    },
+    {
+      "name": "Pill Multiple",
+      "codepoint": "F1B4C",
+      "mdi": "pill-multiple"
     },
     {
       "name": "Pool",

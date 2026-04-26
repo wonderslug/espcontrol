@@ -42,6 +42,7 @@ const GROUP_ORDER = [
   'Network & Tech',
   'Rooms & Furniture',
   'Vehicles',
+  'Health',
   'General',
 ]
 
@@ -257,6 +258,11 @@ const ICON_GROUPS = {
 
   'Car Electric': 'Vehicles',
   'EV Charger': 'Vehicles',
+
+  'Medication': 'Health',
+  'Medication Outline': 'Health',
+  'Pill': 'Health',
+  'Pill Multiple': 'Health',
 
   'Account': 'General',
   'Broom': 'General',
