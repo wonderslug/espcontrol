@@ -84,6 +84,15 @@ packages:
 
 If Ethernet is unplugged or your network does not give the display an IP address, the display will show an Ethernet setup message. It will not create a WiFi hotspot in this mode.
 
+The Ethernet firmware is intentionally different from the normal WiFi firmware:
+
+- It uses the panel's built-in wired Ethernet port instead of WiFi.
+- It does not include WiFi, the captive portal, or the first-boot WiFi setup hotspot.
+- It keeps the ESP32-C6 hosted WiFi co-processor disabled because it is not needed for wired networking.
+- It uses a higher backlight PWM frequency on this panel to avoid the visible shimmer that can appear when Ethernet is active.
+
+To switch back to WiFi later, remove `network_transport: ethernet`, add your `wifi:` block again, then recompile and install the firmware.
+
 ::: warning Keep the device name simple
 Use lowercase letters, numbers, and hyphens for `name`. For example, `espcontrol-kitchen` is better than `Kitchen Touchscreen`.
 :::
