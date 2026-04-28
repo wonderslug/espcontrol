@@ -4,13 +4,13 @@ description: >-
   Review a newly submitted or open GitHub pull request for this repository,
   document what changed, evaluate code quality, security and integration risk,
   run the relevant local checks, and recommend whether to merge, request
-  improvements, or hold. Use when the user says "review this PR", "new PR",
-  "PR submitted", "check pull request", "outside PR", "evaluate PR quality",
-  "should we merge this", or asks for integration recommendations on a pull
-  request.
+  improvements, or hold. Use when the user says "/pr-review", "review this
+  PR", "new PR", "PR submitted", "check pull request", "outside PR",
+  "evaluate PR quality", "should we merge this", or asks for integration
+  recommendations on a pull request.
 ---
 
-# PR Review
+# /pr-review
 
 ## Overview
 
