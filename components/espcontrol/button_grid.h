@@ -96,9 +96,9 @@ struct ParsedCfg {
   std::string label;       // 1  display name (blank = use HA friendly_name)
   std::string icon;        // 2  icon name for off/default state
   std::string icon_on;     // 3  icon name for on state (blank = no swap)
-  std::string sensor;      // 4  sensor entity; "h" for horizontal slider; "push" for internal relay; "toggle"/"tilt" for cover modes
+  std::string sensor;      // 4  sensor entity, or action name for Action cards
   std::string unit;        // 5  unit suffix for sensor display
-  std::string type;        // 6  button type: "" (toggle), sensor, calendar, timezone, slider, cover, garage, push, internal, subpage
+  std::string type;        // 6  button type: "" (toggle), action, sensor, calendar, timezone, slider, cover, garage, push, internal, subpage
   std::string precision;   // 7  decimal places for sensors; "text" = text sensor mode
 };
 
@@ -1084,6 +1084,13 @@ inline void setup_toggle_visual(BtnSlot &s, const ParsedCfg &p) {
   }
 }
 
+inline void setup_action_card(BtnSlot &s, const ParsedCfg &p) {
+  lv_label_set_text(s.text_lbl, p.label.empty() ? (p.entity.empty() ? "Action" : p.entity.c_str()) : p.label.c_str());
+  const char *icon_cp = (p.icon.empty() || p.icon == "Auto") ? find_icon("Flash") : find_icon(p.icon.c_str());
+  lv_label_set_text(s.icon_lbl, icon_cp);
+  apply_push_button_transition(s.btn);
+}
+
 inline void setup_text_sensor_card(BtnSlot &s, const ParsedCfg &p,
                                    bool has_sensor_color, uint32_t sensor_val) {
   if (has_sensor_color) {
@@ -1098,6 +1105,24 @@ inline void setup_text_sensor_card(BtnSlot &s, const ParsedCfg &p,
 }
 
 // ── Home Assistant subscriptions ──────────────────────────────────────
+
+struct ToggleTextSensorCtx {
+  lv_obj_t *text_lbl = nullptr;
+  std::string steady_text;
+  std::string sensor_text = "--";
+  bool on = false;
+};
+
+inline std::string label_text_or_empty(lv_obj_t *label) {
+  if (!label) return "";
+  const char *text = lv_label_get_text(label);
+  return text ? std::string(text) : "";
+}
+
+inline void apply_toggle_text_sensor_label(ToggleTextSensorCtx *ctx) {
+  if (!ctx || !ctx->text_lbl) return;
+  lv_label_set_text(ctx->text_lbl, ctx->on ? ctx->sensor_text.c_str() : ctx->steady_text.c_str());
+}
 
 // Subscribe to a HA sensor entity and update an LVGL label with its value
 inline void subscribe_sensor_value(lv_obj_t *sensor_lbl, const std::string &sensor_id, int precision = 0) {
@@ -1114,6 +1139,17 @@ inline void subscribe_sensor_value(lv_obj_t *sensor_lbl, const std::string &sens
       } else {
         lv_label_set_text_limited(sensor_lbl, state, HA_SHORT_STATE_MAX_LEN);
       }
+    })
+  );
+}
+
+inline void subscribe_toggle_text_sensor_value(ToggleTextSensorCtx *ctx, const std::string &sensor_id) {
+  esphome::api::global_api_server->subscribe_home_assistant_state(
+    sensor_id, {},
+    std::function<void(esphome::StringRef)>([ctx](esphome::StringRef state) {
+      if (!ctx) return;
+      ctx->sensor_text = sentence_cap_text(string_ref_limited(state, HA_STATE_TEXT_MAX_LEN));
+      apply_toggle_text_sensor_label(ctx);
     })
   );
 }
@@ -1188,6 +1224,18 @@ inline void subscribe_friendly_name(TransientStatusLabel *status_label,
   );
 }
 
+inline void subscribe_friendly_name(ToggleTextSensorCtx *ctx,
+                                    const std::string &entity_id) {
+  esphome::api::global_api_server->subscribe_home_assistant_state(
+    entity_id, std::string("friendly_name"),
+    std::function<void(esphome::StringRef)>([ctx](esphome::StringRef name) {
+      if (!ctx) return;
+      ctx->steady_text = string_ref_limited(name, HA_FRIENDLY_NAME_MAX_LEN);
+      if (!ctx->on) apply_toggle_text_sensor_label(ctx);
+    })
+  );
+}
+
 inline void subscribe_friendly_name(lv_obj_t *text_lbl, const std::string &entity_id) {
   esphome::api::global_api_server->subscribe_home_assistant_state(
     entity_id, std::string("friendly_name"),
@@ -1200,20 +1248,27 @@ inline void subscribe_friendly_name(lv_obj_t *text_lbl, const std::string &entit
 // Subscribe to a toggle entity's state; updates checked visual, icon swap, sensor overlay
 inline void subscribe_toggle_state(lv_obj_t *btn_ptr, lv_obj_t *icon_lbl,
                                    lv_obj_t *sensor_ctr,
-                                   bool *slot_has_sensor, bool *slot_has_icon_on,
+                                   bool *slot_has_sensor, bool *slot_sensor_text_mode,
+                                   bool *slot_has_icon_on,
                                    const char **slot_icon_off, const char **slot_icon_on,
+                                   ToggleTextSensorCtx *text_sensor_ctx,
                                    const std::string &entity_id) {
   esphome::api::global_api_server->subscribe_home_assistant_state(
     entity_id, {},
     std::function<void(esphome::StringRef)>(
-      [btn_ptr, icon_lbl, sensor_ctr, slot_has_sensor, slot_has_icon_on,
-       slot_icon_off, slot_icon_on](esphome::StringRef state) {
+      [btn_ptr, icon_lbl, sensor_ctr, slot_has_sensor, slot_sensor_text_mode,
+       slot_has_icon_on, slot_icon_off, slot_icon_on, text_sensor_ctx](esphome::StringRef state) {
         bool on = is_entity_on_ref(state);
         if (on) lv_obj_add_state(btn_ptr, LV_STATE_CHECKED);
         else lv_obj_clear_state(btn_ptr, LV_STATE_CHECKED);
-        if (*slot_has_icon_on) {
-          lv_label_set_text(icon_lbl, on ? *slot_icon_on : *slot_icon_off);
-        } else if (*slot_has_sensor) {
+
+        if (text_sensor_ctx) {
+          text_sensor_ctx->on = on;
+          apply_toggle_text_sensor_label(text_sensor_ctx);
+        }
+
+        bool show_numeric_sensor = *slot_has_sensor && !*slot_sensor_text_mode;
+        if (show_numeric_sensor && sensor_ctr) {
           if (on) {
             lv_obj_add_flag(icon_lbl, LV_OBJ_FLAG_HIDDEN);
             lv_obj_clear_flag(sensor_ctr, LV_OBJ_FLAG_HIDDEN);
@@ -1221,6 +1276,11 @@ inline void subscribe_toggle_state(lv_obj_t *btn_ptr, lv_obj_t *icon_lbl,
             lv_obj_clear_flag(icon_lbl, LV_OBJ_FLAG_HIDDEN);
             lv_obj_add_flag(sensor_ctr, LV_OBJ_FLAG_HIDDEN);
           }
+        } else {
+          if (icon_lbl) lv_obj_clear_flag(icon_lbl, LV_OBJ_FLAG_HIDDEN);
+          if (sensor_ctr) lv_obj_add_flag(sensor_ctr, LV_OBJ_FLAG_HIDDEN);
+          if (*slot_has_icon_on)
+            lv_label_set_text(icon_lbl, on ? *slot_icon_on : *slot_icon_off);
         }
       })
   );
@@ -1243,6 +1303,47 @@ inline void send_toggle_action(const std::string &entity_id) {
   auto &kv = req.data.emplace_back();
   kv.key = decltype(kv.key)("entity_id");
   kv.value = decltype(kv.value)(entity_id.c_str());
+  esphome::api::global_api_server->send_homeassistant_action(req);
+}
+
+inline bool action_card_requires_value(const std::string &action) {
+  return action == "input_number.set_value" || action == "input_select.select_option";
+}
+
+inline const char *action_card_value_key(const std::string &action) {
+  if (action == "input_number.set_value") return "value";
+  if (action == "input_select.select_option") return "option";
+  return nullptr;
+}
+
+inline bool action_card_action_allowed(const std::string &action) {
+  return action == "scene.turn_on" ||
+         action == "script.turn_on" ||
+         action == "button.press" ||
+         action == "input_button.press" ||
+         action == "input_boolean.toggle" ||
+         action == "input_boolean.turn_on" ||
+         action == "input_boolean.turn_off" ||
+         action_card_requires_value(action);
+}
+
+inline void send_action_card_action(const ParsedCfg &p) {
+  if (p.entity.empty() || p.sensor.empty() || !action_card_action_allowed(p.sensor)) return;
+  const char *value_key = action_card_value_key(p.sensor);
+  if (value_key && p.unit.empty()) return;
+
+  esphome::api::HomeassistantActionRequest req;
+  req.service = decltype(req.service)(p.sensor.c_str());
+  req.is_event = false;
+  req.data.init(value_key ? 2 : 1);
+  auto &entity_kv = req.data.emplace_back();
+  entity_kv.key = decltype(entity_kv.key)("entity_id");
+  entity_kv.value = decltype(entity_kv.value)(p.entity.c_str());
+  if (value_key) {
+    auto &value_kv = req.data.emplace_back();
+    value_kv.key = decltype(value_kv.key)(value_key);
+    value_kv.value = decltype(value_kv.value)(p.unit.c_str());
+  }
   esphome::api::global_api_server->send_homeassistant_action(req);
 }
 
@@ -1371,6 +1472,8 @@ inline void handle_button_click(const std::string &cfg, int slot_num,
     }
   } else if (p.type == "internal") {
     if (!p.entity.empty()) send_internal_relay_action(p);
+  } else if (p.type == "action") {
+    send_action_card_action(p);
   } else if (p.type == "slider" || p.type == "cover") {
     if (!p.entity.empty()) send_slider_action(p.entity, -1, cover_tilt_mode(p.sensor));
   } else {
@@ -1489,7 +1592,7 @@ inline lv_obj_t *setup_slider_widget(lv_obj_t *btn, uint32_t on_color, bool hori
 }
 
 inline bool slider_has_alt_icon(const std::string &type, const std::string &icon_on) {
-  return type == "cover" || (!icon_on.empty() && icon_on != "Auto");
+  return type == "slider" || type == "cover" || (!icon_on.empty() && icon_on != "Auto");
 }
 
 inline const char *slider_icon_off(const std::string &type, const std::string &entity_id,
@@ -1501,9 +1604,12 @@ inline const char *slider_icon_off(const std::string &type, const std::string &e
   return find_icon(icon.c_str());
 }
 
-inline const char *slider_icon_on(const std::string &type, const std::string &icon_on) {
+inline const char *slider_icon_on(const std::string &type, const std::string &entity_id,
+                                  const std::string &icon, const std::string &icon_on) {
   if (type == "cover" && (icon_on.empty() || icon_on == "Auto"))
     return find_icon("Blinds Open");
+  if (type == "slider" && (icon_on.empty() || icon_on == "Auto"))
+    return slider_icon_off(type, entity_id, icon);
   return find_icon(icon_on.c_str());
 }
 
@@ -1645,9 +1751,9 @@ struct SubpageBtn {
   std::string label;
   std::string icon;
   std::string icon_on;
-  std::string sensor;     // sensor entity for toggle; orientation "h"|"" for slider; "toggle"/"tilt" for cover modes
+  std::string sensor;     // sensor entity, slider mode, internal relay mode, or action name
   std::string unit;
-  std::string type;       // button type: "" (toggle), sensor, calendar, timezone, slider, cover, garage, push, internal, subpage
+  std::string type;       // button type: "" (toggle), action, sensor, calendar, timezone, slider, cover, garage, push, internal, subpage
   std::string precision;  // decimal places for sensor display; "text" = text sensor mode
 };
 
@@ -1664,6 +1770,7 @@ inline std::vector<std::string> split_subpage_fields(const std::string &value, c
 }
 
 inline std::string compact_subpage_type(const std::string &code) {
+  if (code == "A") return "action";
   if (code == "D") return "calendar";
   if (code == "T") return "timezone";
   if (code == "S") return "sensor";
@@ -1724,7 +1831,7 @@ inline lv_obj_t *setup_subpage_slider(lv_obj_t *btn, lv_obj_t *icon_lbl, lv_obj_
   }, LV_EVENT_RELEASED, nullptr);
 
   bool has_icon_on = slider_has_alt_icon(sb.type, sb.icon_on);
-  const char *sl_icon_on = has_icon_on ? slider_icon_on(sb.type, sb.icon_on) : nullptr;
+  const char *sl_icon_on = has_icon_on ? slider_icon_on(sb.type, sb.entity, sb.icon, sb.icon_on) : nullptr;
   const char *sl_icon_off = has_icon_on ? slider_icon_off(sb.type, sb.entity, sb.icon) : nullptr;
   subscribe_slider_state(btn, icon_lbl, sl, has_icon_on, sl_icon_off, sl_icon_on,
     sb.entity, ctx->cover_tilt);
@@ -1983,6 +2090,10 @@ inline void grid_phase1(
       setup_internal_relay_card(s, p);
       continue;
     }
+    if (p.type == "action") {
+      setup_action_card(s, p);
+      continue;
+    }
     if (p.type == "slider" || p.type == "cover") {
       setup_slider_visual(s, p, has_on ? on_val : DEFAULT_SLIDER_COLOR);
     } else {
@@ -2018,6 +2129,7 @@ inline void grid_phase2(
   int ROWS = (NS + COLS - 1) / COLS;
 
   static bool has_sensor[MAX_GRID_SLOTS] = {};
+  static bool sensor_text_mode[MAX_GRID_SLOTS] = {};
   static bool has_icon_on[MAX_GRID_SLOTS] = {};
   static const char* icon_off_cp[MAX_GRID_SLOTS] = {};
   static const char* icon_on_cp[MAX_GRID_SLOTS] = {};
@@ -2029,6 +2141,7 @@ inline void grid_phase2(
   sp_child_alloc_idx = 0;
   sp_entity_alloc_idx = 0;
   memset(has_sensor, 0, sizeof(has_sensor));
+  memset(sensor_text_mode, 0, sizeof(sensor_text_mode));
   memset(has_icon_on, 0, sizeof(has_icon_on));
   clear_internal_relay_watchers();
 
@@ -2093,7 +2206,7 @@ inline void grid_phase2(
         TransientStatusLabel *status_label = create_transient_status_label(
           s.text_lbl, p.label.empty() ? "Cover" : p.label);
         subscribe_cover_toggle_state(s.btn, s.icon_lbl, status_label,
-          slider_icon_off(p.type, p.entity, p.icon), slider_icon_on(p.type, p.icon_on), p.entity);
+          slider_icon_off(p.type, p.entity, p.icon), slider_icon_on(p.type, p.entity, p.icon, p.icon_on), p.entity);
         if (p.label.empty())
           subscribe_friendly_name(status_label, p.entity);
       }
@@ -2108,13 +2221,16 @@ inline void grid_phase2(
       }
       continue;
     }
+    if (p.type == "action") {
+      continue;
+    }
 
     if (p.entity.empty()) continue;
 
     if (p.type == "slider" || p.type == "cover") {
       lv_obj_t *slider = (lv_obj_t *)lv_obj_get_user_data(s.sensor_container);
       bool sl_has_icon_on = slider_has_alt_icon(p.type, p.icon_on);
-      const char *sl_icon_on_cp = sl_has_icon_on ? slider_icon_on(p.type, p.icon_on) : nullptr;
+      const char *sl_icon_on_cp = sl_has_icon_on ? slider_icon_on(p.type, p.entity, p.icon, p.icon_on) : nullptr;
       const char *sl_icon_off_cp = sl_has_icon_on ? slider_icon_off(p.type, p.entity, p.icon) : nullptr;
       subscribe_slider_state(s.btn, s.icon_lbl, slider,
         sl_has_icon_on, sl_icon_off_cp, sl_icon_on_cp, p.entity,
@@ -2125,6 +2241,7 @@ inline void grid_phase2(
     }
 
     has_sensor[idx - 1] = !p.sensor.empty();
+    sensor_text_mode[idx - 1] = has_sensor[idx - 1] && p.precision == "text";
 
     has_icon_on[idx - 1] = !p.icon_on.empty() && p.icon_on != "Auto";
     if (has_icon_on[idx - 1])
@@ -2138,15 +2255,31 @@ inline void grid_phase2(
     }
     icon_off_cp[idx - 1] = icon_cp;
 
-    if (p.label.empty())
-      subscribe_friendly_name(s.text_lbl, p.entity);
+    ToggleTextSensorCtx *text_sensor_ctx = nullptr;
+    if (sensor_text_mode[idx - 1]) {
+      text_sensor_ctx = new ToggleTextSensorCtx();
+      text_sensor_ctx->text_lbl = s.text_lbl;
+      text_sensor_ctx->steady_text = label_text_or_empty(s.text_lbl);
+    }
+
+    if (p.label.empty()) {
+      if (text_sensor_ctx)
+        subscribe_friendly_name(text_sensor_ctx, p.entity);
+      else
+        subscribe_friendly_name(s.text_lbl, p.entity);
+    }
 
     subscribe_toggle_state(s.btn, s.icon_lbl, s.sensor_container,
-      &has_sensor[idx - 1], &has_icon_on[idx - 1],
-      &icon_off_cp[idx - 1], &icon_on_cp[idx - 1], p.entity);
+      &has_sensor[idx - 1], &sensor_text_mode[idx - 1],
+      &has_icon_on[idx - 1], &icon_off_cp[idx - 1], &icon_on_cp[idx - 1],
+      text_sensor_ctx, p.entity);
 
-    if (has_sensor[idx - 1])
-      subscribe_sensor_value(s.sensor_lbl, p.sensor, parse_precision(p.precision));
+    if (has_sensor[idx - 1]) {
+      if (sensor_text_mode[idx - 1])
+        subscribe_toggle_text_sensor_value(text_sensor_ctx, p.sensor);
+      else
+        subscribe_sensor_value(s.sensor_lbl, p.sensor, parse_precision(p.precision));
+    }
   }
 
   // --- Subpage creation ---
@@ -2414,7 +2547,7 @@ inline void grid_phase2(
           TransientStatusLabel *status_label = create_transient_status_label(
             stl, sb.label.empty() ? "Cover" : sb.label);
           subscribe_cover_toggle_state(sb_btn, sil, status_label,
-            slider_icon_off(sb.type, sb.entity, sb.icon), slider_icon_on(sb.type, sb.icon_on), sb.entity);
+            slider_icon_off(sb.type, sb.entity, sb.icon), slider_icon_on(sb.type, sb.entity, sb.icon, sb.icon_on), sb.entity);
           if (sb.label.empty())
             subscribe_friendly_name(status_label, sb.entity);
 
@@ -2510,6 +2643,27 @@ inline void grid_phase2(
           esphome::api::global_api_server->send_homeassistant_action(req);
         }, LV_EVENT_CLICKED, label);
 
+      } else if (sb.type == "action") {
+        lv_label_set_text(stl, sb.label.empty() ? (sb.entity.empty() ? "Action" : sb.entity.c_str()) : sb.label.c_str());
+        const char *action_icon = (sb.icon.empty() || sb.icon == "Auto") ? find_icon("Flash") : find_icon(sb.icon.c_str());
+        lv_label_set_text(sil, action_icon);
+        apply_push_button_transition(sb_btn);
+        if (!sb.entity.empty() && !sb.sensor.empty()) {
+          ParsedCfg *ctx = new ParsedCfg();
+          ctx->entity = sb.entity;
+          ctx->label = sb.label;
+          ctx->icon = sb.icon;
+          ctx->icon_on = sb.icon_on;
+          ctx->sensor = sb.sensor;
+          ctx->unit = sb.unit;
+          ctx->type = sb.type;
+          ctx->precision = sb.precision;
+          lv_obj_add_event_cb(sb_btn, [](lv_event_t *e) {
+            ParsedCfg *c = (ParsedCfg *)lv_event_get_user_data(e);
+            if (c) send_action_card_action(*c);
+          }, LV_EVENT_CLICKED, ctx);
+        }
+
       } else if (sb.type == "internal") {
         ParsedCfg ip;
         ip.entity = sb.entity;
@@ -2583,21 +2737,73 @@ inline void grid_phase2(
         }
 
       } else if (!sb.entity.empty()) {
-        if (!sb.label.empty()) {
-          lv_label_set_text(stl, sb.label.c_str());
-        } else {
-          subscribe_friendly_name(stl, sb.entity);
+        bool switch_has_sensor = !sb.sensor.empty();
+        bool switch_sensor_text_mode = switch_has_sensor && sb.precision == "text";
+        bool switch_has_icon_on = !sb.icon_on.empty() && sb.icon_on != "Auto";
+        const char *switch_icon_on = switch_has_icon_on ? find_icon(sb.icon_on.c_str()) : nullptr;
+
+        lv_obj_t *switch_sensor_ctr = nullptr;
+        lv_obj_t *switch_sensor_lbl = nullptr;
+        if (switch_has_sensor && !switch_sensor_text_mode) {
+          switch_sensor_ctr = lv_obj_create(sb_btn);
+          lv_obj_set_align(switch_sensor_ctr, LV_ALIGN_TOP_LEFT);
+          lv_obj_set_size(switch_sensor_ctr, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+          lv_obj_clear_flag(switch_sensor_ctr, LV_OBJ_FLAG_CLICKABLE);
+          lv_obj_clear_flag(switch_sensor_ctr, LV_OBJ_FLAG_SCROLLABLE);
+          lv_obj_add_flag(switch_sensor_ctr, LV_OBJ_FLAG_HIDDEN);
+          lv_obj_set_style_bg_opa(switch_sensor_ctr, LV_OPA_TRANSP, LV_PART_MAIN);
+          lv_obj_set_style_border_width(switch_sensor_ctr, 0, LV_PART_MAIN);
+          lv_obj_set_style_pad_all(switch_sensor_ctr, 0, LV_PART_MAIN);
+          lv_obj_set_layout(switch_sensor_ctr, LV_LAYOUT_FLEX);
+          lv_obj_set_style_flex_flow(switch_sensor_ctr, LV_FLEX_FLOW_ROW, LV_PART_MAIN);
+          lv_obj_set_style_flex_cross_place(switch_sensor_ctr, LV_FLEX_ALIGN_END, LV_PART_MAIN);
+
+          switch_sensor_lbl = lv_label_create(switch_sensor_ctr);
+          lv_obj_set_style_text_font(switch_sensor_lbl, cfg.sp_sensor_font, LV_PART_MAIN);
+          lv_obj_set_style_text_color(switch_sensor_lbl, sp_txt_color, LV_PART_MAIN);
+          lv_label_set_text(switch_sensor_lbl, "--");
+
+          lv_obj_t *switch_unit_lbl = lv_label_create(switch_sensor_ctr);
+          lv_obj_set_style_text_font(switch_unit_lbl, sp_btn_fnt, LV_PART_MAIN);
+          lv_obj_set_style_text_color(switch_unit_lbl, sp_txt_color, LV_PART_MAIN);
+          lv_obj_set_style_pad_bottom(switch_unit_lbl, 6, LV_PART_MAIN);
+          if (!sb.unit.empty())
+            lv_label_set_text(switch_unit_lbl, sb.unit.c_str());
         }
 
-        lv_obj_t *bp = sb_btn;
-        esphome::api::global_api_server->subscribe_home_assistant_state(
-          sb.entity, {},
-          std::function<void(esphome::StringRef)>([bp](esphome::StringRef state) {
-            bool on = is_entity_on_ref(state);
-            if (on) lv_obj_add_state(bp, LV_STATE_CHECKED);
-            else lv_obj_clear_state(bp, LV_STATE_CHECKED);
-          })
-        );
+        if (!sb.label.empty()) {
+          lv_label_set_text(stl, sb.label.c_str());
+        }
+
+        ToggleTextSensorCtx *switch_text_ctx = nullptr;
+        if (switch_sensor_text_mode) {
+          switch_text_ctx = new ToggleTextSensorCtx();
+          switch_text_ctx->text_lbl = stl;
+          switch_text_ctx->steady_text = label_text_or_empty(stl);
+        }
+
+        if (sb.label.empty()) {
+          if (switch_text_ctx)
+            subscribe_friendly_name(switch_text_ctx, sb.entity);
+          else
+            subscribe_friendly_name(stl, sb.entity);
+        }
+
+        bool *switch_has_sensor_ptr = new bool(switch_has_sensor);
+        bool *switch_sensor_text_ptr = new bool(switch_sensor_text_mode);
+        bool *switch_has_icon_on_ptr = new bool(switch_has_icon_on);
+        const char **switch_icon_off_ptr = new const char*(sic);
+        const char **switch_icon_on_ptr = new const char*(switch_icon_on);
+        subscribe_toggle_state(sb_btn, sil, switch_sensor_ctr,
+          switch_has_sensor_ptr, switch_sensor_text_ptr, switch_has_icon_on_ptr,
+          switch_icon_off_ptr, switch_icon_on_ptr, switch_text_ctx, sb.entity);
+
+        if (switch_has_sensor) {
+          if (switch_sensor_text_mode)
+            subscribe_toggle_text_sensor_value(switch_text_ctx, sb.sensor);
+          else if (switch_sensor_lbl)
+            subscribe_sensor_value(switch_sensor_lbl, sb.sensor, parse_precision(sb.precision));
+        }
 
         if (sp_indicator) {
           lv_obj_t *parent_btn = slots[si].btn;

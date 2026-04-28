@@ -7,7 +7,7 @@
 //
 // Per-device config (grid size, styling) is injected between __DEVICE_CONFIG__
 // markers by scripts/build.py. Button type plugins (switch, sensor, weather,
-// calendar, timezone, slider, cover, garage, push, subpage) are injected between __BUTTON_TYPES__ markers.
+// action, calendar, timezone, slider, cover, garage, push, subpage) are injected between __BUTTON_TYPES__ markers.
 // Icon data is generated between GENERATED:ICONS / GENERATED:DOMAIN_ICONS.
 // =============================================================================
 
@@ -1497,15 +1497,23 @@
   }
 
   function buttonConfigFields(b) {
+    var type = b && b.type || "";
+    var sensor = b && b.sensor || "";
+    var unit = b && b.unit || "";
+    var precision = b && b.precision || "";
+    if (!type && !sensor) {
+      unit = "";
+      precision = "";
+    }
     return trimConfigFields([
       b && b.entity || "",
       b && b.label || "",
       b && b.icon || "Auto",
       b && b.icon_on || "Auto",
-      b && b.sensor || "",
-      b && b.unit || "",
-      b && b.type || "",
-      b && b.precision || "",
+      sensor,
+      unit,
+      type,
+      precision,
     ]);
   }
 
@@ -1583,6 +1591,7 @@
 
   function subpageTypeCode(type) {
     var map = {
+      action: "A",
       calendar: "D",
       timezone: "T",
       sensor: "S",
@@ -1599,6 +1608,7 @@
 
   function subpageTypeFromCode(code) {
     var map = {
+      A: "action",
       D: "calendar",
       T: "timezone",
       S: "sensor",
@@ -3294,10 +3304,10 @@
       });
     }
 
-    function makeIconPicker(pickerId, inputId, currentVal, onSelect) {
+    function makeIconPicker(pickerId, inputId, currentVal, onSelect, labelText) {
       var icf = document.createElement("div");
       icf.className = "sp-field";
-      icf.appendChild(fieldLabel("Icon", inputId));
+      icf.appendChild(fieldLabel(labelText || "Icon", inputId));
       var picker = document.createElement("div");
       picker.className = "sp-icon-picker";
       if (pickerId) picker.id = pickerId;
@@ -3372,7 +3382,7 @@
     if (typeDef && typeDef.renderSettings && (!c.isSub || typeDef.allowInSubpage)) {
       typeDef.renderSettings(panel, b, slot, typeHelpers);
     } else {
-      // Toggle (home or subpage): entity, icon, when-on
+      // Toggle fallback: entity, icons, sensor data
       var ef = document.createElement("div");
       ef.className = "sp-field";
       ef.appendChild(fieldLabel("Entity ID", idPrefix + "entity"));
@@ -3384,7 +3394,7 @@
       panel.appendChild(makeIconPicker(idPrefix + "icon-picker", idPrefix + "icon", b.icon || "Auto", function (opt) {
         b.icon = opt;
         saveField("icon", opt);
-      }));
+      }, "Off Icon"));
 
       // When-on section
       var hasIconOn = b.icon_on && b.icon_on !== "Auto";
@@ -3392,7 +3402,7 @@
       var whenOnEnabled = hasIconOn || hasSensor || !!b._whenOnActive;
       var whenOnMode = b._whenOnMode || (hasSensor ? "sensor" : "icon");
 
-      var whenOnToggle = toggleRow("When Entity On", idPrefix + "whenon-toggle", whenOnEnabled);
+      var whenOnToggle = toggleRow("Show sensor data when on", idPrefix + "whenon-toggle", whenOnEnabled);
       panel.appendChild(whenOnToggle.row);
 
       var whenOnCond = condField();
@@ -3402,11 +3412,11 @@
       seg.className = "sp-segment";
       var btnIcon = document.createElement("button");
       btnIcon.type = "button";
-      btnIcon.textContent = "Replace Icon";
+      btnIcon.textContent = "On Icon";
       if (whenOnMode === "icon") btnIcon.classList.add("active");
       var btnSensor = document.createElement("button");
       btnSensor.type = "button";
-      btnSensor.textContent = "Sensor Data";
+      btnSensor.textContent = "Numeric";
       if (whenOnMode === "sensor") btnSensor.classList.add("active");
       seg.appendChild(btnIcon);
       seg.appendChild(btnSensor);
@@ -3415,7 +3425,7 @@
       // Icon-on section
       var iconOnSection = condField();
       if (whenOnMode === "icon") iconOnSection.classList.add("sp-visible");
-      var ionLabel = fieldLabel("Icon When On", idPrefix + "icon-on");
+      var ionLabel = fieldLabel("On Icon", idPrefix + "icon-on");
       iconOnSection.appendChild(ionLabel);
       var iconOnVal = hasIconOn ? b.icon_on : "Auto";
       var iconOnPicker = document.createElement("div");

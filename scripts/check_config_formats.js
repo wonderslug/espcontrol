@@ -48,6 +48,7 @@ function decodeField(value) {
 
 function subpageTypeFromCode(code) {
   return {
+    A: "action",
     D: "calendar",
     T: "timezone",
     S: "sensor",
@@ -163,6 +164,17 @@ assertButtonRoundTrip(hooks, "normal button", {
   precision: "",
 }, false);
 
+assertButtonRoundTrip(hooks, "switch text sensor when on", {
+  entity: "switch.washing_machine",
+  label: "Washer",
+  icon: "Washer",
+  icon_on: "Washer",
+  sensor: "sensor.washing_machine_status",
+  unit: "",
+  type: "",
+  precision: "text",
+}, false);
+
 assertButtonRoundTrip(hooks, "delimiter button", {
   entity: "sensor.kitchen_temperature",
   label: "Kitchen; west, 50% | prep: zone",
@@ -228,6 +240,105 @@ assertButtonRoundTrip(hooks, "timezone card", {
   type: "timezone",
   precision: "",
 }, false);
+
+assertButtonRoundTrip(hooks, "scene action card", {
+  entity: "scene.movie_mode",
+  label: "Movie Mode",
+  icon: "Flash",
+  icon_on: "Auto",
+  sensor: "scene.turn_on",
+  unit: "",
+  type: "action",
+  precision: "",
+}, false);
+
+assertButtonRoundTrip(hooks, "script action card", {
+  entity: "script.goodnight",
+  label: "Goodnight",
+  icon: "Flash",
+  icon_on: "Auto",
+  sensor: "script.turn_on",
+  unit: "",
+  type: "action",
+  precision: "",
+}, false);
+
+assertButtonRoundTrip(hooks, "button action card", {
+  entity: "button.restart_router",
+  label: "Restart Router",
+  icon: "Flash",
+  icon_on: "Auto",
+  sensor: "button.press",
+  unit: "",
+  type: "action",
+  precision: "",
+}, false);
+
+assertButtonRoundTrip(hooks, "input button action card", {
+  entity: "input_button.doorbell",
+  label: "Doorbell",
+  icon: "Flash",
+  icon_on: "Auto",
+  sensor: "input_button.press",
+  unit: "",
+  type: "action",
+  precision: "",
+}, false);
+
+assertButtonRoundTrip(hooks, "input boolean toggle action card", {
+  entity: "input_boolean.guest_mode",
+  label: "Guest Mode",
+  icon: "Flash",
+  icon_on: "Auto",
+  sensor: "input_boolean.toggle",
+  unit: "",
+  type: "action",
+  precision: "",
+}, false);
+
+assertButtonRoundTrip(hooks, "input boolean on action card", {
+  entity: "input_boolean.guest_mode",
+  label: "Guest Mode On",
+  icon: "Flash",
+  icon_on: "Auto",
+  sensor: "input_boolean.turn_on",
+  unit: "",
+  type: "action",
+  precision: "",
+}, false);
+
+assertButtonRoundTrip(hooks, "input boolean off action card", {
+  entity: "input_boolean.guest_mode",
+  label: "Guest Mode Off",
+  icon: "Flash",
+  icon_on: "Auto",
+  sensor: "input_boolean.turn_off",
+  unit: "",
+  type: "action",
+  precision: "",
+}, false);
+
+assertButtonRoundTrip(hooks, "input number action card", {
+  entity: "input_number.target_level",
+  label: "Target Level",
+  icon: "Flash",
+  icon_on: "Auto",
+  sensor: "input_number.set_value",
+  unit: "50",
+  type: "action",
+  precision: "",
+}, false);
+
+assertButtonRoundTrip(hooks, "input select delimiter action card", {
+  entity: "input_select.house_mode",
+  label: "House Mode",
+  icon: "Flash",
+  icon_on: "Auto",
+  sensor: "input_select.select_option",
+  unit: "Away; overnight | 50%, main",
+  type: "action",
+  precision: "",
+}, true);
 
 assert.deepStrictEqual(buttonShape(hooks.parseButtonConfig("light.legacy;Legacy;Auto;Lightbulb;sensor.legacy;W;sensor;1")), {
   entity: "light.legacy",
@@ -296,6 +407,14 @@ assertSubpageRoundTrip(hooks, "cover tilt subpage", {
   ],
 }, true);
 
+assertSubpageRoundTrip(hooks, "action subpage", {
+  order: ["1", "B", "2"],
+  buttons: [
+    buttonShape({ entity: "scene.movie_mode", label: "Movie Mode", icon: "Flash", sensor: "scene.turn_on", type: "action" }),
+    buttonShape({ entity: "input_select.house_mode", label: "House Mode", icon: "Flash", sensor: "input_select.select_option", unit: "Away: overnight | 50%, main", type: "action" }),
+  ],
+}, true);
+
 assertSubpageRoundTrip(hooks, "delimiter subpage", {
   order: ["1", "B", "2"],
   buttons: [
@@ -360,6 +479,13 @@ assert.deepStrictEqual(subpageShape(hooks.parseSubpageConfig("~1,B|I,relay_2,Gat
     buttonShape({ entity: "relay_2", label: "Gate", icon: "Power Plug", icon_on: "Power", sensor: "push", type: "internal" }),
   ],
 }, "compact internal relay subpage parse");
+
+assert.deepStrictEqual(subpageShape(hooks.parseSubpageConfig("~1,B|A,scene.movie_mode,Movie%20Mode,Flash,,scene.turn_on")), {
+  order: ["1", "B"],
+  buttons: [
+    buttonShape({ entity: "scene.movie_mode", label: "Movie Mode", icon: "Flash", icon_on: "Auto", sensor: "scene.turn_on", type: "action" }),
+  ],
+}, "compact action subpage parse");
 
 const largeSubpage = {
   order: Array.from({ length: 25 }, (_, i) => (i === 4 ? "B" : String(i + 1))),

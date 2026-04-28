@@ -17,8 +17,9 @@ Use Switch cards for common Home Assistant entities such as lights, switches, fa
 1. Select a card and change its type to **Switch**. New cards use **Switch** by default.
 2. Enter an **Entity ID** - the Home Assistant entity you want to control, for example `light.kitchen` or `switch.garden_lights`.
 3. Set a **Label** if you want custom text on the card. If left blank, the friendly name from Home Assistant is used.
-4. Choose an **Icon**, or leave it as **Auto** so the panel picks an icon from the entity type.
-5. Optionally turn on **When Entity On** to change what the card shows while the entity is active.
+4. Choose an **Off Icon**, or leave it as **Auto** so the panel picks an icon from the entity type.
+5. Choose an **On Icon** if you want a different icon while the entity is active.
+6. Optionally turn on **Show sensor data when on** if the card should show a live sensor value or text state while active.
 
 ## How It Works on the Panel
 
@@ -27,14 +28,16 @@ Use Switch cards for common Home Assistant entities such as lights, switches, fa
 - The card lights up when Home Assistant reports an active state such as `on`, `open`, `opening`, `closing`, `playing`, `home`, or `unlocked`.
 - If the entity is changed somewhere else, such as in Home Assistant or by an automation, the card updates to match.
 
-## When Entity On
+## Active State Display
 
-Switch cards have an optional **When Entity On** section:
+Switch cards always have separate **Off Icon** and **On Icon** settings. The on icon is used while Home Assistant reports the entity as active.
 
-- **Replace Icon** - show a different icon while the entity is active.
-- **Sensor Data** - show a live sensor value instead of the icon while the entity is active. You can set the sensor entity, unit, and decimal precision.
+Switch cards can also show sensor data while the entity is active:
 
-When the entity is not active, the card goes back to its normal icon.
+- **Numeric** - show a live sensor value instead of the icon. You can set the sensor entity, unit, and decimal precision.
+- **Text** - show a live text state instead of the card label.
+
+When the entity is not active, the card goes back to its normal off icon and label.
 
 ::: info Requires Home Assistant actions
 Switch cards send Home Assistant actions from the panel. If tapping a card does nothing, check [Home Assistant Actions](/getting-started/home-assistant-actions).

@@ -14,7 +14,7 @@ A slider card lets you control the brightness of a Home Assistant light entity o
 
 1. Select a card and change its type to **Slider**.
 2. Enter an **Entity ID** — the Home Assistant light or fan entity you want to control (for example, `light.living_room` or `fan.office_fan`).
-3. Choose an **Icon** (defaults to the entity type's icon when set to **Auto**).
+3. Choose an **Off Icon** and **On Icon**. Existing sliders that only had one icon keep using that same icon for both states unless you change it.
 4. Set a **Label** (optional) — shown at the bottom of the card. If left blank, the entity's friendly name from Home Assistant is used.
 5. Pick a **Direction** — **Vertical** (default) or **Horizontal**.
 
@@ -35,8 +35,6 @@ You can orient the slider in two directions:
 
 Choose the direction that best fits your grid layout. **Tall** cards work well with vertical sliders, while **Wide** cards suit horizontal sliders.
 
-## Change Icon When On
+## On and Off Icons
 
-Enable **Change Icon When On** to show a different icon while the light or fan is on. For example, you could use an outline lightbulb when off and a filled lightbulb when on.
-
-When the entity is off, the card reverts to the default icon.
+Slider cards always have separate **Off Icon** and **On Icon** fields. Use the same icon in both fields if you do not want the icon to change while the light or fan is on.

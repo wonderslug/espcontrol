@@ -125,10 +125,15 @@ function sliderTypeFactory(opts) {
       }
 
       if (opts.alwaysShowIconPair) {
-        var closedIconVal = b.icon && b.icon !== "Auto" ? b.icon : opts.defaultIcon;
-        var openIconVal = b.icon_on && b.icon_on !== "Auto" ? b.icon_on : opts.defaultIconOn;
-        panel.appendChild(iconField("Closed Icon", "icon", "icon", closedIconVal, opts.defaultIcon));
-        panel.appendChild(iconField("Open Icon", "icon-on", "icon_on", openIconVal, opts.defaultIconOn));
+        var offIconVal = b.icon && b.icon !== "Auto" ? b.icon : opts.defaultIcon;
+        var onIconDefault = opts.onIconInheritsOff ? offIconVal : opts.defaultIconOn;
+        var onIconVal = b.icon_on && b.icon_on !== "Auto" ? b.icon_on : onIconDefault;
+        panel.appendChild(iconField(
+          opts.iconOffFieldLabel || "Closed Icon", "icon", "icon", offIconVal, opts.defaultIcon
+        ));
+        panel.appendChild(iconField(
+          opts.iconOnFieldLabel || "Open Icon", "icon-on", "icon_on", onIconVal, opts.defaultIconOn
+        ));
       } else {
         panel.appendChild(helpers.makeIconPicker(
           helpers.idPrefix + "icon-picker", helpers.idPrefix + "icon",
@@ -257,8 +262,10 @@ registerButtonType("slider", sliderTypeFactory({
   fallbackLabel: "Slider",
   fallbackIcon: "lightbulb",
   badgeIcon: "tune-vertical-variant",
-  iconOnLabel: "Change Icon When On",
-  iconOnFieldLabel: "Icon When On",
+  alwaysShowIconPair: true,
+  onIconInheritsOff: true,
+  iconOffFieldLabel: "Off Icon",
+  iconOnFieldLabel: "On Icon",
 }));
 
 registerButtonType("cover", sliderTypeFactory({

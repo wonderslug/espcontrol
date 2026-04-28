@@ -187,6 +187,7 @@ export default defineConfig({
         text: 'Card Types',
         items: [
           { text: 'Switch', link: '/card-types/switches' },
+          { text: 'Action', link: '/card-types/actions' },
           { text: 'Trigger', link: '/card-types/buttons' },
           { text: 'Sensor', link: '/card-types/sensors' },
           { text: 'Slider', link: '/card-types/sliders' },
