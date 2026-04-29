@@ -28,7 +28,9 @@ captive_portal:
 
 wifi:
   reboot_timeout: 0s
-  ap: {}
+  ap:
+    # Keep the setup hotspot available while the WiFi setup screen is shown.
+    ap_timeout: 0s
   on_connect:
     - script.stop: setup_screen_dim
     - lambda: |-
