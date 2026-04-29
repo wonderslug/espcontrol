@@ -12,6 +12,9 @@ api:
   on_client_connected:
     - lambda: |-
         refresh_weather_forecast_cards();
+    - delay: 10s
+    - lambda: |-
+        refresh_weather_forecast_cards();
 
 interval:
   - interval: 1h

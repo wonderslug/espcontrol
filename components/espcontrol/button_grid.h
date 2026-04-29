@@ -263,6 +263,8 @@ inline void reset_weather_forecast_cards() {
   weather_forecast_card_count() = 0;
 }
 
+constexpr int WEATHER_FORECAST_TEMP_MISSING = 32767;
+
 inline std::string weather_forecast_unit_symbol(const std::string &unit) {
   std::string lower = unit;
   for (char &ch : lower) ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
@@ -282,7 +284,13 @@ inline void apply_weather_forecast_card_text(const WeatherForecastCardRef &ref,
     return;
   }
   char buf[24];
-  snprintf(buf, sizeof(buf), "%d / %d", high, low);
+  char high_buf[12];
+  char low_buf[12];
+  if (high == WEATHER_FORECAST_TEMP_MISSING) snprintf(high_buf, sizeof(high_buf), "--");
+  else snprintf(high_buf, sizeof(high_buf), "%d", high);
+  if (low == WEATHER_FORECAST_TEMP_MISSING) snprintf(low_buf, sizeof(low_buf), "--");
+  else snprintf(low_buf, sizeof(low_buf), "%d", low);
+  snprintf(buf, sizeof(buf), "%s / %s", high_buf, low_buf);
   lv_label_set_text(ref.value_lbl, buf);
   std::string normalized_unit = weather_forecast_unit_symbol(unit);
   lv_label_set_text(ref.unit_lbl, normalized_unit.c_str());
@@ -339,8 +347,11 @@ inline bool parse_weather_forecast_payload(const std::string &payload,
   std::string high_text = payload.substr(0, p1);
   std::string low_text = payload.substr(p1 + 1, p2 - p1 - 1);
   unit = payload.substr(p2 + 1);
-  return parse_weather_forecast_temp(high_text, high) &&
-         parse_weather_forecast_temp(low_text, low);
+  high = WEATHER_FORECAST_TEMP_MISSING;
+  low = WEATHER_FORECAST_TEMP_MISSING;
+  bool has_high = parse_weather_forecast_temp(high_text, high);
+  bool has_low = parse_weather_forecast_temp(low_text, low);
+  return has_high || has_low;
 }
 
 inline std::string weather_forecast_response_template(const std::string &entity_id) {
@@ -353,9 +364,10 @@ inline std::string weather_forecast_response_template(const std::string &entity_
     "{% set ns.forecast = item %}"
     "{% endif %}"
     "{% endfor %}"
-    "{% set f = ns.forecast if ns.forecast is not none else (forecasts[1] if forecasts|length > 1 else none) %}"
-    "{{ f.temperature if f is not none and f.temperature is defined else '' }}|"
-    "{{ f.templow if f is not none and f.templow is defined else '' }}|"
+    "{% set f = ns.forecast if ns.forecast is not none else (forecasts[1] if forecasts|length > 1 else (forecasts[0] if forecasts|length > 0 else none)) %}"
+    "{% set high = f.temperature if f is not none and f.temperature is defined else (f.temperature_high if f is not none and f.temperature_high is defined else (f.high_temperature if f is not none and f.high_temperature is defined else (f.high if f is not none and f.high is defined else ''))) %}"
+    "{% set low = f.templow if f is not none and f.templow is defined else (f.temperature_low if f is not none and f.temperature_low is defined else (f.low_temperature if f is not none and f.low_temperature is defined else (f.low if f is not none and f.low is defined else ''))) %}"
+    "{{ high }}|{{ low }}|"
     "{{ state_attr(entity, 'temperature_unit') or '' }}";
 }
 
@@ -404,6 +416,9 @@ inline void request_weather_forecast_entity(const std::string &entity_id) {
       int low = 0;
       std::string unit;
       bool valid = parse_weather_forecast_payload(payload, high, low, unit);
+      if (!valid) {
+        ESP_LOGW("weather_forecast", "No usable forecast temperatures for %s", entity_id.c_str());
+      }
       apply_weather_forecast_to_entity(entity_id, valid, high, low, unit);
     });
   esphome::api::global_api_server->send_homeassistant_action(req);
