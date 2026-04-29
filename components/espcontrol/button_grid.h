@@ -693,26 +693,33 @@ inline void climate_format_temp_unit(char *buf, size_t size, float value) {
   snprintf(buf, size, "%.1f\u00B0C", value);
 }
 
-inline std::string climate_dashboard_target_text(const ClimateCardCtx *ctx) {
-  if (!ctx || !ctx->available) return "Set --";
+inline std::string climate_dashboard_target_value_text(const ClimateCardCtx *ctx) {
+  if (!ctx || !ctx->available) return "--";
   char buf[32];
   if (ctx->has_low && ctx->has_high) {
-    snprintf(buf, sizeof(buf), "Set %.1f-%.1f\u00B0C", ctx->low, ctx->high);
+    snprintf(buf, sizeof(buf), "%.1f-%.1f", ctx->low, ctx->high);
     return std::string(buf);
   }
   if (ctx->has_target) {
-    snprintf(buf, sizeof(buf), "Set %.1f\u00B0C", ctx->target);
+    snprintf(buf, sizeof(buf), "%.1f", ctx->target);
     return std::string(buf);
   }
   if (ctx->has_low) {
-    snprintf(buf, sizeof(buf), "Set %.1f\u00B0C", ctx->low);
+    snprintf(buf, sizeof(buf), "%.1f", ctx->low);
     return std::string(buf);
   }
   if (ctx->has_high) {
-    snprintf(buf, sizeof(buf), "Set %.1f\u00B0C", ctx->high);
+    snprintf(buf, sizeof(buf), "%.1f", ctx->high);
     return std::string(buf);
   }
-  return "Set --";
+  return "--";
+}
+
+inline std::string climate_dashboard_current_text(const ClimateCardCtx *ctx) {
+  if (!ctx || !ctx->available || !ctx->has_current) return "Actual --";
+  char buf[24];
+  snprintf(buf, sizeof(buf), "Actual %.1f\u00B0C", ctx->current);
+  return std::string(buf);
 }
 
 inline void climate_align_dashboard_target(ClimateCardCtx *ctx) {
@@ -790,19 +797,13 @@ inline void climate_update_dashboard(ClimateCardCtx *ctx) {
   else lv_obj_clear_state(ctx->card_btn, LV_STATE_CHECKED);
 
   if (ctx->value_lbl) {
-    if (ctx->available && ctx->has_current) {
-      char buf[16];
-      climate_format_temp(buf, sizeof(buf), ctx->current);
-      lv_label_set_text(ctx->value_lbl, buf);
-      if (ctx->unit_lbl) lv_label_set_text(ctx->unit_lbl, "\u00B0C");
-    } else {
-      lv_label_set_text(ctx->value_lbl, "--");
-      if (ctx->unit_lbl) lv_label_set_text(ctx->unit_lbl, "");
-    }
+    std::string target = climate_dashboard_target_value_text(ctx);
+    lv_label_set_text(ctx->value_lbl, target.c_str());
+    if (ctx->unit_lbl) lv_label_set_text(ctx->unit_lbl, target == "--" ? "" : "\u00B0C");
   }
   if (ctx->dashboard_target_lbl) {
-    std::string target = climate_dashboard_target_text(ctx);
-    lv_label_set_text(ctx->dashboard_target_lbl, target.c_str());
+    std::string current = climate_dashboard_current_text(ctx);
+    lv_label_set_text(ctx->dashboard_target_lbl, current.c_str());
     climate_align_dashboard_target(ctx);
   }
   if (ctx->text_lbl) {
@@ -1551,7 +1552,7 @@ inline lv_obj_t *climate_create_dashboard_target_label(lv_obj_t *btn,
                                                        const lv_font_t *font) {
   if (!btn) return nullptr;
   lv_obj_t *label = lv_label_create(btn);
-  lv_label_set_text(label, "Set --");
+  lv_label_set_text(label, "Actual --");
   lv_label_set_long_mode(label, LV_LABEL_LONG_CLIP);
   lv_obj_set_width(label, lv_pct(100));
   lv_obj_set_style_text_color(label, lv_color_hex(CLIMATE_DASHBOARD_TARGET_COLOR), LV_PART_MAIN);
