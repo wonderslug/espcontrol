@@ -312,6 +312,7 @@
 
     ".sp-field{margin-bottom:28px}.sp-field:last-child{margin-bottom:0}" +
     ".sp-field-stack{display:grid;gap:10px}" +
+    ".sp-field-stack.sp-hidden{display:none}" +
     ".sp-field-label{display:block;font-size:.8rem;font-weight:500;color:var(--text2);margin-bottom:8px}" +
     ".sp-input,.sp-select{width:100%;padding:10px 12px;background:var(--surface2);" +
     "border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.875rem;" +
@@ -535,6 +536,8 @@
 
   // ── State ──────────────────────────────────────────────────────────────
 
+  var NTP_SERVER_DEFAULTS = ["0.pool.ntp.org", "1.pool.ntp.org", "2.pool.ntp.org"];
+
   var state = {
     grid: [],
     sizes: {},
@@ -579,9 +582,10 @@
     timezoneOptions: [],
     clockFormat: "24h",
     clockFormatOptions: ["12h", "24h"],
-    ntpServer1: "0.pool.ntp.org",
-    ntpServer2: "1.pool.ntp.org",
-    ntpServer3: "2.pool.ntp.org",
+    customNtpServers: false,
+    ntpServer1: NTP_SERVER_DEFAULTS[0],
+    ntpServer2: NTP_SERVER_DEFAULTS[1],
+    ntpServer3: NTP_SERVER_DEFAULTS[2],
     screenRotation: "0",
     screenRotationOptions: (CFG.features && CFG.features.screenRotationOptions) || ["0", "90", "180", "270"],
     sunrise: "",
@@ -747,6 +751,18 @@
     return v || fallback;
   }
 
+  function hasCustomNtpServers() {
+    return normalizeNtpServer(state.ntpServer1, NTP_SERVER_DEFAULTS[0]) !== NTP_SERVER_DEFAULTS[0] ||
+      normalizeNtpServer(state.ntpServer2, NTP_SERVER_DEFAULTS[1]) !== NTP_SERVER_DEFAULTS[1] ||
+      normalizeNtpServer(state.ntpServer3, NTP_SERVER_DEFAULTS[2]) !== NTP_SERVER_DEFAULTS[2];
+  }
+
+  function resetNtpServersToDefaults() {
+    state.ntpServer1 = NTP_SERVER_DEFAULTS[0];
+    state.ntpServer2 = NTP_SERVER_DEFAULTS[1];
+    state.ntpServer3 = NTP_SERVER_DEFAULTS[2];
+  }
+
   function formatDuration(seconds) {
     seconds = normalizeScheduleWakeTimeout(seconds);
     if (seconds < 60) return seconds + " second" + (seconds === 1 ? "" : "s");
@@ -891,6 +907,19 @@
     if (els.setOutdoorField) {
       els.setOutdoorField.className = "sp-cond-field" + (state._outdoorOn ? " sp-visible" : "");
     }
+  }
+
+  function syncNtpServerUi() {
+    if (els.setCustomNtpServersToggle) {
+      els.setCustomNtpServersToggle.checked = !!state.customNtpServers;
+    }
+    if (els.setNtpServerFields) {
+      els.setNtpServerFields.className =
+        "sp-field-stack" + (state.customNtpServers ? "" : " sp-hidden");
+    }
+    syncInput(els.setNtpServer1, state.ntpServer1);
+    syncInput(els.setNtpServer2, state.ntpServer2);
+    syncInput(els.setNtpServer3, state.ntpServer3);
   }
 
   function syncClockBarUi() {
@@ -2402,9 +2431,25 @@
 
     var ntpField = document.createElement("div");
     ntpField.className = "sp-field";
-    ntpField.appendChild(fieldLabel("NTP Servers", "sp-set-ntp-server-1"));
+    ntpField.appendChild(fieldLabel("NTP Servers", "sp-set-custom-ntp-servers"));
+    state.customNtpServers = state.customNtpServers || hasCustomNtpServers();
+    var customNtpServers = toggleRow("Custom NTP Servers", "sp-set-custom-ntp-servers", state.customNtpServers);
+    ntpField.appendChild(customNtpServers.row);
+    els.setCustomNtpServersToggle = customNtpServers.input;
+    customNtpServers.input.addEventListener("change", function () {
+      state.customNtpServers = this.checked;
+      if (!state.customNtpServers) {
+        resetNtpServersToDefaults();
+        postText("Screen: NTP Server 1", state.ntpServer1);
+        postText("Screen: NTP Server 2", state.ntpServer2);
+        postText("Screen: NTP Server 3", state.ntpServer3);
+      }
+      syncNtpServerUi();
+    });
+
     var ntpList = document.createElement("div");
     ntpList.className = "sp-field-stack";
+    els.setNtpServerFields = ntpList;
 
     function addNtpServerInput(id, stateKey, postName, placeholder, ariaLabel) {
       var input = textInput(id, state[stateKey], placeholder);
@@ -2413,6 +2458,8 @@
         var value = this.value.trim();
         this.value = value;
         state[stateKey] = value;
+        state.customNtpServers = true;
+        syncNtpServerUi();
         postText(postName, value);
       });
       input.addEventListener("keydown", function (e) {
@@ -2424,15 +2471,16 @@
 
     els.setNtpServer1 = addNtpServerInput(
       "sp-set-ntp-server-1", "ntpServer1",
-      "Screen: NTP Server 1", "0.pool.ntp.org", "NTP Server 1");
+      "Screen: NTP Server 1", NTP_SERVER_DEFAULTS[0], "NTP Server 1");
     els.setNtpServer2 = addNtpServerInput(
       "sp-set-ntp-server-2", "ntpServer2",
-      "Screen: NTP Server 2", "1.pool.ntp.org", "NTP Server 2");
+      "Screen: NTP Server 2", NTP_SERVER_DEFAULTS[1], "NTP Server 2");
     els.setNtpServer3 = addNtpServerInput(
       "sp-set-ntp-server-3", "ntpServer3",
-      "Screen: NTP Server 3", "2.pool.ntp.org", "NTP Server 3");
+      "Screen: NTP Server 3", NTP_SERVER_DEFAULTS[2], "NTP Server 3");
 
     ntpField.appendChild(ntpList);
+    syncNtpServerUi();
     clockBody.appendChild(ntpField);
 
     var timeSettingsCard = makeCollapsibleCard("Time Settings", clockBody, true);
@@ -5119,13 +5167,13 @@
           var hasNtpServer2 = Object.prototype.hasOwnProperty.call(s, "ntp_server_2");
           var hasNtpServer3 = Object.prototype.hasOwnProperty.call(s, "ntp_server_3");
           var importedNtpServer1 = hasNtpServer1
-            ? normalizeNtpServer(s.ntp_server_1, "0.pool.ntp.org")
+            ? normalizeNtpServer(s.ntp_server_1, NTP_SERVER_DEFAULTS[0])
             : state.ntpServer1;
           var importedNtpServer2 = hasNtpServer2
-            ? normalizeNtpServer(s.ntp_server_2, "1.pool.ntp.org")
+            ? normalizeNtpServer(s.ntp_server_2, NTP_SERVER_DEFAULTS[1])
             : state.ntpServer2;
           var importedNtpServer3 = hasNtpServer3
-            ? normalizeNtpServer(s.ntp_server_3, "2.pool.ntp.org")
+            ? normalizeNtpServer(s.ntp_server_3, NTP_SERVER_DEFAULTS[2])
             : state.ntpServer3;
           if (s.timezone) postSelect("Screen: Timezone", importedTimezone);
           postSelect("Screen: Temperature Unit", importedTemperatureUnit);
@@ -5173,6 +5221,7 @@
           state.ntpServer1 = importedNtpServer1;
           state.ntpServer2 = importedNtpServer2;
           state.ntpServer3 = importedNtpServer3;
+          state.customNtpServers = hasCustomNtpServers();
           state.screensaverMode = importedScreensaverMode;
           state._screensaverModeReceived = true;
           state.presenceEntity = s.presence_sensor_entity || "";
@@ -5191,9 +5240,7 @@
           syncInput(els.setPresence, state.presenceEntity);
           if (els.setTimezone) els.setTimezone.value = state.timezone;
           if (els.setClockFormat) els.setClockFormat.value = state.clockFormat;
-          syncInput(els.setNtpServer1, state.ntpServer1);
-          syncInput(els.setNtpServer2, state.ntpServer2);
-          syncInput(els.setNtpServer3, state.ntpServer3);
+          syncNtpServerUi();
           syncClockScreensaverControls();
           syncScreensaverTimeoutUi();
           syncIdleUi();
@@ -5613,28 +5660,34 @@
         updateClock();
       },
       "text-screen__ntp_server_1": function (val) {
-        state.ntpServer1 = normalizeNtpServer(val, "0.pool.ntp.org");
-        syncInput(els.setNtpServer1, state.ntpServer1);
+        state.ntpServer1 = normalizeNtpServer(val, NTP_SERVER_DEFAULTS[0]);
+        state.customNtpServers = state.customNtpServers || hasCustomNtpServers();
+        syncNtpServerUi();
       },
       "text-screen__ntp_server_2": function (val) {
-        state.ntpServer2 = normalizeNtpServer(val, "1.pool.ntp.org");
-        syncInput(els.setNtpServer2, state.ntpServer2);
+        state.ntpServer2 = normalizeNtpServer(val, NTP_SERVER_DEFAULTS[1]);
+        state.customNtpServers = state.customNtpServers || hasCustomNtpServers();
+        syncNtpServerUi();
       },
       "text-screen__ntp_server_3": function (val) {
-        state.ntpServer3 = normalizeNtpServer(val, "2.pool.ntp.org");
-        syncInput(els.setNtpServer3, state.ntpServer3);
+        state.ntpServer3 = normalizeNtpServer(val, NTP_SERVER_DEFAULTS[2]);
+        state.customNtpServers = state.customNtpServers || hasCustomNtpServers();
+        syncNtpServerUi();
       },
       "text-ntp_server_1": function (val) {
-        state.ntpServer1 = normalizeNtpServer(val, "0.pool.ntp.org");
-        syncInput(els.setNtpServer1, state.ntpServer1);
+        state.ntpServer1 = normalizeNtpServer(val, NTP_SERVER_DEFAULTS[0]);
+        state.customNtpServers = state.customNtpServers || hasCustomNtpServers();
+        syncNtpServerUi();
       },
       "text-ntp_server_2": function (val) {
-        state.ntpServer2 = normalizeNtpServer(val, "1.pool.ntp.org");
-        syncInput(els.setNtpServer2, state.ntpServer2);
+        state.ntpServer2 = normalizeNtpServer(val, NTP_SERVER_DEFAULTS[1]);
+        state.customNtpServers = state.customNtpServers || hasCustomNtpServers();
+        syncNtpServerUi();
       },
       "text-ntp_server_3": function (val) {
-        state.ntpServer3 = normalizeNtpServer(val, "2.pool.ntp.org");
-        syncInput(els.setNtpServer3, state.ntpServer3);
+        state.ntpServer3 = normalizeNtpServer(val, NTP_SERVER_DEFAULTS[2]);
+        state.customNtpServers = state.customNtpServers || hasCustomNtpServers();
+        syncNtpServerUi();
       },
       "select-screen__rotation": function (val, d) {
         state.screenRotation = normalizeScreenRotation(d.value || val || state.screenRotation);
