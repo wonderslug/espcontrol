@@ -91,6 +91,12 @@ ota:
 packages:
   core_infra: !include ../../../common/device/core_infra.yaml
 
+# The 4848S040 USB-C port is exposed as UART0 through a USB-UART bridge.
+# GPIO19/20 are used by the touchscreen/display path, so USB_SERIAL_JTAG
+# stops working once the application starts.
+logger:
+  hardware_uart: UART0
+
 # ---------------------------------------------------------------------------
 # Backlight (LEDC PWM output + monochromatic light entity)
 # ---------------------------------------------------------------------------

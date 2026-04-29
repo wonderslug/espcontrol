@@ -26,6 +26,8 @@ esphome:
 
 captive_portal:
 
+improv_serial:
+
 wifi:
   reboot_timeout: 0s
   ap:
