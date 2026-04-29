@@ -90,5 +90,5 @@ inline const char *display_temperature_unit_symbol() {
 
 inline const char *display_clock_bar_temperature_unit_symbol() {
   if (display_temperature_degree_symbol_enabled()) return display_temperature_unit_symbol();
-  return display_temperature_uses_fahrenheit() ? "F" : "C";
+  return "";
 }
