@@ -1433,7 +1433,7 @@ inline void climate_ensure_detail_ui(ClimateCardCtx *ctx) {
   ui.target_value = climate_create_label(ui.page, "20.0", LV_ALIGN_CENTER, 0, 14, ctx ? ctx->target_font : nullptr);
   ui.target_unit = climate_create_label(ui.page, display_temperature_unit_symbol(), LV_ALIGN_CENTER, 66, -2, unit_font);
   ui.target_hint = climate_create_label(ui.page, "Target", LV_ALIGN_CENTER, 0, 78, ctx ? ctx->label_font : nullptr, 0xBDBDBD);
-  ui.current_title = climate_create_label(ui.page, find_icon("Thermometer"), LV_ALIGN_CENTER, -40, 70, control_icon_font, CLIMATE_DETAIL_TEXT_COLOR);
+  ui.current_title = climate_create_label(ui.page, find_icon("Thermostat"), LV_ALIGN_CENTER, -40, 70, control_icon_font, CLIMATE_DETAIL_TEXT_COLOR);
   std::string current_placeholder = std::string("-- ") + display_temperature_unit_symbol();
   ui.current_value = climate_create_label(ui.page, current_placeholder.c_str(), LV_ALIGN_CENTER, 20, 70, ctx ? ctx->label_font : nullptr, CLIMATE_DETAIL_TEXT_COLOR);
   ui.minus_btn = climate_create_round_button(ui.page, 72, find_icon("Minus"), control_icon_font);
