@@ -1843,8 +1843,10 @@ inline void set_posix_timezone_for_epoch(const std::string &tz_option, time_t ep
 }
 
 inline bool timezone_localtime(const std::string &tz_option, time_t epoch, struct tm &out) {
-  set_posix_timezone_for_epoch(tz_option, epoch);
-  return localtime_r(&epoch, &out) != nullptr;
+  int offset_minutes = 0;
+  if (!timezone_offset_minutes_at_utc(tz_option, epoch, offset_minutes)) return false;
+  time_t local_epoch = epoch + static_cast<time_t>(offset_minutes) * 60;
+  return gmtime_r(&local_epoch, &out) != nullptr;
 }
 
 inline void apply_timezone_card_text(const TimezoneCardRef &ref,
