@@ -8,7 +8,7 @@ description:
 
 A Climate card controls a Home Assistant `climate` entity, such as a thermostat, heat pump, radiator valve, or air conditioner.
 
-On the main screen it shows the current temperature. Tapping the card opens a full-screen thermostat page with a target temperature arc, plus and minus buttons, mode tabs, and a preset menu.
+On the main screen it shows the target temperature. Tapping the card opens a full-screen thermostat page with a target temperature arc, plus and minus buttons, mode tabs, and a preset menu.
 
 ## Setting Up a Climate Card
 
@@ -20,7 +20,7 @@ Climate cards can also be placed inside a [Subpage](/features/subpages).
 
 ## How It Works on the Panel
 
-- The dashboard card shows the target temperature, with the current temperature from `current_temperature` underneath.
+- The dashboard card shows the target temperature.
 - The card label changes to the active action, such as **Heating**, **Cooling**, **Drying**, or **Fan**, while Home Assistant reports that action.
 - The card uses the normal on colour while the climate action is active, and the normal off colour while off, unavailable, idle, or otherwise enabled.
 - The detail page uses `min_temp`, `max_temp`, and `target_temp_step` when Home Assistant provides them. Until those arrive, it uses 5-35 °C with 0.5 °C steps.

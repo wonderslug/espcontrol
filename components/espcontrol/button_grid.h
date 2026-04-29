@@ -566,7 +566,6 @@ constexpr uint32_t CLIMATE_HEAT_COLOR = 0xA44A1C;
 constexpr uint32_t CLIMATE_COOL_COLOR = 0x1565C0;
 constexpr uint32_t CLIMATE_NEUTRAL_COLOR = 0x313131;
 constexpr uint32_t CLIMATE_DETAIL_TEXT_COLOR = 0xD8D8D8;
-constexpr uint32_t CLIMATE_DASHBOARD_TARGET_COLOR = 0xA0A0A0;
 
 struct ClimateCardCtx;
 
@@ -633,7 +632,6 @@ struct ClimateCardCtx {
   lv_obj_t *sensor_container = nullptr;
   lv_obj_t *value_lbl = nullptr;
   lv_obj_t *unit_lbl = nullptr;
-  lv_obj_t *dashboard_target_lbl = nullptr;
   lv_obj_t *text_lbl = nullptr;
   const lv_font_t *value_font = nullptr;
   const lv_font_t *target_font = nullptr;
@@ -716,20 +714,6 @@ inline std::string climate_dashboard_target_value_text(const ClimateCardCtx *ctx
   return "--";
 }
 
-inline std::string climate_dashboard_current_text(const ClimateCardCtx *ctx) {
-  if (!ctx || !ctx->available || !ctx->has_current) return "Actual --";
-  char buf[24];
-  snprintf(buf, sizeof(buf), "Actual %.1f\u00B0C", ctx->current);
-  return std::string(buf);
-}
-
-inline void climate_align_dashboard_target(ClimateCardCtx *ctx) {
-  if (!ctx || !ctx->dashboard_target_lbl || !ctx->sensor_container) return;
-  lv_obj_update_layout(ctx->sensor_container);
-  lv_obj_align_to(ctx->dashboard_target_lbl, ctx->sensor_container,
-                  LV_ALIGN_OUT_BOTTOM_LEFT, 0, 0);
-}
-
 inline bool climate_dual_target(const ClimateCardCtx *ctx) {
   return ctx && ctx->hvac_mode == "heat_cool" && ctx->has_low && ctx->has_high;
 }
@@ -801,11 +785,6 @@ inline void climate_update_dashboard(ClimateCardCtx *ctx) {
     std::string target = climate_dashboard_target_value_text(ctx);
     lv_label_set_text(ctx->value_lbl, target.c_str());
     if (ctx->unit_lbl) lv_label_set_text(ctx->unit_lbl, target == "--" ? "" : "\u00B0C");
-  }
-  if (ctx->dashboard_target_lbl) {
-    std::string current = climate_dashboard_current_text(ctx);
-    lv_label_set_text(ctx->dashboard_target_lbl, current.c_str());
-    climate_align_dashboard_target(ctx);
   }
   if (ctx->text_lbl) {
     std::string label = climate_dashboard_label(ctx);
@@ -1554,26 +1533,6 @@ inline void climate_open_detail(ClimateCardCtx *ctx, lv_obj_t *return_page) {
   lv_scr_load_anim(ui.page, LV_SCR_LOAD_ANIM_NONE, 0, 0, false);
 }
 
-inline lv_obj_t *climate_create_dashboard_target_label(lv_obj_t *btn,
-                                                       lv_obj_t *sensor_container,
-                                                       const lv_font_t *font) {
-  if (!btn) return nullptr;
-  lv_obj_t *label = lv_label_create(btn);
-  lv_label_set_text(label, "Actual --");
-  lv_label_set_long_mode(label, LV_LABEL_LONG_CLIP);
-  lv_obj_set_width(label, lv_pct(100));
-  lv_obj_set_style_text_color(label, lv_color_hex(CLIMATE_DASHBOARD_TARGET_COLOR), LV_PART_MAIN);
-  lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN);
-  if (font) lv_obj_set_style_text_font(label, font, LV_PART_MAIN);
-  if (sensor_container) {
-    lv_obj_update_layout(sensor_container);
-    lv_obj_align_to(label, sensor_container, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 0);
-  } else {
-    lv_obj_align(label, LV_ALIGN_TOP_LEFT, 0, 0);
-  }
-  return label;
-}
-
 inline void setup_climate_card(BtnSlot &s, const ParsedCfg &p,
                                const lv_font_t *value_font,
                                uint32_t off_color) {
@@ -1584,12 +1543,6 @@ inline void setup_climate_card(BtnSlot &s, const ParsedCfg &p,
   lv_label_set_text(s.sensor_lbl, "--");
   lv_label_set_text(s.unit_lbl, "");
   lv_label_set_text(s.text_lbl, p.label.empty() ? "Climate" : p.label.c_str());
-  lv_obj_t *target_lbl = static_cast<lv_obj_t *>(lv_obj_get_user_data(s.sensor_container));
-  if (!target_lbl) {
-    target_lbl = climate_create_dashboard_target_label(
-      s.btn, s.sensor_container, lv_obj_get_style_text_font(s.text_lbl, LV_PART_MAIN));
-    lv_obj_set_user_data(s.sensor_container, (void *)target_lbl);
-  }
   climate_apply_btn_color(s.btn, off_color);
 }
 
@@ -1617,7 +1570,6 @@ inline ClimateCardCtx *create_climate_context(lv_obj_t *card_btn,
                                               lv_obj_t *sensor_container,
                                               lv_obj_t *value_lbl,
                                               lv_obj_t *unit_lbl,
-                                              lv_obj_t *dashboard_target_lbl,
                                               lv_obj_t *text_lbl,
                                               lv_obj_t *icon_lbl,
                                               const ParsedCfg &p,
@@ -1634,7 +1586,6 @@ inline ClimateCardCtx *create_climate_context(lv_obj_t *card_btn,
   ctx->sensor_container = sensor_container;
   ctx->value_lbl = value_lbl;
   ctx->unit_lbl = unit_lbl;
-  ctx->dashboard_target_lbl = dashboard_target_lbl;
   ctx->text_lbl = text_lbl;
   ctx->value_font = value_font;
   ctx->target_font = target_font ? target_font : value_font;
@@ -3452,14 +3403,8 @@ inline void grid_phase2(
     }
     if (p.type == "climate") {
       if (!p.entity.empty()) {
-        lv_obj_t *target_lbl = static_cast<lv_obj_t *>(lv_obj_get_user_data(s.sensor_container));
-        if (!target_lbl) {
-          target_lbl = climate_create_dashboard_target_label(
-            s.btn, s.sensor_container, lv_obj_get_style_text_font(s.text_lbl, LV_PART_MAIN));
-          lv_obj_set_user_data(s.sensor_container, (void *)target_lbl);
-        }
         ClimateCardCtx *climate_ctx = create_climate_context(
-          s.btn, s.sensor_container, s.sensor_lbl, s.unit_lbl, target_lbl, s.text_lbl, s.icon_lbl, p,
+          s.btn, s.sensor_container, s.sensor_lbl, s.unit_lbl, s.text_lbl, s.icon_lbl, p,
           has_on ? on_val : DEFAULT_SLIDER_COLOR,
           has_off ? off_val : CLIMATE_NEUTRAL_COLOR,
           cfg.sp_sensor_font,
@@ -3870,8 +3815,6 @@ inline void grid_phase2(
         lv_obj_set_style_pad_bottom(sul, 6, LV_PART_MAIN);
         lv_label_set_text(sul, "");
 
-        lv_obj_t *target_lbl = climate_create_dashboard_target_label(sb_btn, sc, sp_btn_fnt);
-
         ParsedCfg cp;
         cp.entity = sb.entity;
         cp.label = sb.label;
@@ -3886,7 +3829,7 @@ inline void grid_phase2(
 
         if (!sb.entity.empty()) {
           ClimateCardCtx *climate_ctx = create_climate_context(
-            sb_btn, sc, svl, sul, target_lbl, stl, sil, cp,
+            sb_btn, sc, svl, sul, stl, sil, cp,
             has_on ? on_val : DEFAULT_SLIDER_COLOR,
             has_off ? off_val : CLIMATE_NEUTRAL_COLOR,
             cfg.sp_sensor_font,
