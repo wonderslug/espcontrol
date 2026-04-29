@@ -175,6 +175,9 @@ display:
   - platform: mipi_rgb
     model: GUITION-4848S040
     id: my_display
+    # Start WiFi before the RGB panel allocates its frame buffers; otherwise the
+    # WiFi driver can fail to claim enough internal RX buffers on fresh boots.
+    setup_priority: 240
     pclk_frequency: 8MHz
     update_interval: never
     auto_clear_enabled: False
@@ -184,6 +187,8 @@ display:
 # ---------------------------------------------------------------------------
 lvgl:
   id: main_lvgl
+  # Keep LVGL after WiFi and after the display driver.
+  setup_priority: 230
   buffer_size: 25%
   displays: my_display
   rotation: 180
