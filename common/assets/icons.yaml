@@ -13,7 +13,7 @@ font:
     bpp: 4
     glyphs: !include icon_glyphs.yaml
 
-  # Climate detail controls (chevron-left, minus, plus)
+  # Climate detail controls (chevron-left, minus, plus, thermometer)
   - file: 'https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf'
     id: climate_control_icon_font
     size: 34
@@ -22,6 +22,7 @@ font:
       - "\U000F0141"  # mdi-chevron-left
       - "\U000F0374"  # mdi-minus
       - "\U000F0415"  # mdi-plus
+      - "\U000F050F"  # mdi-thermometer
 
   # Setup screen icons (64px)
   - file: 'https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf'
