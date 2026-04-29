@@ -885,10 +885,6 @@
     if (els.setOutdoorField) {
       els.setOutdoorField.className = "sp-cond-field" + (state._outdoorOn ? " sp-visible" : "");
     }
-    if (els.setTemperatureBadge) {
-      els.setTemperatureBadge.className = "sp-card-badge" +
-        (state._indoorOn || state._outdoorOn ? "" : " sp-hidden");
-    }
   }
 
   function syncClockBarUi() {
@@ -2339,15 +2335,6 @@
 
     var clockBody = document.createElement("div");
 
-    var clockBar = toggleRow("Show Clock Bar", "sp-set-clock-bar", state.clockBarOn);
-    clockBody.appendChild(clockBar.row);
-    els.setClockBarToggle = clockBar.input;
-    clockBar.input.addEventListener("change", function () {
-      state.clockBarOn = this.checked;
-      syncClockBarUi();
-      postClockBar(state.clockBarOn);
-    });
-
     var tzField = document.createElement("div");
     tzField.className = "sp-field";
     tzField.appendChild(fieldLabel("Timezone", "sp-set-timezone"));
@@ -2428,12 +2415,52 @@
     ntpField.appendChild(ntpList);
     clockBody.appendChild(ntpField);
 
+    config.appendChild(makeCollapsibleCard("Time Settings", clockBody, true));
+
+    var clockBarBody = document.createElement("div");
+
+    var clockBar = toggleRow("Show Clock Bar", "sp-set-clock-bar", state.clockBarOn);
+    clockBarBody.appendChild(clockBar.row);
+    els.setClockBarToggle = clockBar.input;
+    clockBar.input.addEventListener("change", function () {
+      state.clockBarOn = this.checked;
+      syncClockBarUi();
+      postClockBar(state.clockBarOn);
+    });
+
+    var outdoor = createEntityToggleSection("Outdoor Temperature", "sp-set-outdoor-toggle", state._outdoorOn,
+      "Outdoor Temp Enable", "Outdoor Temp Entity", "Outdoor Temp Entity", "sensor.outdoor_temperature");
+    clockBarBody.appendChild(outdoor.toggle.row);
+    clockBarBody.appendChild(outdoor.field);
+    els.setOutdoorToggle = outdoor.toggle.input;
+    els.setOutdoorField = outdoor.field;
+    els.setOutdoorEntity = outdoor.input;
+    outdoor.toggle.input.addEventListener("change", function () {
+      state._outdoorOn = this.checked;
+      syncTemperatureUi();
+      updateTempPreview();
+    });
+
+    var indoor = createEntityToggleSection("Indoor Temperature", "sp-set-indoor-toggle", state._indoorOn,
+      "Indoor Temp Enable", "Indoor Temp Entity", "Indoor Temp Entity", "sensor.indoor_temperature");
+    clockBarBody.appendChild(indoor.toggle.row);
+    clockBarBody.appendChild(indoor.field);
+    els.setIndoorToggle = indoor.toggle.input;
+    els.setIndoorField = indoor.field;
+    els.setIndoorEntity = indoor.input;
+    indoor.toggle.input.addEventListener("change", function () {
+      state._indoorOn = this.checked;
+      syncTemperatureUi();
+      updateTempPreview();
+    });
+
     var clockBarBadge = document.createElement("span");
     clockBarBadge.setAttribute("aria-label", "Clock bar on");
     clockBarBadge.innerHTML = '<span class="sp-card-badge-dot"></span><span>ON</span>';
     els.setClockBarBadge = clockBarBadge;
     syncClockBarUi();
-    config.appendChild(makeCollapsibleCard("Clock", clockBody, true, clockBarBadge));
+    syncTemperatureUi();
+    config.appendChild(makeCollapsibleCard("Clock Bar", clockBarBody, true, clockBarBadge));
 
     if (CFG.features && CFG.features.screenRotation) {
       var rotationBody = document.createElement("div");
@@ -2486,38 +2513,8 @@
     tempBody.appendChild(unitField);
     els.setTemperatureUnit = unitSelect;
 
-    var outdoor = createEntityToggleSection("Outdoor Temperature", "sp-set-outdoor-toggle", state._outdoorOn,
-      "Outdoor Temp Enable", "Outdoor Temp Entity", "Outdoor Temp Entity", "sensor.outdoor_temperature");
-    tempBody.appendChild(outdoor.toggle.row);
-    tempBody.appendChild(outdoor.field);
-    els.setOutdoorToggle = outdoor.toggle.input;
-    els.setOutdoorField = outdoor.field;
-    els.setOutdoorEntity = outdoor.input;
-    outdoor.toggle.input.addEventListener("change", function () {
-      state._outdoorOn = this.checked;
-      syncTemperatureUi();
-      updateTempPreview();
-    });
-
-    var indoor = createEntityToggleSection("Indoor Temperature", "sp-set-indoor-toggle", state._indoorOn,
-      "Indoor Temp Enable", "Indoor Temp Entity", "Indoor Temp Entity", "sensor.indoor_temperature");
-    tempBody.appendChild(indoor.toggle.row);
-    tempBody.appendChild(indoor.field);
-    els.setIndoorToggle = indoor.toggle.input;
-    els.setIndoorField = indoor.field;
-    els.setIndoorEntity = indoor.input;
-    indoor.toggle.input.addEventListener("change", function () {
-      state._indoorOn = this.checked;
-      syncTemperatureUi();
-      updateTempPreview();
-    });
-
-    var tempBadge = document.createElement("span");
-    tempBadge.setAttribute("aria-label", "Temperature on");
-    tempBadge.innerHTML = '<span class="sp-card-badge-dot"></span><span>ON</span>';
-    els.setTemperatureBadge = tempBadge;
     syncTemperatureUi();
-    config.appendChild(makeCollapsibleCard("Temperature", tempBody, true, tempBadge));
+    config.appendChild(makeCollapsibleCard("Temperature", tempBody, true));
 
     var ssBody = document.createElement("div");
     var ssMode = getActiveScreensaverMode();

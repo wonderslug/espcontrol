@@ -19,7 +19,7 @@ Configured in the **Brightness** section of the **Settings** tab in [Setup](/fea
 - **Daytime Brightness** — screen brightness during the day (10%–100%, default 100%).
 - **Nighttime Brightness** — screen brightness at night (10%–100%, default 75%).
 
-Sunrise and sunset times are derived from the timezone set in the [Clock](/features/clock) settings.
+Sunrise and sunset times are derived from the timezone set in [Time Settings](/features/clock).
 
 ## Screensaver
 

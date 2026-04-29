@@ -1,22 +1,23 @@
 ---
-title: Clock
+title: Time Settings
 description:
   How to configure clock sync, timezone, and 12/24-hour format on your Espcontrol panel.
 ---
 
-# Clock
+# Time Settings
 
-The panel can display a clock in the top bar, updated every minute from network time. You can choose your timezone, switch between 12-hour and 24-hour format, set custom NTP servers, or hide the top bar completely.
+The panel can display a clock in the top bar, updated every minute from network time. You can choose your timezone, switch between 12-hour and 24-hour format, and set custom NTP servers.
 
 ## Settings
 
-Configured in the **Clock** section of the **Settings** tab in [Setup](/features/setup).
+Configured in the **Time Settings** section of the **Settings** tab in [Setup](/features/setup).
 
 - **Timezone** — select your timezone from the dropdown. This also determines sunrise and sunset times used by the [backlight schedule](/features/backlight).
 - **Clock Format** — choose **12h** for 12-hour time with AM/PM, or **24h** for 24-hour time. Defaults to 24h.
 - **NTP Server 1 / 2 / 3** — choose the network time servers used to keep the panel clock accurate. Defaults to `0.pool.ntp.org`, `1.pool.ntp.org`, and `2.pool.ntp.org`.
-- **Show Clock Bar** — turn this off to hide the top clock/temperature bar and give the card grid more screen space.
 - **Sunrise / Sunset** — read-only reference values calculated from your timezone, updated daily. Displayed in whichever format you chose.
+
+The **Clock Bar** section controls whether the top bar is shown. It also contains the indoor and outdoor temperature controls shown in that bar.
 
 ## How It Works
 

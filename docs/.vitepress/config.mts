@@ -174,7 +174,7 @@ export default defineConfig({
           { text: 'Appearance', link: '/features/appearance' },
           { text: 'Temperature', link: '/features/temperature' },
           { text: 'Idle', link: '/features/idle' },
-          { text: 'Clock', link: '/features/clock' },
+          { text: 'Time Settings', link: '/features/clock' },
           { text: 'Screensaver', link: '/features/screensaver' },
           { text: 'Backlight', link: '/features/backlight' },
           { text: 'Screen Schedule', link: '/features/screen-schedule' },

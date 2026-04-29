@@ -18,7 +18,7 @@ World clock cards are read-only — tapping them does nothing. They do not need 
 
 ## How It Works on the Panel
 
-- The dropdown uses the same city/timezone list as the main [Clock](/features/clock) setting.
+- The dropdown uses the same city/timezone list as the main [Time Settings](/features/clock) setting.
 - The card follows the panel's 12-hour or 24-hour clock format.
 - The time updates once per minute from the panel's own synced time source.
 - The card uses the **tertiary** colour from [Appearance](/features/appearance), like Sensor, Date, and Weather cards.
