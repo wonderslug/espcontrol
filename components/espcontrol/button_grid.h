@@ -1277,7 +1277,7 @@ inline void climate_layout_detail_ui(ClimateCardCtx *ctx) {
   lv_coord_t top_clearance = short_side < 520 ? 44 : 56;
 
   lv_obj_set_size(ui.back_btn, back_size, back_size);
-  lv_obj_align(ui.back_btn, LV_ALIGN_TOP_LEFT, 12, top_clearance);
+  lv_obj_align(ui.back_btn, LV_ALIGN_TOP_LEFT, 22, top_clearance + 12);
   lv_obj_move_foreground(ui.back_btn);
   lv_obj_set_size(ui.preset_chip, back_size, back_size);
   lv_obj_set_style_radius(ui.preset_chip, 8, LV_PART_MAIN);
