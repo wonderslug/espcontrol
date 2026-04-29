@@ -28,13 +28,13 @@ font:
     glyphs:
       - "0123456789.- /"
 
-  # Main page: compact weather temperature unit symbols
+  # Main page: compact weather temperature unit symbol
   - file: "gfonts://Noto Sans"
     id: forecast_unit_font
     size: 22
     bpp: 4
     glyphs:
-      - "℃℉"
+      - "°"
 
   # Main page: button labels
   - file: "gfonts://Roboto"

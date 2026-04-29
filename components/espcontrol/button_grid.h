@@ -40,7 +40,7 @@ struct BtnSlot {
   lv_obj_t *text_lbl;               // entity name / custom label
   lv_obj_t *sensor_container;       // flex row shown when sensor overlay is active
   lv_obj_t *sensor_lbl;             // numeric sensor value
-  lv_obj_t *unit_lbl;               // unit suffix (°C, %, etc.)
+  lv_obj_t *unit_lbl;               // unit suffix (°, %, etc.)
 };
 
 // Extract the Nth semicolon-delimited field from a config string
@@ -268,8 +268,8 @@ constexpr int WEATHER_FORECAST_TEMP_MISSING = 32767;
 inline std::string weather_forecast_unit_symbol(const std::string &unit) {
   std::string lower = unit;
   for (char &ch : lower) ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
-  if (lower.find("f") != std::string::npos || lower.find("fahrenheit") != std::string::npos) return "\u2109";
-  if (lower.find("c") != std::string::npos || lower.find("celsius") != std::string::npos) return "\u2103";
+  if (lower.find("f") != std::string::npos || lower.find("fahrenheit") != std::string::npos) return "\u00B0";
+  if (lower.find("c") != std::string::npos || lower.find("celsius") != std::string::npos) return "\u00B0";
   return unit;
 }
 
@@ -689,7 +689,7 @@ inline void climate_format_temp(char *buf, size_t size, float value) {
 }
 
 inline void climate_format_temp_unit(char *buf, size_t size, float value) {
-  snprintf(buf, size, "%.1f\u00B0C", value);
+  snprintf(buf, size, "%.1f\u00B0", value);
 }
 
 inline std::string climate_dashboard_target_value_text(const ClimateCardCtx *ctx) {
@@ -784,7 +784,7 @@ inline void climate_update_dashboard(ClimateCardCtx *ctx) {
   if (ctx->value_lbl) {
     std::string target = climate_dashboard_target_value_text(ctx);
     lv_label_set_text(ctx->value_lbl, target.c_str());
-    if (ctx->unit_lbl) lv_label_set_text(ctx->unit_lbl, target == "--" ? "" : "\u00B0C");
+    if (ctx->unit_lbl) lv_label_set_text(ctx->unit_lbl, target == "--" ? "" : "\u00B0");
   }
   if (ctx->text_lbl) {
     std::string label = climate_dashboard_label(ctx);
@@ -1088,8 +1088,8 @@ inline void climate_update_detail(ClimateCardCtx *ctx) {
 
   if (ui.current_value) {
     char buf[24];
-    if (ctx->available && ctx->has_current) snprintf(buf, sizeof(buf), "%.1f \u00B0C", ctx->current);
-    else snprintf(buf, sizeof(buf), "-- \u00B0C");
+    if (ctx->available && ctx->has_current) snprintf(buf, sizeof(buf), "%.1f \u00B0", ctx->current);
+    else snprintf(buf, sizeof(buf), "-- \u00B0");
     lv_label_set_text(ui.current_value, buf);
   }
   if (ui.current_title) lv_obj_set_style_text_color(ui.current_title, lv_color_hex(CLIMATE_DETAIL_TEXT_COLOR), LV_PART_MAIN);
@@ -1105,7 +1105,7 @@ inline void climate_update_detail(ClimateCardCtx *ctx) {
     lv_label_set_text(ui.target_value, tbuf);
   }
   if (ui.target_unit && ui.target_value) {
-    lv_label_set_text(ui.target_unit, "\u00B0C");
+    lv_label_set_text(ui.target_unit, "\u00B0");
     lv_obj_update_layout(ui.target_value);
     lv_obj_align_to(ui.target_unit, ui.target_value, LV_ALIGN_OUT_RIGHT_TOP, 6, 8);
   }
@@ -1357,10 +1357,10 @@ inline void climate_ensure_detail_ui(ClimateCardCtx *ctx) {
   const lv_font_t *unit_font = ctx && ctx->unit_font ? ctx->unit_font : (ctx ? ctx->label_font : nullptr);
   ui.state_label = climate_create_label(ui.page, "Idle", LV_ALIGN_CENTER, 0, -50, ctx ? ctx->label_font : nullptr, CLIMATE_DETAIL_TEXT_COLOR);
   ui.target_value = climate_create_label(ui.page, "20.0", LV_ALIGN_CENTER, -14, 14, ctx ? ctx->target_font : nullptr);
-  ui.target_unit = climate_create_label(ui.page, "\u00B0C", LV_ALIGN_CENTER, 64, -2, unit_font);
+  ui.target_unit = climate_create_label(ui.page, "\u00B0", LV_ALIGN_CENTER, 64, -2, unit_font);
   ui.target_hint = climate_create_label(ui.page, "Target", LV_ALIGN_CENTER, 0, 78, ctx ? ctx->label_font : nullptr, 0xBDBDBD);
   ui.current_title = climate_create_label(ui.page, find_icon("Thermometer"), LV_ALIGN_CENTER, -64, 70, ctx ? ctx->icon_font : nullptr, CLIMATE_DETAIL_TEXT_COLOR);
-  ui.current_value = climate_create_label(ui.page, "-- \u00B0C", LV_ALIGN_CENTER, 22, 70, ctx ? ctx->label_font : nullptr, CLIMATE_DETAIL_TEXT_COLOR);
+  ui.current_value = climate_create_label(ui.page, "-- \u00B0", LV_ALIGN_CENTER, 22, 70, ctx ? ctx->label_font : nullptr, CLIMATE_DETAIL_TEXT_COLOR);
   ui.minus_btn = climate_create_round_button(ui.page, 60, find_icon("Minus"), control_icon_font);
   ui.plus_btn = climate_create_round_button(ui.page, 60, find_icon("Plus"), control_icon_font);
   ui.low_btn = climate_create_chip(ui.page, "Low", ctx ? ctx->label_font : nullptr);

@@ -8,7 +8,7 @@ description:
 
 A Weather Forecast card shows tomorrow's expected high and low temperature from a Home Assistant `weather` entity.
 
-It is intentionally simple: the label always says **Tomorrow**, and the main value shows the forecast high / low temperature, such as **18 / 10 ℃**.
+It is intentionally simple: the label always says **Tomorrow**, and the main value shows the forecast high / low temperature, such as **18 / 10 °**.
 
 ## Setting Up a Weather Forecast Card
 

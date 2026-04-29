@@ -25,7 +25,7 @@ registerButtonType("climate", {
       iconHtml:
         '<span class="sp-sensor-preview">' +
           '<span class="sp-sensor-value">19.8</span>' +
-          '<span class="sp-sensor-unit">\u00B0C</span>' +
+          '<span class="sp-sensor-unit">\u00B0</span>' +
         '</span>',
       labelHtml:
         '<span class="sp-btn-label-row"><span class="sp-btn-label">' + helpers.escHtml(label) + '</span>' +

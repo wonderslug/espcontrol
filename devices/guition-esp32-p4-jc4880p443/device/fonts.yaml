@@ -46,13 +46,13 @@ font:
     glyphs:
       - "0123456789.- /"
 
-  # Forecast unit symbols
+  # Forecast unit symbol
   - file: "gfonts://Noto Sans"
     id: forecast_unit_font_lg
     size: 31
     bpp: 4
     glyphs:
-      - "℃℉"
+      - "°"
 
   # Top bar clock and temperature (25px)
   - file: "gfonts://Roboto"

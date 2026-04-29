@@ -32,13 +32,13 @@ font:
     glyphs:
       - "0123456789.- /"
 
-  # Main page: forecast unit symbols
+  # Main page: forecast unit symbol
   - file: "gfonts://Noto Sans"
     id: forecast_unit_font_lt
     size: 24
     bpp: 4
     glyphs:
-      - "℃℉"
+      - "°"
 
   # Main page: button icons
   - file: 'https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf'

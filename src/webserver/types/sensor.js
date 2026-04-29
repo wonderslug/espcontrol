@@ -49,7 +49,7 @@ registerButtonType("sensor", {
     var uf = document.createElement("div");
     uf.className = "sp-field";
     uf.appendChild(helpers.fieldLabel("Unit", helpers.idPrefix + "unit"));
-    var unitInp = helpers.textInput(helpers.idPrefix + "unit", b.unit, "e.g. \u00B0C");
+    var unitInp = helpers.textInput(helpers.idPrefix + "unit", b.unit, "e.g. \u00B0");
     unitInp.className = "sp-input";
     uf.appendChild(unitInp);
     numericSection.appendChild(uf);

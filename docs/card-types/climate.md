@@ -23,7 +23,7 @@ Climate cards can also be placed inside a [Subpage](/features/subpages).
 - The dashboard card shows the target temperature.
 - The card label changes to the active action, such as **Heating**, **Cooling**, **Drying**, or **Fan**, while Home Assistant reports that action.
 - The card uses the normal on colour only while `hvac_action` is active, such as `heating`, `cooling`, `drying`, or `fan`. If Home Assistant reports `hvac_action` as `idle`, the card uses the off colour even when the mode is not **Off**.
-- The detail page uses `min_temp`, `max_temp`, and `target_temp_step` when Home Assistant provides them. Until those arrive, it uses 5-35 °C with 0.5 °C steps.
+- The detail page uses `min_temp`, `max_temp`, and `target_temp_step` when Home Assistant provides them. Until those arrive, it uses 5-35° with 0.5° steps.
 - Dragging the arc updates the display immediately, but sends the new temperature only when you release it. The plus and minus buttons wait briefly before sending, so repeated taps do not spam Home Assistant.
 
 ## Supported Controls
