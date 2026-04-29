@@ -632,6 +632,7 @@ struct ClimateCardCtx {
   lv_obj_t *text_lbl = nullptr;
   const lv_font_t *value_font = nullptr;
   const lv_font_t *label_font = nullptr;
+  const lv_font_t *unit_font = nullptr;
   const lv_font_t *icon_font = nullptr;
   uint32_t on_color = DEFAULT_SLIDER_COLOR;
   uint32_t off_color = CLIMATE_NEUTRAL_COLOR;
@@ -1023,7 +1024,14 @@ inline lv_obj_t *climate_create_round_button(lv_obj_t *parent, lv_coord_t size,
   return btn;
 }
 
-inline lv_obj_t *climate_create_chip(lv_obj_t *parent, const char *text) {
+inline void climate_set_button_label_font(lv_obj_t *btn, const lv_font_t *font) {
+  if (!btn || !font) return;
+  lv_obj_t *label = lv_obj_get_child(btn, 0);
+  if (label) lv_obj_set_style_text_font(label, font, LV_PART_MAIN);
+}
+
+inline lv_obj_t *climate_create_chip(lv_obj_t *parent, const char *text,
+                                     const lv_font_t *font = nullptr) {
   lv_obj_t *btn = lv_btn_create(parent);
   lv_obj_set_style_radius(btn, 8, LV_PART_MAIN);
   lv_obj_set_style_bg_color(btn, lv_color_hex(0x222222), LV_PART_MAIN);
@@ -1035,6 +1043,7 @@ inline lv_obj_t *climate_create_chip(lv_obj_t *parent, const char *text) {
   lv_label_set_text(label, text);
   lv_obj_set_style_text_color(label, lv_color_hex(0xD8D8D8), LV_PART_MAIN);
   lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN);
+  if (font) lv_obj_set_style_text_font(label, font, LV_PART_MAIN);
   lv_obj_center(label);
   return btn;
 }
@@ -1089,7 +1098,25 @@ inline void climate_layout_detail_ui(ClimateCardCtx *ctx) {
   if (ctx && ctx->value_font) {
     lv_obj_set_style_text_font(ui.target_value, ctx->value_font, LV_PART_MAIN);
   }
-  if (ctx && ctx->label_font) lv_obj_set_style_text_font(ui.current_value, ctx->label_font, LV_PART_MAIN);
+  if (ctx && ctx->label_font) {
+    lv_obj_set_style_text_font(ui.state_label, ctx->label_font, LV_PART_MAIN);
+    lv_obj_set_style_text_font(ui.current_value, ctx->label_font, LV_PART_MAIN);
+    lv_obj_set_style_text_font(ui.target_hint, ctx->label_font, LV_PART_MAIN);
+    climate_set_button_label_font(ui.minus_btn, ctx->label_font);
+    climate_set_button_label_font(ui.plus_btn, ctx->label_font);
+    climate_set_button_label_font(ui.low_btn, ctx->label_font);
+    climate_set_button_label_font(ui.high_btn, ctx->label_font);
+    climate_set_button_label_font(ui.mode_chip, ctx->label_font);
+    climate_set_button_label_font(ui.fan_chip, ctx->label_font);
+    climate_set_button_label_font(ui.swing_chip, ctx->label_font);
+    climate_set_button_label_font(ui.preset_chip, ctx->label_font);
+  }
+  const lv_font_t *unit_font = ctx && ctx->unit_font ? ctx->unit_font : (ctx ? ctx->label_font : nullptr);
+  if (unit_font) lv_obj_set_style_text_font(ui.target_unit, unit_font, LV_PART_MAIN);
+  if (ctx && ctx->icon_font) {
+    lv_obj_set_style_text_font(ui.current_title, ctx->icon_font, LV_PART_MAIN);
+    climate_set_button_label_font(ui.back_btn, ctx->icon_font);
+  }
 }
 
 inline void climate_open_options(ClimateCardCtx *ctx, const char *kind,
@@ -1140,16 +1167,17 @@ inline void climate_ensure_detail_ui(ClimateCardCtx *ctx) {
     if (ui.active) climate_send_temperature_action(ui.active);
   }, LV_EVENT_RELEASED, nullptr);
 
-  ui.state_label = climate_create_label(ui.page, "Idle", LV_ALIGN_CENTER, 0, -50, nullptr, CLIMATE_HEAT_COLOR);
+  const lv_font_t *unit_font = ctx && ctx->unit_font ? ctx->unit_font : (ctx ? ctx->label_font : nullptr);
+  ui.state_label = climate_create_label(ui.page, "Idle", LV_ALIGN_CENTER, 0, -50, ctx ? ctx->label_font : nullptr, CLIMATE_HEAT_COLOR);
   ui.target_value = climate_create_label(ui.page, "20.0", LV_ALIGN_CENTER, -14, 14, ctx ? ctx->value_font : nullptr);
-  ui.target_unit = climate_create_label(ui.page, "\u00B0C", LV_ALIGN_CENTER, 64, -2);
-  ui.target_hint = climate_create_label(ui.page, "Target", LV_ALIGN_CENTER, 0, 78, nullptr, 0xBDBDBD);
+  ui.target_unit = climate_create_label(ui.page, "\u00B0C", LV_ALIGN_CENTER, 64, -2, unit_font);
+  ui.target_hint = climate_create_label(ui.page, "Target", LV_ALIGN_CENTER, 0, 78, ctx ? ctx->label_font : nullptr, 0xBDBDBD);
   ui.current_title = climate_create_label(ui.page, find_icon("Thermometer"), LV_ALIGN_CENTER, -64, 70, ctx ? ctx->icon_font : nullptr, CLIMATE_HEAT_COLOR);
-  ui.current_value = climate_create_label(ui.page, "-- \u00B0C", LV_ALIGN_CENTER, 22, 70, nullptr, CLIMATE_HEAT_COLOR);
+  ui.current_value = climate_create_label(ui.page, "-- \u00B0C", LV_ALIGN_CENTER, 22, 70, ctx ? ctx->label_font : nullptr, CLIMATE_HEAT_COLOR);
   ui.minus_btn = climate_create_round_button(ui.page, 60, "-", ctx ? ctx->label_font : nullptr);
   ui.plus_btn = climate_create_round_button(ui.page, 60, "+", ctx ? ctx->label_font : nullptr);
-  ui.low_btn = climate_create_chip(ui.page, "Low");
-  ui.high_btn = climate_create_chip(ui.page, "High");
+  ui.low_btn = climate_create_chip(ui.page, "Low", ctx ? ctx->label_font : nullptr);
+  ui.high_btn = climate_create_chip(ui.page, "High", ctx ? ctx->label_font : nullptr);
   lv_obj_set_size(ui.low_btn, 76, 36);
   lv_obj_set_size(ui.high_btn, 76, 36);
   lv_obj_add_event_cb(ui.minus_btn, [](lv_event_t *e) {
@@ -1175,10 +1203,10 @@ inline void climate_ensure_detail_ui(ClimateCardCtx *ctx) {
     climate_update_detail(ui.active);
   }, LV_EVENT_CLICKED, nullptr);
 
-  ui.mode_chip = climate_create_chip(ui.page, "Mode\nOff");
-  ui.fan_chip = climate_create_chip(ui.page, "Fan\nNone");
-  ui.swing_chip = climate_create_chip(ui.page, "Swing\nNone");
-  ui.preset_chip = climate_create_chip(ui.page, "Preset\nNone");
+  ui.mode_chip = climate_create_chip(ui.page, "Mode\nOff", ctx ? ctx->label_font : nullptr);
+  ui.fan_chip = climate_create_chip(ui.page, "Fan\nNone", ctx ? ctx->label_font : nullptr);
+  ui.swing_chip = climate_create_chip(ui.page, "Swing\nNone", ctx ? ctx->label_font : nullptr);
+  ui.preset_chip = climate_create_chip(ui.page, "Preset\nNone", ctx ? ctx->label_font : nullptr);
   lv_obj_add_event_cb(ui.mode_chip, [](lv_event_t *e) {
     ClimateDetailUi &ui = climate_detail_ui();
     if (ui.active) climate_open_options(ui.active, "hvac", "Mode", ui.active->hvac_modes);
@@ -1253,9 +1281,10 @@ inline void climate_open_options(ClimateCardCtx *ctx, const char *kind,
   lv_label_set_text(title_lbl, title);
   lv_obj_set_style_text_color(title_lbl, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
   lv_obj_set_style_text_align(title_lbl, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN);
+  if (ctx->label_font) lv_obj_set_style_text_font(title_lbl, ctx->label_font, LV_PART_MAIN);
 
   for (const auto &value : options) {
-    lv_obj_t *btn = climate_create_chip(ui.popup, climate_mode_label(value).c_str());
+    lv_obj_t *btn = climate_create_chip(ui.popup, climate_mode_label(value).c_str(), ctx->label_font);
     lv_obj_set_width(btn, lv_pct(92));
     lv_obj_set_height(btn, 44);
     ClimateOptionCtx *opt = new ClimateOptionCtx();
@@ -1267,7 +1296,7 @@ inline void climate_open_options(ClimateCardCtx *ctx, const char *kind,
       delete static_cast<ClimateOptionCtx *>(lv_event_get_user_data(e));
     }, LV_EVENT_DELETE, opt);
   }
-  lv_obj_t *cancel = climate_create_chip(ui.popup, "Cancel");
+  lv_obj_t *cancel = climate_create_chip(ui.popup, "Cancel", ctx->label_font);
   lv_obj_set_width(cancel, lv_pct(72));
   lv_obj_set_height(cancel, 40);
   lv_obj_add_event_cb(cancel, [](lv_event_t *e) { climate_hide_popup(); }, LV_EVENT_CLICKED, nullptr);
@@ -1344,6 +1373,7 @@ inline ClimateCardCtx *create_climate_context(lv_obj_t *card_btn,
   ctx->text_lbl = text_lbl;
   ctx->value_font = value_font;
   ctx->label_font = text_lbl ? lv_obj_get_style_text_font(text_lbl, LV_PART_MAIN) : nullptr;
+  ctx->unit_font = unit_lbl ? lv_obj_get_style_text_font(unit_lbl, LV_PART_MAIN) : ctx->label_font;
   ctx->icon_font = icon_lbl ? lv_obj_get_style_text_font(icon_lbl, LV_PART_MAIN) : nullptr;
   ctx->on_color = on_color;
   ctx->off_color = off_color;
