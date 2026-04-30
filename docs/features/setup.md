@@ -32,7 +32,6 @@ The **Type** dropdown uses these card names on the device:
 | **[Sensor](/card-types/sensors)** | Shows a live numeric reading or text state. | Yes, as **Sensor Entity** |
 | **[Slider](/card-types/sliders)** | Controls light brightness or fan speed with a draggable fill bar. | Yes |
 | **[Cover](/card-types/covers)** | Controls blinds, shutters, and similar cover entities with a slider or tap action. | Yes |
-| **[Climate](/card-types/climate)** | Shows current temperature and opens a thermostat control page. | Yes, as **Climate Entity** |
 | **[Garage Door](/card-types/garage-doors)** | Controls a garage door cover entity with an open/close tap action. | Yes |
 | **[Date](/card-types/calendar)** | Shows the local date, or the date and time. | No |
 | **[World Clock](/card-types/timezones)** | Shows the current time for another city. | No, choose a city/timezone |

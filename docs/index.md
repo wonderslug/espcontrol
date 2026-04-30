@@ -19,7 +19,7 @@ Espcontrol is free, open-source firmware that turns **Guition ESP32** touchscree
 - **Grid layout** — a fixed grid sized to each screen so you can place cards exactly where you want them
 - **Subpage cards** — group related controls into folders to keep the home screen tidy
 - **Flexible card sizes** — make cards Single, Tall, Wide, or Large to suit the control
-- **Current card types** — Switch, Action, Trigger, Sensor, Slider, Cover, Climate, Garage Door, Date, World Clock, Weather, and Weather Forecast
+- **Current card types** — Switch, Action, Trigger, Sensor, Slider, Cover, Garage Door, Date, World Clock, Weather, and Weather Forecast
 - **Edit controls** — drag-and-drop ordering, bulk select, and copy-paste between pages from the built-in web UI
 - **Screensaver** — dims and sleeps after a set time, or wakes automatically from a presence sensor
 

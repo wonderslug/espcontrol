@@ -192,7 +192,6 @@ export default defineConfig({
           { text: 'Sensor', link: '/card-types/sensors' },
           { text: 'Slider', link: '/card-types/sliders' },
           { text: 'Cover', link: '/card-types/covers' },
-          { text: 'Climate', link: '/card-types/climate' },
           { text: 'Garage Door', link: '/card-types/garage-doors' },
           { text: 'Date', link: '/card-types/calendar' },
           { text: 'World Clock', link: '/card-types/timezones' },

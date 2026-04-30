@@ -137,7 +137,24 @@
       renderSettings: null,
       renderPreview: null,
       contextMenuItems: null,
+      experimental: null,
     }, def);
+  }
+  function isExperimentalEnabled(key) {
+    var value = "";
+    try {
+      value = new URLSearchParams(window.location.search).get("experimental") || "";
+    } catch (e) {}
+    if (value === "1" || value === "true" || value === "all") return true;
+    var parts = value.split(",");
+    for (var i = 0; i < parts.length; i++) {
+      if (parts[i].trim().toLowerCase() === key) return true;
+    }
+    try {
+      return localStorage.getItem("espcontrol.experimental." + key) === "1";
+    } catch (e) {
+      return false;
+    }
   }
   // __BUTTON_TYPES_START__
   // __BUTTON_TYPES_END__
@@ -3516,6 +3533,7 @@
         var td = BUTTON_TYPES[k];
         if (c.isSub && !td.allowInSubpage) continue;
         if (td.isAvailable && !td.isAvailable({ isSub: c.isSub }) && (b.type || "") !== td.key) continue;
+        if (td.experimental && (b.type || "") !== td.key && !isExperimentalEnabled(td.experimental)) continue;
         typeOpts.push([td.key, td.label]);
       }
       typeOpts.sort(function (a, b) {

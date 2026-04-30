@@ -6,6 +6,10 @@ description:
 
 # Climate
 
+::: warning Experimental
+Climate cards are still experimental. They are not shown in release setup pages or public navigation yet. Developers can enable them from the setup page with `?experimental=climate`, or by running `localStorage.setItem("espcontrol.experimental.climate", "1"); location.reload();` in the browser console.
+:::
+
 A Climate card controls a Home Assistant `climate` entity, such as a thermostat, heat pump, radiator valve, or air conditioner.
 
 On the main screen it shows the target temperature. Tapping the card opens a thermostat control page with a target temperature arc, plus and minus buttons, a mode menu, and optional fan and swing controls.

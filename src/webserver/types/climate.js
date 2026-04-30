@@ -1,6 +1,7 @@
 // Climate card: compact dashboard status that opens a thermostat detail page.
 registerButtonType("climate", {
   label: "Climate",
+  experimental: "climate",
   allowInSubpage: true,
   labelPlaceholder: "e.g. Living Room",
   onSelect: function (b) {
