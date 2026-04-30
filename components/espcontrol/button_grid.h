@@ -1286,14 +1286,22 @@ inline void climate_layout_detail_ui(ClimateCardCtx *ctx) {
   lv_coord_t sw = disp ? lv_disp_get_hor_res(disp) : 480;
   lv_coord_t sh = disp ? lv_disp_get_ver_res(disp) : 480;
   lv_coord_t short_side = sw < sh ? sw : sh;
-  lv_coord_t outer_margin = short_side < 520 ? 12 : 28;
-  lv_coord_t top_clearance = sw < sh ? 58 : (short_side < 520 ? 48 : 104);
-  lv_coord_t card_w = sw - outer_margin * 2;
-  lv_coord_t card_h = sh - top_clearance - outer_margin;
-  if (card_w < sw / 2) card_w = sw;
-  if (card_h < sh / 2) card_h = sh;
-  lv_coord_t card_x = (sw - card_w) / 2;
-  lv_coord_t card_y = top_clearance;
+  ClimateHomeGridMetrics &home_metrics = climate_home_grid_metrics();
+  lv_obj_t *home_page = home_metrics.page;
+  lv_coord_t card_x = home_page ? lv_obj_get_style_pad_left(home_page, LV_PART_MAIN) : (short_side < 520 ? 12 : 28);
+  lv_coord_t card_y = home_page ? lv_obj_get_style_pad_top(home_page, LV_PART_MAIN) : (sw < sh ? 58 : (short_side < 520 ? 48 : 104));
+  lv_coord_t card_right = home_page ? lv_obj_get_style_pad_right(home_page, LV_PART_MAIN) : card_x;
+  lv_coord_t card_bottom = home_page ? lv_obj_get_style_pad_bottom(home_page, LV_PART_MAIN) : (short_side < 520 ? 12 : 28);
+  lv_coord_t card_w = sw - card_x - card_right;
+  lv_coord_t card_h = sh - card_y - card_bottom;
+  if (card_w < sw / 2) {
+    card_x = 0;
+    card_w = sw;
+  }
+  if (card_h < sh / 2) {
+    card_y = 0;
+    card_h = sh;
+  }
   lv_coord_t card_pad = short_side < 520 ? 18 : 42;
   lv_coord_t frame_w = card_w - card_pad * 2;
   lv_coord_t frame_h = card_h - card_pad * 2;
