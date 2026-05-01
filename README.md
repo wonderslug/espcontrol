@@ -42,6 +42,10 @@ See the [docs](https://jtenniswood.github.io/espcontrol/) for full specs and ins
 5. **Allow Home Assistant actions** — [enable the device](https://jtenniswood.github.io/espcontrol/getting-started/home-assistant-actions) to control your entities
 6. **Configure your cards** by opening the panel's built-in web page
 
+## Developer/Experimental Features
+
+Experimental features are included in normal release firmware, but stay off unless explicitly enabled. To enable them, open the panel web UI with `?developer=experimental`, turn on **Developer/Experimental Features** in the Developer settings section, then configure the experimental feature. Experimental code should check this setting before running.
+
 ## Support This Project
 
 If you find this project useful, consider buying me a coffee to support ongoing development!

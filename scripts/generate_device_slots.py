@@ -91,6 +91,7 @@ def cfg_lines(device: dict) -> list[str]:
     lines.append(f"            cfg.forecast_unit_font = id({device['forecast_unit_font']})->get_lv_font();")
     lines.append("            cfg.temperature_unit = id(temperature_unit_select).current_option();")
     lines.append("            cfg.timezone = id(timezone_select).current_option();")
+    lines.append("            cfg.developer_experimental_features = id(developer_experimental_features).state;")
     return lines
 
 

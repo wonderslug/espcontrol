@@ -140,21 +140,16 @@
       experimental: null,
     }, def);
   }
-  function isExperimentalEnabled(key) {
+  function developerExperimentalUrlFlag() {
     var value = "";
     try {
-      value = new URLSearchParams(window.location.search).get("experimental") || "";
+      value = new URLSearchParams(window.location.search).get("developer") || "";
     } catch (e) {}
-    if (value === "1" || value === "true" || value === "all") return true;
-    var parts = value.split(",");
-    for (var i = 0; i < parts.length; i++) {
-      if (parts[i].trim().toLowerCase() === key) return true;
-    }
-    try {
-      return localStorage.getItem("espcontrol.experimental." + key) === "1";
-    } catch (e) {
-      return false;
-    }
+    return value.trim().toLowerCase() === "experimental";
+  }
+
+  function isExperimentalEnabled(key) {
+    return !!state.developerExperimentalFeatures;
   }
   // __BUTTON_TYPES_START__
   // __BUTTON_TYPES_END__
@@ -605,6 +600,7 @@
     autoUpdate: true,
     updateFrequency: "Daily",
     updateFreqOptions: ["Hourly", "Daily", "Weekly", "Monthly"],
+    developerExperimentalFeatures: false,
     subpages: {},
     subpageRaw: {},
     subpageSavePending: {},
@@ -2898,6 +2894,23 @@
 
     config.appendChild(makeCollapsibleCard("Firmware", fwBody, true));
 
+    if (developerExperimentalUrlFlag()) {
+      var devBody = document.createElement("div");
+      var experimentalToggle = toggleRow(
+        "Developer/Experimental Features",
+        "sp-set-developer-experimental-features",
+        state.developerExperimentalFeatures
+      );
+      devBody.appendChild(experimentalToggle.row);
+      experimentalToggle.input.addEventListener("change", function () {
+        state.developerExperimentalFeatures = this.checked;
+        postSwitch("Developer: Experimental Features", state.developerExperimentalFeatures);
+        renderButtonSettings();
+      });
+      els.setDeveloperExperimentalFeatures = experimentalToggle.input;
+      config.appendChild(makeCollapsibleCard("Developer", devBody, true));
+    }
+
     page.appendChild(config);
     page.appendChild(buildApplyBar());
 
@@ -3240,6 +3253,11 @@
           ? state.sensorColor : state.offColor;
         var previewTypeDef = BUTTON_TYPES[b.type || ""] || null;
         if (previewTypeDef && c.isSub && !previewTypeDef.allowInSubpage) previewTypeDef = null;
+        if (previewTypeDef && previewTypeDef.experimental && !isExperimentalEnabled(previewTypeDef.experimental)) {
+          previewTypeDef = null;
+          iconName = "cog";
+          label = "Configure";
+        }
         var typePreview = previewTypeDef && previewTypeDef.renderPreview
           ? previewTypeDef.renderPreview(b, { escHtml: escHtml })
           : null;
@@ -3531,13 +3549,16 @@
     }
 
     var typeDef = BUTTON_TYPES[b.type || ""] || BUTTON_TYPES[""];
+    if (typeDef && typeDef.experimental && !isExperimentalEnabled(typeDef.experimental)) {
+      typeDef = BUTTON_TYPES[""];
+    }
     {
       var typeOpts = [];
       for (var k in BUTTON_TYPES) {
         var td = BUTTON_TYPES[k];
         if (c.isSub && !td.allowInSubpage) continue;
         if (td.isAvailable && !td.isAvailable({ isSub: c.isSub }) && (b.type || "") !== td.key) continue;
-        if (td.experimental && (b.type || "") !== td.key && !isExperimentalEnabled(td.experimental)) continue;
+        if (td.experimental && !isExperimentalEnabled(td.experimental)) continue;
         typeOpts.push([td.key, td.label]);
       }
       typeOpts.sort(function (a, b) {
@@ -5008,6 +5029,7 @@
         screensaver_timeout: state.screensaverTimeout,
         home_screen_timeout: state.homeScreenTimeout,
         screen_rotation: state.screenRotation,
+        developer_experimental_features: state.developerExperimentalFeatures,
       },
       screen: {
         brightness_day: Math.round(state.brightnessDayVal),
@@ -5231,6 +5253,8 @@
           var hasNtpServer1 = Object.prototype.hasOwnProperty.call(s, "ntp_server_1");
           var hasNtpServer2 = Object.prototype.hasOwnProperty.call(s, "ntp_server_2");
           var hasNtpServer3 = Object.prototype.hasOwnProperty.call(s, "ntp_server_3");
+          var hasDeveloperExperimentalFeatures =
+            Object.prototype.hasOwnProperty.call(s, "developer_experimental_features");
           var importedNtpServer1 = hasNtpServer1
             ? normalizeNtpServer(s.ntp_server_1, NTP_SERVER_DEFAULTS[0])
             : state.ntpServer1;
@@ -5273,6 +5297,9 @@
           postNumber("Home Screen Timeout", s.home_screen_timeout != null ? s.home_screen_timeout : 60);
           var importedScreenRotation = normalizeScreenRotation(s.screen_rotation);
           if (CFG.features && CFG.features.screenRotation) postSelect("Screen: Rotation", importedScreenRotation);
+          if (hasDeveloperExperimentalFeatures) {
+            postSwitch("Developer: Experimental Features", !!s.developer_experimental_features);
+          }
 
           state._indoorOn = !!s.indoor_temp_enable;
           state._outdoorOn = !!s.outdoor_temp_enable;
@@ -5296,6 +5323,9 @@
           state.screensaverTimeout = s.screensaver_timeout || 300;
           state.homeScreenTimeout = s.home_screen_timeout != null ? s.home_screen_timeout : 60;
           state.screenRotation = importedScreenRotation;
+          if (hasDeveloperExperimentalFeatures) {
+            state.developerExperimentalFeatures = !!s.developer_experimental_features;
+          }
 
           syncTemperatureUi();
           syncClockBarUi();
@@ -5310,6 +5340,9 @@
           syncScreensaverTimeoutUi();
           syncIdleUi();
           if (els.setScreenRotation) els.setScreenRotation.value = state.screenRotation;
+          if (els.setDeveloperExperimentalFeatures) {
+            els.setDeveloperExperimentalFeatures.checked = state.developerExperimentalFeatures;
+          }
           if (els.setSsMode) els.setSsMode(getActiveScreensaverMode());
           updateTempPreview();
 
@@ -5787,6 +5820,20 @@
         state.autoUpdate = d.value === true || val === "ON";
         if (els.setAutoUpdate) els.setAutoUpdate.checked = state.autoUpdate;
         if (els.updateFreqWrap) els.updateFreqWrap.style.display = state.autoUpdate ? "" : "none";
+      },
+      "switch-developer__experimental_features": function (val, d) {
+        state.developerExperimentalFeatures = d.value === true || val === "ON";
+        if (els.setDeveloperExperimentalFeatures) {
+          els.setDeveloperExperimentalFeatures.checked = state.developerExperimentalFeatures;
+        }
+        renderButtonSettings();
+      },
+      "switch-developer_experimental_features": function (val, d) {
+        state.developerExperimentalFeatures = d.value === true || val === "ON";
+        if (els.setDeveloperExperimentalFeatures) {
+          els.setDeveloperExperimentalFeatures.checked = state.developerExperimentalFeatures;
+        }
+        renderButtonSettings();
       },
       "select-firmware__update_frequency": function (val, d) {
         state.updateFrequency = d.value || val || state.updateFrequency;

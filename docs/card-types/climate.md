@@ -7,7 +7,7 @@ description:
 # Climate
 
 ::: warning Experimental
-Climate cards are still experimental. They are not shown in release setup pages or public navigation yet. Developers can enable them from the setup page with `?experimental=climate`, or by running `localStorage.setItem("espcontrol.experimental.climate", "1"); location.reload();` in the browser console.
+Climate cards are still experimental. They are included in normal release firmware, but stay hidden and disabled until **Developer/Experimental Features** is turned on. Open the setup page with `?developer=experimental`, then enable **Developer/Experimental Features** in the Developer settings section.
 :::
 
 A Climate card controls a Home Assistant `climate` entity, such as a thermostat, heat pump, radiator valve, or air conditioner.

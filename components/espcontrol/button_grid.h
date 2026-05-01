@@ -3531,7 +3531,13 @@ struct GridConfig {
   const lv_font_t *forecast_unit_font;
   std::string temperature_unit;
   std::string timezone;
+  bool developer_experimental_features;
 };
+
+inline bool experimental_card_enabled(const ParsedCfg &p, const GridConfig &cfg) {
+  if (p.type == "climate") return cfg.developer_experimental_features;
+  return true;
+}
 
 // ── Phase 1: Visual setup ────────────────────────────────────────────
 
@@ -3605,6 +3611,10 @@ inline void grid_phase1(
     apply_button_colors(s.btn, has_on, on_val, has_off, off_val);
 
     ParsedCfg p = parse_cfg(scfg);
+    if (!experimental_card_enabled(p, cfg)) {
+      setup_toggle_visual(s, ParsedCfg{});
+      continue;
+    }
     if (is_text_sensor_card(p)) {
       setup_text_sensor_card(s, p, has_sensor_color, sensor_val);
       continue;
@@ -3725,6 +3735,7 @@ inline void grid_phase2(
     std::string scfg = s.config->state;
 
     ParsedCfg p = parse_cfg(scfg);
+    if (!experimental_card_enabled(p, cfg)) continue;
     if (is_text_sensor_card(p)) {
       if (!p.sensor.empty())
         subscribe_text_sensor_value(s.text_lbl, p.sensor);
@@ -3958,6 +3969,9 @@ inline void grid_phase2(
       int bn = sp_ord.positions[gp];
       if (bn < 1 || bn > (int)sp_btns.size()) continue;
       auto &sb = sp_btns[bn - 1];
+      ParsedCfg sb_cfg;
+      sb_cfg.type = sb.type;
+      if (!experimental_card_enabled(sb_cfg, cfg)) continue;
       int col, row;
       if (sp_ord.has_back_token) { col = gp % COLS; row = gp / COLS; }
       else { int op = gp + 1; col = op % COLS; row = op / COLS; }

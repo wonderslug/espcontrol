@@ -65,7 +65,7 @@ Use the dedicated card types for richer controls:
 
 - Use [Cover](/card-types/covers) for blinds, shutters, and covers.
 - Use [Switch](/card-types/switches) or [Slider](/card-types/sliders) for lights.
-- Thermostat and climate controls are experimental and are not shown in release builds yet.
+- Thermostat and climate controls are experimental. They are included in release firmware, but must be enabled from the hidden Developer/Experimental Features setting first.
 - Media controls are not a dedicated card type yet.
 
 ::: info Requires Home Assistant actions
