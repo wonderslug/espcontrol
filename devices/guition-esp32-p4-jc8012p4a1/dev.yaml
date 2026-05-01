@@ -6,7 +6,7 @@
 
 substitutions:
   name: "espcontrol-dev"
-  friendly_name: "Espcontrol Dev"
+  friendly_name: "EspControl Dev"
   espcontrol_component_url: "../.."
   espcontrol_component_ref: "HEAD"
 

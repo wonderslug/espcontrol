@@ -1,12 +1,12 @@
 ---
 title: Manual ESPHome Setup
 description:
-  How to add Espcontrol to ESPHome manually, compile the firmware, and install it by USB or OTA.
+  How to add EspControl to ESPHome manually, compile the firmware, and install it by USB or OTA.
 ---
 
 # Manual ESPHome Setup
 
-The normal [browser install](/getting-started/install) is the easiest route. Use this page if you prefer to manage Espcontrol from ESPHome, want to compile the firmware yourself, or need to install from the ESPHome Device Builder dashboard.
+The normal [browser install](/getting-started/install) is the easiest route. Use this page if you prefer to manage EspControl from ESPHome, want to compile the firmware yourself, or need to install from the ESPHome Device Builder dashboard.
 
 ## What You Need
 
@@ -16,7 +16,7 @@ The normal [browser install](/getting-started/install) is the easiest route. Use
 - Your WiFi name and password, unless you are using the advanced wired Ethernet option for the 7-inch Ethernet model.
 
 ::: tip First install or update?
-Use USB for a blank screen or a screen that is not already running Espcontrol. Once Espcontrol is installed and connected to WiFi, later ESPHome installs can usually be done wirelessly with OTA.
+Use USB for a blank screen or a screen that is not already running EspControl. Once EspControl is installed and connected to WiFi, later ESPHome installs can usually be done wirelessly with OTA.
 :::
 
 ## Choose the Correct Package File
@@ -42,7 +42,7 @@ Each screen uses a different ESPHome package file. Pick the one that matches you
 ```yaml
 substitutions:
   name: "espcontrol-kitchen"
-  friendly_name: "Espcontrol Kitchen"
+  friendly_name: "EspControl Kitchen"
 
 wifi:
   ssid: !secret wifi_ssid
@@ -72,7 +72,7 @@ Use this template for the Ethernet model. Do not add a `wifi:` block.
 ```yaml
 substitutions:
   name: "espcontrol-office"
-  friendly_name: "Espcontrol Office"
+  friendly_name: "EspControl Office"
   network_transport: ethernet
 
 packages:
@@ -120,6 +120,6 @@ If ESPHome cannot access the USB port directly, choose **Manual download** inste
 
 ## Updating Later
 
-Because the package uses `refresh: 1d`, ESPHome checks GitHub for Espcontrol updates about once a day when it compiles. To update manually, open ESPHome Device Builder and run **Install** again. If the display is online, use OTA so you do not need to reconnect USB.
+Because the package uses `refresh: 1d`, ESPHome checks GitHub for EspControl updates about once a day when it compiles. To update manually, open ESPHome Device Builder and run **Install** again. If the display is online, use OTA so you do not need to reconnect USB.
 
 Next: [Home Assistant Actions](/getting-started/home-assistant-actions)

@@ -1,7 +1,7 @@
 ---
 title: Date
 description:
-  How to show today's date on your Espcontrol panel.
+  How to show today's date on your EspControl panel.
 ---
 
 # Date

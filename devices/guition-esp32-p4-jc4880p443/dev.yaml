@@ -5,7 +5,7 @@
 
 substitutions:
   name: "jc4880p443-dev"
-  friendly_name: "Espcontrol JC4880P443 Dev"
+  friendly_name: "EspControl JC4880P443 Dev"
   espcontrol_component_url: "../.."
   espcontrol_component_ref: "HEAD"
 

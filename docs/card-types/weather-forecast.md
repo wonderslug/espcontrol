@@ -24,5 +24,5 @@ It is intentionally simple: the label always says **Tomorrow**, and the main val
 - If the forecast is missing or unavailable, the card shows **-- / --** instead of leaving the card blank.
 
 ::: tip Home Assistant actions permission
-This card needs the same **Allow the device to perform Home Assistant actions** setting as control cards. Espcontrol uses that permission to request forecast data from Home Assistant.
+This card needs the same **Allow the device to perform Home Assistant actions** setting as control cards. EspControl uses that permission to request forecast data from Home Assistant.
 :::

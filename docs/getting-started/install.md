@@ -1,12 +1,12 @@
 ---
 title: Install
 description:
-  How to flash Espcontrol firmware to a Guition ESP32 touchscreen, connect it to WiFi, and add it to Home Assistant.
+  How to flash EspControl firmware to a Guition ESP32 touchscreen, connect it to WiFi, and add it to Home Assistant.
 ---
 
 # Install
 
-Flash the Espcontrol firmware to your Guition ESP32 display directly from your browser — no special software or technical knowledge required.
+Flash the EspControl firmware to your Guition ESP32 display directly from your browser — no special software or technical knowledge required.
 
 ::: tip Prefer ESPHome?
 If you want to compile and install the firmware yourself, use the [manual ESPHome setup guide](/getting-started/manual-esphome-setup).
@@ -36,7 +36,7 @@ If the install button doesn't detect your device, try a different USB-C cable. C
 ### Step by Step
 
 1. **Plug in the display** using the USB-C cable. If your computer asks to install drivers, allow it.
-2. **Choose your panel** above, then click **Install Espcontrol**. A dialog will ask you to choose a serial port — select the one that appeared when you plugged in the display.
+2. **Choose your panel** above, then click **Install EspControl**. A dialog will ask you to choose a serial port — select the one that appeared when you plugged in the display.
 3. **Wait for the flash to complete.** This takes a few minutes. You'll see a progress bar. Don't disconnect the cable until it finishes.
 4. **The display restarts** and shows a loading screen.
 

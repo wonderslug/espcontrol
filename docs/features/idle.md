@@ -1,7 +1,7 @@
 ---
 title: Idle
 description:
-  How the Espcontrol panel automatically returns to the home screen after a period of inactivity.
+  How the EspControl panel automatically returns to the home screen after a period of inactivity.
 ---
 
 # Idle

@@ -1,16 +1,16 @@
 ---
-title: Espcontrol — No-Code Smart Home Touch Controller
+title: EspControl — No-Code Smart Home Touch Controller
 titleTemplate: :title
 description: "No-code smart home controller for ESP32 touchscreens. Easy web installer, full docs, no ESPHome required. Configure cards to control your Home Assistant devices."
 ---
 
-![Espcontrol on a 7-inch touchscreen: home screen with temperature, clock, and control tiles](/images/home_screen_hero.jpg)
+![EspControl on a 7-inch touchscreen: home screen with temperature, clock, and control tiles](/images/home_screen_hero.jpg)
 
-# Espcontrol
+# EspControl
 
 **A no-code, super-easy-to-configure smart home controller.** Configure affordable touchscreens to control devices across your entire smart home — no ESPHome setup, no YAML, no code to write. Just flash, connect, and start adding cards.
 
-Espcontrol is free, open-source firmware that turns **Guition ESP32** touchscreens into beautiful control panels for [Home Assistant](https://www.home-assistant.io/). It comes with **full documentation** and an **[easy-to-use web installer](/getting-started/install)** — you can go from unboxing to a working wall panel in minutes.
+EspControl is free, open-source firmware that turns **Guition ESP32** touchscreens into beautiful control panels for [Home Assistant](https://www.home-assistant.io/). It comes with **full documentation** and an **[easy-to-use web installer](/getting-started/install)** — you can go from unboxing to a working wall panel in minutes.
 
 **Source code and issues:** [github.com/jtenniswood/espcontrol](https://github.com/jtenniswood/espcontrol).
 

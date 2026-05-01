@@ -1,7 +1,7 @@
 ---
 title: Troubleshooting
 description:
-  Solutions for common issues when installing Espcontrol, connecting to WiFi, or adding the device to Home Assistant.
+  Solutions for common issues when installing EspControl, connecting to WiFi, or adding the device to Home Assistant.
 ---
 
 # Troubleshooting

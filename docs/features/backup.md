@@ -1,7 +1,7 @@
 ---
 title: Backup
 description:
-  How to export and import your Espcontrol panel configuration as a backup file.
+  How to export and import your EspControl panel configuration as a backup file.
 ---
 
 # Backup

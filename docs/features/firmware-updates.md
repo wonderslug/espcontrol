@@ -1,7 +1,7 @@
 ---
 title: Firmware Updates
 description:
-  How the Espcontrol panel checks for and installs firmware updates over the air, and how to control update behaviour.
+  How the EspControl panel checks for and installs firmware updates over the air, and how to control update behaviour.
 ---
 
 # Firmware Updates

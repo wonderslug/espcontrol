@@ -1,7 +1,7 @@
 ---
 title: Climate
 description:
-  How to control a Home Assistant climate entity from an Espcontrol thermostat card.
+  How to control a Home Assistant climate entity from an EspControl thermostat card.
 ---
 
 # Climate

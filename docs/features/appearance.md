@@ -1,7 +1,7 @@
 ---
 title: Appearance
 description:
-  How to customise the primary, secondary, and tertiary colours on your Espcontrol panel.
+  How to customise the primary, secondary, and tertiary colours on your EspControl panel.
 ---
 
 # Appearance

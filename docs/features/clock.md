@@ -1,7 +1,7 @@
 ---
 title: Time Settings
 description:
-  How to configure clock sync, timezone, and 12/24-hour format on your Espcontrol panel.
+  How to configure clock sync, timezone, and 12/24-hour format on your EspControl panel.
 ---
 
 # Time Settings

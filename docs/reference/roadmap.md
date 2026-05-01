@@ -1,12 +1,12 @@
 ---
 title: Roadmap
 description:
-  What's next for Espcontrol — community-driven development via GitHub issues and releases.
+  What's next for EspControl — community-driven development via GitHub issues and releases.
 ---
 
 # Roadmap
 
-Espcontrol is actively developed and improved based on user feedback. There is no fixed public roadmap — features and priorities evolve based on what users need and what Home Assistant and the hardware support.
+EspControl is actively developed and improved based on user feedback. There is no fixed public roadmap — features and priorities evolve based on what users need and what Home Assistant and the hardware support.
 
 ## Priorities
 

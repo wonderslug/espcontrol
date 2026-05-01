@@ -1,7 +1,7 @@
 ---
 title: FAQ
 description:
-  Frequently asked questions about the Espcontrol touchscreen panel — WiFi, setup, updates, troubleshooting, and more.
+  Frequently asked questions about the EspControl touchscreen panel — WiFi, setup, updates, troubleshooting, and more.
 ---
 
 # FAQ
@@ -84,7 +84,7 @@ Yes. In the [Setup](/features/setup) **Settings** tab, under **Backup**, you can
 
 ## Which Panels Are Supported?
 
-Espcontrol currently supports four Guition touchscreen panels:
+EspControl currently supports four Guition touchscreen panels:
 
 - **JC8012P4A1** — 10.1-inch, 1280x800 landscape orientation (ESP32-P4)
 - **JC1060P470** — 7-inch, 1024x600, landscape orientation (ESP32-P4)
@@ -95,7 +95,7 @@ All use the same firmware features, card configuration, and web UI. The grid lay
 
 ## Does the Panel Work with Other Smart Home Platforms?
 
-Espcontrol is built specifically for Home Assistant. It does not support other platforms like Google Home, Apple HomeKit, or SmartThings directly. However, if those platforms are integrated into your Home Assistant setup, the panel can control devices that are exposed through Home Assistant.
+EspControl is built specifically for Home Assistant. It does not support other platforms like Google Home, Apple HomeKit, or SmartThings directly. However, if those platforms are integrated into your Home Assistant setup, the panel can control devices that are exposed through Home Assistant.
 
 ## The Display Is Stuck on the Loading Screen
 

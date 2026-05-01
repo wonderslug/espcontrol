@@ -1,7 +1,7 @@
 ---
 title: Subpage
 description:
-  How to use Subpage cards on your Espcontrol panel to organise cards into folders.
+  How to use Subpage cards on your EspControl panel to organise cards into folders.
 ---
 
 # Subpage

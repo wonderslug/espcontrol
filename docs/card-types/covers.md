@@ -1,7 +1,7 @@
 ---
 title: Cover
 description:
-  How to use cover cards on your Espcontrol panel to control blinds, shutters, and other cover entities from Home Assistant.
+  How to use cover cards on your EspControl panel to control blinds, shutters, and other cover entities from Home Assistant.
 ---
 
 # Cover

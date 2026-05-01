@@ -1,7 +1,7 @@
 ---
 title: Temperature Display
 description:
-  How to show indoor and outdoor temperatures on your Espcontrol panel's top bar.
+  How to show indoor and outdoor temperatures on your EspControl panel's top bar.
 ---
 
 # Temperature Display

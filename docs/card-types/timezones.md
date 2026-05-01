@@ -1,7 +1,7 @@
 ---
 title: World Clock
 description:
-  How to show the current time for another city on your Espcontrol panel.
+  How to show the current time for another city on your EspControl panel.
 ---
 
 # World Clock

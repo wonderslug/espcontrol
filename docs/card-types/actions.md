@@ -1,7 +1,7 @@
 ---
 title: Action
 description:
-  How to use action cards on your Espcontrol panel to run Home Assistant scenes, scripts, buttons, and helpers.
+  How to use action cards on your EspControl panel to run Home Assistant scenes, scripts, buttons, and helpers.
 ---
 
 # Action
@@ -31,7 +31,7 @@ For example, to run a script called `script.mettre_de_la_musique`:
 4. Set **Label** to the text you want on the panel, such as `Music`.
 5. Choose an icon.
 
-When you tap the card, Espcontrol sends `script.turn_on` to Home Assistant with that script as the target entity. The label is only what appears on the panel, so it can be different from the script name.
+When you tap the card, EspControl sends `script.turn_on` to Home Assistant with that script as the target entity. The label is only what appears on the panel, so it can be different from the script name.
 
 Action cards do not currently pass script variables or extra data. If a script needs inputs, handle those inside the Home Assistant script, or create a small wrapper script in Home Assistant and point the Action card at that wrapper.
 

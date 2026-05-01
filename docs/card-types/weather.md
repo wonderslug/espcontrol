@@ -1,7 +1,7 @@
 ---
 title: Weather
 description:
-  How to show the current Home Assistant weather condition on your Espcontrol panel.
+  How to show the current Home Assistant weather condition on your EspControl panel.
 ---
 
 # Weather
