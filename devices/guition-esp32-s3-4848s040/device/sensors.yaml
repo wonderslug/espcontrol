@@ -160,3 +160,4 @@ esphome:
               []() {
                 id(screensaver_presence_sleep).execute();
               });
+            register_local_sensor_endpoint(id(espcontrol_web_server));

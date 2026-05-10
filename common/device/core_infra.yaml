@@ -6,6 +6,10 @@
 # =============================================================================
 
 esphome:
+  on_boot:
+    - priority: 600
+      then:
+        - lambda: register_local_sensor_endpoint(id(espcontrol_web_server));
   # Enable LVGL's bidirectional text algorithm so right-to-left scripts
   # (Hebrew, Arabic) render in visual order.
   platformio_options:
@@ -20,6 +24,7 @@ api:
   on_client_connected:
     - lambda: |-
         refresh_weather_forecast_cards();
+        register_local_sensor_endpoint(id(espcontrol_web_server));
     - delay: 10s
     - lambda: |-
         refresh_weather_forecast_cards();
@@ -40,6 +45,7 @@ http_request:
   timeout: 10s
 
 web_server:
+  id: espcontrol_web_server
   port: 80
   version: 3
   include_internal: true

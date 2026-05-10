@@ -22,6 +22,15 @@
 #include "esphome/core/string_ref.h"
 #include "icons.h"
 #include "backlight.h"
+#ifdef USE_SENSOR
+#include "esphome/components/sensor/sensor.h"
+#endif
+#ifdef USE_TEXT_SENSOR
+#include "esphome/components/text_sensor/text_sensor.h"
+#endif
+#ifdef USE_WEBSERVER
+#include <esp_http_server.h>
+#endif
 
 constexpr uint32_t DEFAULT_SLIDER_COLOR = 0xFF8C00;
 constexpr uint32_t DEFAULT_OFF_COLOR = 0x313131;
@@ -677,6 +686,106 @@ inline void send_local_action(const std::string &key) {
   }
   ESP_LOGW("espcontrol", "Local action '%s' not registered", key.c_str());
 }
+
+struct LocalSensorControl {
+  std::string key;
+  bool is_text;
+  int precision;
+  lv_obj_t *sensor_lbl;
+  lv_obj_t *text_lbl;
+};
+
+inline std::vector<LocalSensorControl> &local_sensor_registry() {
+  static std::vector<LocalSensorControl> sensors;
+  return sensors;
+}
+
+#ifdef USE_WEBSERVER
+class LocalSensorHandler : public esphome::web_server_idf::AsyncWebHandler {
+ public:
+  static std::string json_escape(const std::string &s) {
+    std::string out;
+    out.reserve(s.size() + 4);
+    for (char c : s) {
+      if (c == '"') out += "\\\"";
+      else if (c == '\\') out += "\\\\";
+      else out += c;
+    }
+    return out;
+  }
+
+  static std::string build_json() {
+    std::string json;
+    json.reserve(512);
+    json = "[";
+    bool first = true;
+    auto append = [&](const std::string &key, const std::string &name,
+                      const std::string &unit, const char *type, bool internal) {
+      if (!first) json += ",";
+      first = false;
+      json += "{\"key\":\"" + json_escape(key) + "\",\"name\":\"" + json_escape(name) +
+              "\",\"unit\":\"" + json_escape(unit) + "\",\"type\":\"" + type + "\"";
+      if (internal) json += ",\"internal\":true";
+      json += "}";
+    };
+    char oid_buf[128];
+#ifdef USE_SENSOR
+    for (auto *s : esphome::App.get_sensors()) {
+      bool internal = (int) s->get_entity_category() != 0;
+      append(std::string(s->get_object_id_to(oid_buf).c_str()), std::string(s->get_name()),
+             std::string(s->get_unit_of_measurement_ref()), "numeric", internal);
+    }
+#endif
+#ifdef USE_TEXT_SENSOR
+    for (auto *ts : esphome::App.get_text_sensors()) {
+      bool internal = (int) ts->get_entity_category() != 0;
+      append(std::string(ts->get_object_id_to(oid_buf).c_str()), std::string(ts->get_name()),
+             "", "text", internal);
+    }
+#endif
+    json += "]";
+    return json;
+  }
+
+ public:
+  bool canHandle(esphome::web_server_idf::AsyncWebServerRequest *request) const override {
+    if (request->method() != HTTP_GET) return false;
+    char url_buf[esphome::web_server_idf::AsyncWebServerRequest::URL_BUF_SIZE];
+    esphome::StringRef url = request->url_to(url_buf);
+    bool match = (strncmp(url.c_str(), "/local_sensors", 14) == 0);
+    ESP_LOGD("sensors", "LocalSensorHandler::canHandle %s -> %s", url.c_str(), match ? "yes" : "no");
+    return match;
+  }
+
+  void handleRequest(esphome::web_server_idf::AsyncWebServerRequest *request) override {
+    ESP_LOGI("sensors", "LocalSensorHandler::handleRequest called");
+    std::string json = build_json();
+    ESP_LOGI("sensors", "Local sensors JSON (%d bytes): %.80s", (int)json.size(), json.c_str());
+    httpd_req_t *req = *request;
+    httpd_resp_set_status(req, "200 OK");
+    httpd_resp_set_type(req, "application/json");
+    esp_err_t err = httpd_resp_send(req, json.c_str(), HTTPD_RESP_USE_STRLEN);
+    if (err != ESP_OK) ESP_LOGE("sensors", "httpd_resp_send failed: %d", err);
+  }
+};
+
+// Called from on_client_connected so registration appears in the live log.
+// addHandler inserts into the handlers_ list that request_handler_() iterates —
+// the only dispatch mechanism since uri_match_fn always returns true.
+template <typename WebServerT>
+inline void register_local_sensor_endpoint(WebServerT /*ws*/) {
+  static bool registered = false;
+  if (registered) return;
+  auto *server = esphome::web_server_idf::global_async_web_server();
+  if (!server) {
+    ESP_LOGW("sensors", "register_local_sensor_endpoint: server not ready");
+    return;
+  }
+  server->addHandler(new LocalSensorHandler());
+  registered = true;
+  ESP_LOGI("sensors", "Local sensor endpoint registered");
+}
+#endif  // USE_WEBSERVER
 
 inline std::vector<InternalRelayControl> &internal_relay_registry() {
   static std::vector<InternalRelayControl> relays;
@@ -1625,6 +1734,117 @@ inline void setup_local_action_card(BtnSlot &s, const ParsedCfg &p) {
   apply_push_button_transition(s.btn);
 }
 
+inline void send_local_sensor_update(const std::string &key, float value) {
+  for (auto &s : local_sensor_registry()) {
+    if (s.key != key || s.is_text) continue;
+    char buf[32];
+    if (s.precision == 1) snprintf(buf, sizeof(buf), "%.1f", value);
+    else if (s.precision == 2) snprintf(buf, sizeof(buf), "%.2f", value);
+    else snprintf(buf, sizeof(buf), "%.0f", value);
+    if (s.sensor_lbl) lv_label_set_text(s.sensor_lbl, buf);
+    return;
+  }
+  ESP_LOGW("espcontrol", "Local sensor '%s' not registered", key.c_str());
+}
+
+inline void send_local_sensor_update(const std::string &key, const char *value) {
+  for (auto &s : local_sensor_registry()) {
+    if (s.key != key || !s.is_text) continue;
+    if (s.text_lbl) set_wrapped_button_label_text(s.text_lbl, value ? value : "--");
+    return;
+  }
+  ESP_LOGW("espcontrol", "Local sensor '%s' not registered", key.c_str());
+}
+
+inline void setup_local_sensor_card(BtnSlot &s, const ParsedCfg &p,
+                                    bool has_sensor_color, uint32_t sensor_val) {
+  if (has_sensor_color) {
+    lv_obj_set_style_bg_color(s.btn, lv_color_hex(sensor_val),
+      static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_DEFAULT));
+  }
+  lv_obj_clear_flag(s.btn, LV_OBJ_FLAG_CLICKABLE);
+
+  bool is_text = (p.precision == "text");
+  LocalSensorControl ctrl;
+  ctrl.key = p.entity;
+  ctrl.is_text = is_text;
+  ctrl.precision = 0;
+  ctrl.sensor_lbl = nullptr;
+  ctrl.text_lbl = nullptr;
+
+  if (is_text) {
+    setup_toggle_visual(s, p);
+    lv_obj_clear_flag(s.icon_lbl, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(s.sensor_container, LV_OBJ_FLAG_HIDDEN);
+    set_wrapped_button_label_text(s.text_lbl, "--");
+    ctrl.text_lbl = s.text_lbl;
+  } else {
+    lv_obj_add_flag(s.icon_lbl, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_clear_flag(s.sensor_container, LV_OBJ_FLAG_HIDDEN);
+    lv_label_set_text(s.sensor_lbl, "--");
+    if (!p.unit.empty()) lv_label_set_text(s.unit_lbl, trim_display_unit(p.unit).c_str());
+    if (!p.label.empty()) lv_label_set_text(s.text_lbl, p.label.c_str());
+    ctrl.sensor_lbl = s.sensor_lbl;
+    if (!p.precision.empty()) {
+      ctrl.precision = atoi(p.precision.c_str());
+    }
+  }
+
+  auto &reg = local_sensor_registry();
+  for (auto &existing : reg) {
+    if (existing.key == ctrl.key) { existing = ctrl; break; }
+  }
+  if (std::find_if(reg.begin(), reg.end(),
+      [&](const LocalSensorControl &e){ return e.key == ctrl.key; }) == reg.end()) {
+    reg.push_back(ctrl);
+  }
+
+  // Auto-subscribe to ESPHome sensor callbacks (push fallback still works if not found)
+#ifdef USE_SENSOR
+  if (!is_text) {
+    for (auto *esp_s : esphome::App.get_sensors()) {
+      char oid_buf_s[128];
+      if (std::string(esp_s->get_object_id_to(oid_buf_s).c_str()) != ctrl.key) continue;
+      auto *lbl = ctrl.sensor_lbl;
+      int prec = ctrl.precision;
+      esp_s->add_on_state_callback([lbl, prec](float val) {
+        if (!lbl || std::isnan(val)) return;
+        char buf[32];
+        if (prec == 1) snprintf(buf, sizeof(buf), "%.1f", val);
+        else if (prec == 2) snprintf(buf, sizeof(buf), "%.2f", val);
+        else snprintf(buf, sizeof(buf), "%.0f", val);
+        lv_label_set_text(lbl, buf);
+      });
+      if (!std::isnan(esp_s->state) && ctrl.sensor_lbl) {
+        char buf[32];
+        if (ctrl.precision == 1) snprintf(buf, sizeof(buf), "%.1f", esp_s->state);
+        else if (ctrl.precision == 2) snprintf(buf, sizeof(buf), "%.2f", esp_s->state);
+        else snprintf(buf, sizeof(buf), "%.0f", esp_s->state);
+        lv_label_set_text(ctrl.sensor_lbl, buf);
+      }
+      break;
+    }
+  }
+#endif
+#ifdef USE_TEXT_SENSOR
+  if (is_text) {
+    for (auto *esp_ts : esphome::App.get_text_sensors()) {
+      char oid_buf_ts[128];
+      if (std::string(esp_ts->get_object_id_to(oid_buf_ts).c_str()) != ctrl.key) continue;
+      auto *lbl = ctrl.text_lbl;
+      esp_ts->add_on_state_callback([lbl](std::string val) {
+        if (!lbl) return;
+        set_wrapped_button_label_text(lbl, val);
+      });
+      if (!esp_ts->state.empty() && ctrl.text_lbl) {
+        set_wrapped_button_label_text(ctrl.text_lbl, esp_ts->state);
+      }
+      break;
+    }
+  }
+#endif
+}
+
 inline void setup_text_sensor_card(BtnSlot &s, const ParsedCfg &p,
                                    bool has_sensor_color, uint32_t sensor_val) {
   if (has_sensor_color) {
@@ -2237,7 +2457,7 @@ inline void handle_button_click(const std::string &cfg, int slot_num,
                                 bool developer_experimental_features = false) {
   ParsedCfg p = parse_cfg(cfg);
   if (!experimental_card_enabled(p, developer_experimental_features)) return;
-  if (p.type == "sensor" || p.type == "text_sensor" ||
+  if (p.type == "sensor" || p.type == "text_sensor" || p.type == "local_sensor" ||
       p.type == "calendar" || p.type == "timezone" ||
       p.type == "weather_forecast") return;
   if (p.type == "push") {
@@ -5844,6 +6064,11 @@ inline void setup_card_visual(BtnSlot &s, const ParsedCfg &p,
   }
   if (p.type == "local") {
     setup_local_action_card(s, p);
+    return;
+  }
+  if (p.type == "local_sensor") {
+    if (p.entity.empty()) return;
+    setup_local_sensor_card(s, p, palette.has_sensor_color, palette.sensor_val);
     return;
   }
   if (p.type == "action") {

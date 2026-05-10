@@ -418,6 +418,7 @@ export default defineConfig({
           { text: 'Weather', link: '/card-types/weather' },
           { text: 'Internal', link: '/card-types/internal-relays' },
           { text: 'Local Action', link: '/card-types/local-actions' },
+          { text: 'Local Sensor', link: '/card-types/local-sensors' },
           { text: 'Subpage', link: '/features/subpages' },
         ],
       },

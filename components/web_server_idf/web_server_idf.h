@@ -28,6 +28,14 @@ class WebServer;
 #endif
 namespace web_server_idf {
 
+class AsyncWebServer;
+// Set in AsyncWebServer::begin(); lets other components add handlers without
+// needing a reference to the web server component.
+inline AsyncWebServer *&global_async_web_server() {
+  static AsyncWebServer *ptr = nullptr;
+  return ptr;
+}
+
 class AsyncWebParameter {
  public:
   AsyncWebParameter(std::string name, std::string value) : name_(std::move(name)), value_(std::move(value)) {}
