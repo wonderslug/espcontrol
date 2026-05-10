@@ -269,6 +269,10 @@ inline void setup_card_visual(BtnSlot &s, const ParsedCfg &p,
     setup_internal_relay_card(s, p);
     return;
   }
+  if (p.type == "local") {
+    setup_local_action_card(s, p);
+    return;
+  }
   if (p.type == "action") {
     if (action_card_option_select(p)) {
       setup_option_select_card(s, p, palette.has_sensor_color, palette.sensor_val);

@@ -1585,6 +1585,51 @@ struct InternalRelayClickCtx {
   bool push_mode;
 };
 
+// ── Local action controls ─────────────────────────────────────────────
+//
+// Devices register named one-shot callbacks here at boot. The button type
+// "local" dispatches to these by key, so device-specific addons (e.g. BLE
+// keyboard) can be triggered from the grid without going through HA.
+
+struct LocalActionControl {
+  std::string key;
+  std::string label;
+  std::function<void()> action;
+};
+
+inline std::vector<LocalActionControl> &local_action_registry() {
+  static std::vector<LocalActionControl> actions;
+  return actions;
+}
+
+inline void register_local_action(
+    const std::string &key, const std::string &label,
+    std::function<void()> action) {
+  if (key.empty()) return;
+  LocalActionControl a;
+  a.key = key;
+  a.label = label;
+  a.action = action;
+  auto &reg = local_action_registry();
+  for (auto &existing : reg) {
+    if (existing.key == key) {
+      existing = a;
+      return;
+    }
+  }
+  reg.push_back(a);
+}
+
+inline void send_local_action(const std::string &key) {
+  for (auto &a : local_action_registry()) {
+    if (a.key == key) {
+      if (a.action) a.action();
+      return;
+    }
+  }
+  ESP_LOGW("espcontrol", "Local action '%s' not registered", key.c_str());
+}
+
 inline std::vector<InternalRelayControl> &internal_relay_registry() {
   static std::vector<InternalRelayControl> relays;
   return relays;
