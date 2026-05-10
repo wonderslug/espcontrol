@@ -1,0 +1,70 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Serve www.js locally",
+      "type": "shell",
+      "command": "python3 -m http.server 8080 --directory docs/public",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Build webserver",
+      "type": "shell",
+      "command": "npm run webserver:build",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Build & serve www.js locally",
+      "dependsOrder": "sequence",
+      "dependsOn": ["Build webserver", "Serve www.js locally"],
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Switch to local js_url",
+      "type": "shell",
+      "command": "python3 scripts/switch-branch.py ${input:branchName} --local",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Revert js_url to fork (GitHub Pages)",
+      "type": "shell",
+      "command": "python3 scripts/switch-branch.py ${input:branchName}",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "branchName",
+      "type": "pickString",
+      "description": "Branch name",
+      "options": ["esphome-local-actions", "main"],
+      "default": "esphome-local-actions"
+    }
+  ]
+}
