@@ -414,6 +414,7 @@ export default defineConfig({
           { text: 'Internal', link: '/card-types/internal-relays' },
           { text: 'Lights', link: '/card-types/lights' },
           { text: 'Local Action', link: '/card-types/local-actions' },
+          { text: 'Local Sensor', link: '/card-types/local-sensors' },
           { text: 'Lock', link: '/card-types/locks' },
           { text: 'Media', link: '/card-types/media' },
           { text: 'Option Select', link: '/card-types/option-select' },
