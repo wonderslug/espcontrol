@@ -24,7 +24,7 @@ function addSupportButton() {
   link.href = "https://www.buymeacoffee.com/jtenniswood";
   link.target = "_blank";
   link.rel = "noopener";
-  link.innerHTML = '<img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="60" style="border-radius:999px;">';
+  link.innerHTML = '<img src="/assets/bmac.png" alt="Buy Me A Coffee" height="60" style="border-radius:999px;">';
   document.body.appendChild(link);
   syncTabChrome();
 }
@@ -43,12 +43,12 @@ function init() {
 
   var mdi = document.createElement("link");
   mdi.rel = "stylesheet";
-  mdi.href = "https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css";
+  mdi.href = "/assets/mdi.css";
   document.head.appendChild(mdi);
 
   var fonts = document.createElement("link");
   fonts.rel = "stylesheet";
-  fonts.href = "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@100;300;400;500;700&display=swap";
+  fonts.href = "/assets/fonts.css";
   document.head.appendChild(fonts);
 
   buildUI();

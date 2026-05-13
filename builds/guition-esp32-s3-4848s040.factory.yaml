@@ -1,7 +1,7 @@
 # =============================================================================
 # FACTORY BUILD - Guition ESP32-S3-4848S040 (4" square)
 # =============================================================================
-# Factory image: www.js bundled inline for first-boot web UI access.
+# Factory image: web UI assets (www.js + fonts/icons) are fully embedded in flash.
 # =============================================================================
 
 substitutions:
@@ -22,15 +22,3 @@ esphome:
 
 dashboard_import:
   package_import_url: github://wonderslug/espcontrol/devices/guition-esp32-s3-4848s040/esphome.yaml@main
-
-web_server:
-  port: 80
-  version: 3
-  js_url: ""
-  js_include: "../docs/public/webserver/guition-esp32-s3-4848s040/www.js"
-
-wifi:
-  ap:
-    ssid: "${friendly_name}"
-
-captive_portal:
