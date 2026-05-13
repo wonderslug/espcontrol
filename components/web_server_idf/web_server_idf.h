@@ -368,6 +368,16 @@ struct HttpHeader {
   const char *value;
 };
 
+// Descriptor for a single flash-embedded static asset (font, CSS, image).
+// The generated __init__.py fills ESPHOME_ASSET_TABLE[] with these at build time.
+struct EmbeddedAsset {
+  const char *url;
+  const char *content_type;
+  const uint8_t *data;
+  size_t size;
+  bool gzipped;
+};
+
 class DefaultHeaders {
   friend class AsyncWebServerRequest;
 #ifdef USE_WEBSERVER
@@ -380,6 +390,9 @@ class DefaultHeaders {
 
   // NOLINTNEXTLINE(readability-identifier-naming)
   static DefaultHeaders &Instance();
+
+  // Read-only access to the header list (used by EmbeddedAssetsHandler and others).
+  const StaticVector<HttpHeader, WEB_SERVER_DEFAULT_HEADERS_COUNT> &headers() const { return this->headers_; }
 
  protected:
   // Stack-allocated, no reallocation machinery. Count defined in web_server_base where headers are added.
