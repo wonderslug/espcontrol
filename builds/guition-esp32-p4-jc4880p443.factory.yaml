@@ -1,7 +1,7 @@
 # =============================================================================
 # FACTORY BUILD - Guition ESP32-P4 JC4880P443 (4.3" portrait)
 # =============================================================================
-# Factory image: www.js bundled inline for first-boot web UI access.
+# Factory image: web UI assets (www.js + fonts/icons) are fully embedded in flash.
 # =============================================================================
 
 substitutions:
@@ -19,9 +19,3 @@ esphome:
 
 dashboard_import:
   package_import_url: github://wonderslug/espcontrol/devices/guition-esp32-p4-jc4880p443/esphome.yaml@main
-
-web_server:
-  port: 80
-  version: 3
-  js_url: ""
-  js_include: "../docs/public/webserver/guition-esp32-p4-jc4880p443/www.js"

@@ -4,13 +4,15 @@
 Combines icon synchronization and www.js generation into a single tool.
 
 Usage:
-    python scripts/build.py               # run all generators
+    python scripts/build.py               # run all generators (icons + www + assets)
     python scripts/build.py --check       # exit 1 if any output is stale
     python scripts/build.py icons         # sync icons only
     python scripts/build.py www           # build www.js only
+    python scripts/build.py assets        # download and cache external UI assets
     python scripts/build.py icons --check # check icons only
 """
 import copy
+import gzip as _gzip
 import json
 import re
 import shutil
@@ -472,6 +474,112 @@ def build_www(check_only=False):
 
 
 # ===========================================================================
+# External asset download
+# ===========================================================================
+
+ASSETS_DIR = ROOT / "docs" / "public" / "webserver" / "assets"
+ASSETS_MANIFEST = ASSETS_DIR / "manifest.json"
+
+MDI_VERSION = "7.4.47"
+MDI_CSS_CDN = f"https://cdn.jsdelivr.net/npm/@mdi/font@{MDI_VERSION}/css/materialdesignicons.min.css"
+MDI_WOFF2_CDN = f"https://cdn.jsdelivr.net/npm/@mdi/font@{MDI_VERSION}/fonts/materialdesignicons-webfont.woff2"
+GFONTS_URL = "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500&display=swap"
+BMAC_PNG_CDN = "https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
+CHROME_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
+
+def _fetch(url, ua=None):
+    req = urllib.request.Request(url, headers={"User-Agent": ua} if ua else {})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return r.read()
+
+
+def build_assets(check_only=False):
+    """Download all external UI assets to docs/public/webserver/assets/.
+
+    Produces:
+      mdi.css          — MDI icon stylesheet, font URL rewritten to /assets/mdi.woff2
+      mdi.woff2        — MDI icon webfont binary
+      fonts.css        — Google Fonts @font-face CSS, woff2 URLs rewritten to /assets/
+      inter_N.woff2    — Inter font subsets (N = 0…)
+      roboto_N.woff2   — Roboto font subsets (N = 0…)
+      bmac.png         — Buy Me a Coffee button image
+      manifest.json    — asset registry read by web_server_idf/__init__.py
+    """
+    ASSETS_DIR.mkdir(parents=True, exist_ok=True)
+
+    assets = []  # list of dicts: {url, file, content_type, gzip}
+
+    # ── MDI icon webfont ─────────────────────────────────────────────────────
+    mdi_woff2_path = ASSETS_DIR / "mdi.woff2"
+    mdi_woff2_data = _fetch(MDI_WOFF2_CDN)
+    if not check_only:
+        mdi_woff2_path.write_bytes(mdi_woff2_data)
+    assets.append({"url": "/assets/mdi.woff2", "file": "mdi.woff2",
+                   "content_type": "font/woff2", "gzip": False})
+
+    # ── MDI icon CSS (font URL patched to local path) ────────────────────────
+    mdi_css_raw = _fetch(MDI_CSS_CDN).decode("utf-8")
+    mdi_css_patched = re.sub(
+        r"url\(['\"]?[^'\")\s]*materialdesignicons[^'\")\s]*\.woff2[^'\")\s]*['\"]?\)",
+        "url('/assets/mdi.woff2')",
+        mdi_css_raw,
+    )
+    mdi_css_path = ASSETS_DIR / "mdi.css"
+    if not check_only:
+        mdi_css_path.write_text(mdi_css_patched, encoding="utf-8")
+    assets.append({"url": "/assets/mdi.css", "file": "mdi.css",
+                   "content_type": "text/css", "gzip": True})
+
+    # ── Google Fonts woff2 + generated fonts.css ─────────────────────────────
+    gfonts_css = _fetch(GFONTS_URL, ua=CHROME_UA).decode("utf-8")
+
+    # Collect all unique woff2 CDN URLs in order of first appearance
+    seen = {}
+    for m in re.finditer(r"url\((https://fonts\.gstatic\.com/[^)]+\.woff2)\)", gfonts_css):
+        cdn_url = m.group(1)
+        if cdn_url not in seen:
+            family = "inter" if "/inter/" in cdn_url else "roboto"
+            idx = sum(1 for k in seen if family in seen[k])
+            local_name = f"{family}_{idx}.woff2"
+            seen[cdn_url] = local_name
+
+    # Download each unique woff2
+    for cdn_url, local_name in seen.items():
+        woff2_path = ASSETS_DIR / local_name
+        if not check_only:
+            woff2_path.write_bytes(_fetch(cdn_url))
+        family = "inter" if local_name.startswith("inter") else "roboto"
+        assets.append({"url": f"/assets/{local_name}", "file": local_name,
+                       "content_type": "font/woff2", "gzip": False})
+
+    # Patch fonts CSS to use local woff2 paths
+    fonts_css_patched = gfonts_css
+    for cdn_url, local_name in seen.items():
+        fonts_css_patched = fonts_css_patched.replace(cdn_url, f"/assets/{local_name}")
+    fonts_css_path = ASSETS_DIR / "fonts.css"
+    if not check_only:
+        fonts_css_path.write_text(fonts_css_patched, encoding="utf-8")
+    assets.append({"url": "/assets/fonts.css", "file": "fonts.css",
+                   "content_type": "text/css", "gzip": True})
+
+    # ── Buy Me a Coffee button ────────────────────────────────────────────────
+    bmac_path = ASSETS_DIR / "bmac.png"
+    bmac_data = _fetch(BMAC_PNG_CDN, ua=CHROME_UA)
+    if not check_only:
+        bmac_path.write_bytes(bmac_data)
+    assets.append({"url": "/assets/bmac.png", "file": "bmac.png",
+                   "content_type": "image/png", "gzip": False})
+
+    # ── Manifest ──────────────────────────────────────────────────────────────
+    if not check_only:
+        ASSETS_MANIFEST.write_text(json.dumps({"assets": assets}, indent=2))
+        print(f"  wrote {len(assets)} assets to docs/public/webserver/assets/")
+
+    return assets
+
+
+# ===========================================================================
 # Main
 # ===========================================================================
 
@@ -488,6 +596,7 @@ def main():
     try:
         for cmd in commands:
             if cmd == "all":
+                build_assets(check_only=check_only)
                 icon_dirty = sync_icons(check_only=check_only)
                 www_dirty = build_www(check_only=check_only)
                 if check_only and (icon_dirty or www_dirty):
@@ -497,6 +606,8 @@ def main():
                 else:
                     total = len(icon_dirty) + len(www_dirty)
                     print(f"Updated {total} target(s).")
+            elif cmd == "assets":
+                build_assets(check_only=check_only)
             elif cmd == "icons":
                 dirty = sync_icons(check_only=check_only)
                 if check_only and dirty:
@@ -515,7 +626,7 @@ def main():
                     print(f"Built {len(dirty)} file(s).")
             else:
                 print(f"Unknown command: {cmd}")
-                print("Usage: python scripts/build.py [all|icons|www] [--check]")
+                print("Usage: python scripts/build.py [all|icons|www|assets] [--check]")
                 exit_code = 1
     except BuildError as exc:
         print(exc)
