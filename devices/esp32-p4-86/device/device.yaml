@@ -224,7 +224,6 @@ touchscreen:
     display: my_display
     i2c_id: bus_a
     reset_pin: GPIO28
-    interrupt_pin: GPIO38
     on_touch:
       - script.execute: screensaver_wake
 
