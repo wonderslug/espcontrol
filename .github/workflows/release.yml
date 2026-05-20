@@ -35,6 +35,9 @@ jobs:
             slug: guition-esp32-s3-4848s040
             chip: ESP32-S3
     steps:
+      - name: Prepare self-hosted workspace
+        run: rm -rf "${GITHUB_WORKSPACE}/.esphome" || sudo rm -rf "${GITHUB_WORKSPACE}/.esphome"
+
       - uses: actions/checkout@v6
       - run: git sparse-checkout disable || true
 
@@ -70,7 +73,6 @@ jobs:
           -e PLATFORMIO_CORE_DIR=/config/.esphome/platformio
           -e PLATFORMIO_SETTING_ENABLE_TELEMETRY=false
           -v "${PWD}:/config"
-          -v "${HOME}/.cache/espcontrol-actions:${HOME}/.cache/espcontrol-actions"
           ghcr.io/esphome/esphome:2026.4.3
           -s firmware_version "${VERSION}"
           compile /config/builds/${{ matrix.slug }}.factory.yaml
@@ -78,7 +80,7 @@ jobs:
       - name: Collect firmware files and generate manifest
         id: firmware
         run: |
-          BUILD_DIR=$(dirname "$(find builds/.esphome/build -name firmware.factory.bin -print -quit)")
+          BUILD_DIR=$(dirname "$(find .esphome/build builds/.esphome/build -name firmware.factory.bin -print -quit 2>/dev/null)")
           mkdir -p output
 
           if [ ! -f "${BUILD_DIR}/firmware.factory.bin" ]; then
