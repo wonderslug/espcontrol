@@ -333,7 +333,7 @@ var CSS =
   ".sp-ctx-submenu{display:none;position:absolute;top:-4px;left:100%;background:var(--surface);" +
   "border:1px solid var(--border);border-radius:var(--radius);padding:4px 0;min-width:120px;" +
   "box-shadow:var(--shadow-3);z-index:201}" +
-  ".sp-ctx-sub:hover>.sp-ctx-submenu{display:block}" +
+  ".sp-ctx-sub:hover>.sp-ctx-submenu,.sp-ctx-sub.sp-ctx-open>.sp-ctx-submenu{display:block}" +
   ".sp-ctx-check{font-size:14px;width:18px;text-align:center;color:var(--accent)}" +
 
   ".sp-banner{padding:12px var(--gap);font-size:.8rem;font-weight:500;text-align:center;display:none}" +
