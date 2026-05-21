@@ -897,6 +897,7 @@ inline void alarm_control_create_arming_view(AlarmControlModalUi &ui,
                                              AlarmCardCtx *ctx,
                                              const ControlModalLayout &layout,
                                              const lv_font_t *icon_font,
+                                             const lv_font_t *title_font,
                                              const lv_font_t *label_font) {
   ui.arming_view = lv_obj_create(ui.panel);
   lv_obj_set_size(ui.arming_view, layout.panel_w, layout.panel_h);
@@ -911,7 +912,7 @@ inline void alarm_control_create_arming_view(AlarmControlModalUi &ui,
   lv_label_set_text(ui.arming_title, "Arming");
   lv_obj_set_style_text_color(ui.arming_title, lv_color_hex(DARK_TEXT_PRIMARY), LV_PART_MAIN);
   lv_obj_set_style_text_align(ui.arming_title, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN);
-  if (label_font) lv_obj_set_style_text_font(ui.arming_title, label_font, LV_PART_MAIN);
+  if (title_font) lv_obj_set_style_text_font(ui.arming_title, title_font, LV_PART_MAIN);
   lv_obj_set_style_transform_zoom(ui.arming_title, 260, LV_PART_MAIN);
   apply_width_compensation(ui.arming_title, ctx ? ctx->width_compensation_percent : 100);
   lv_obj_set_width(ui.arming_title, layout.panel_w - layout.inset * 2);
@@ -964,7 +965,8 @@ inline void alarm_control_create_arming_view(AlarmControlModalUi &ui,
   if (disarm_h > layout.panel_h / 5) disarm_h = layout.panel_h / 5;
   ui.arming_disarm_btn = control_modal_create_round_button(
     ui.arming_view, disarm_h, "Disarm", label_font,
-    DARK_BORDER, DARK_BACKGROUND_TERTIARY,
+    ctx ? ctx->on_color : DEFAULT_SLIDER_COLOR,
+    ctx ? ctx->on_color : DEFAULT_SLIDER_COLOR,
     ctx ? ctx->width_compensation_percent : 100);
   lv_obj_set_size(ui.arming_disarm_btn, disarm_w, disarm_h);
   lv_obj_set_style_radius(ui.arming_disarm_btn, disarm_h / 2, LV_PART_MAIN);
@@ -1002,6 +1004,7 @@ inline void alarm_control_open_modal(AlarmCardCtx *ctx) {
   const lv_font_t *icon_font = ctx->icon_font
     ? ctx->icon_font
     : ctx->icon_lbl ? lv_obj_get_style_text_font(ctx->icon_lbl, LV_PART_MAIN) : label_font;
+  const lv_font_t *title_font = ctx->key_label_font ? ctx->key_label_font : label_font;
 
   ui.overlay = lv_obj_create(lv_layer_top());
   control_modal_style_overlay(ui.overlay);
@@ -1065,7 +1068,7 @@ inline void alarm_control_open_modal(AlarmCardCtx *ctx) {
     lv_obj_add_event_cb(ui.mode_btn[i], alarm_control_mode_cb, LV_EVENT_CLICKED, &ui.actions[i]);
   }
 
-  alarm_control_create_arming_view(ui, ctx, layout, icon_font, label_font);
+  alarm_control_create_arming_view(ui, ctx, layout, icon_font, title_font, label_font);
   alarm_control_update_modal(ctx);
   lv_obj_move_foreground(ui.back_btn);
   lv_obj_move_foreground(ui.overlay);
