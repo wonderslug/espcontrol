@@ -1162,8 +1162,17 @@ inline void alarm_control_open_modal(AlarmCardCtx *ctx) {
     rail_h = layout.panel_h - layout.inset * 2;
   if (rail_h < control_modal_scaled_px(240, layout.short_side))
     rail_h = control_modal_scaled_px(240, layout.short_side);
-  lv_coord_t background_radius = rail_w / 8;
-  lv_coord_t control_radius = rail_w / 4;
+  static const char *modes[3] = {"home", "away", "disarm"};
+  lv_coord_t button_inset = control_modal_scaled_px(8, layout.short_side);
+  if (button_inset < 4) button_inset = 4;
+  lv_coord_t button_gap = control_modal_scaled_px(8, layout.short_side);
+  if (button_gap < 4) button_gap = 4;
+  lv_coord_t btn_w = rail_w - button_inset * 2;
+  lv_coord_t btn_h = (rail_h - button_inset * 2 - button_gap * 2) / 3;
+  if (btn_w < 1) btn_w = rail_w;
+  if (btn_h < 1) btn_h = rail_h / 3;
+  lv_coord_t control_radius = (btn_w < btn_h ? btn_w : btn_h) / 2;
+  lv_coord_t background_radius = control_radius + button_inset;
 
   ui.rail = lv_obj_create(ui.panel);
   lv_obj_set_size(ui.rail, rail_w, rail_h);
@@ -1177,15 +1186,6 @@ inline void alarm_control_open_modal(AlarmCardCtx *ctx) {
   lv_obj_clear_flag(ui.rail, LV_OBJ_FLAG_SCROLLABLE);
   lv_obj_align(ui.rail, LV_ALIGN_CENTER, 0, 0);
 
-  static const char *modes[3] = {"home", "away", "disarm"};
-  lv_coord_t button_inset = control_modal_scaled_px(8, layout.short_side);
-  if (button_inset < 4) button_inset = 4;
-  lv_coord_t button_gap = control_modal_scaled_px(8, layout.short_side);
-  if (button_gap < 4) button_gap = 4;
-  lv_coord_t btn_w = rail_w - button_inset * 2;
-  lv_coord_t btn_h = (rail_h - button_inset * 2 - button_gap * 2) / 3;
-  if (btn_w < 1) btn_w = rail_w;
-  if (btn_h < 1) btn_h = rail_h / 3;
   for (int i = 0; i < 3; i++) {
     ui.mode_btn[i] = alarm_control_create_mode_button(
       ui.rail, ctx, modes[i], btn_w, btn_h, control_radius,
