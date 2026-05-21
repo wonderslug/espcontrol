@@ -374,7 +374,7 @@ inline void alarm_pin_key_cb(lv_event_t *e) {
   if (!key) return;
   AlarmPinModalUi &ui = alarm_pin_modal_ui();
   if (strcmp(key, "back") == 0) {
-    if (!ui.pin.empty()) ui.pin.pop_back();
+    ui.pin.clear();
     alarm_pin_update_display();
     return;
   }
@@ -468,7 +468,7 @@ inline void alarm_pin_open_modal(AlarmActionCtx *action) {
     const char *text = key_data[i];
     const lv_font_t *key_font = label_font;
     if (strcmp(text, "back") == 0) {
-      text = "\U000F0B5C";
+      text = "\U000F0156";
       key_font = icon_font;
     } else if (strcmp(text, "submit") == 0) {
       text = find_icon("Check");
@@ -477,6 +477,12 @@ inline void alarm_pin_open_modal(AlarmActionCtx *action) {
 
     lv_obj_t *key_btn = alarm_create_key_button(
       ui.panel, key_size, key_size, text, key_font, action->card->width_compensation_percent);
+    if (strcmp(key_data[i], "submit") == 0) {
+      lv_obj_set_style_bg_color(key_btn, lv_color_hex(DEFAULT_SLIDER_COLOR), LV_PART_MAIN);
+      lv_obj_set_style_border_color(key_btn, lv_color_hex(DEFAULT_SLIDER_COLOR), LV_PART_MAIN);
+      lv_obj_t *key_lbl = lv_obj_get_child(key_btn, 0);
+      if (key_lbl) lv_obj_set_style_text_color(key_lbl, lv_color_hex(DARK_TEXT_PRIMARY), LV_PART_MAIN);
+    }
     int row = i / 3;
     int col = i % 3;
     lv_coord_t x = start_x + col * (key_size + gap);

@@ -22,12 +22,6 @@
       "codepoint": "F0156",
       "mdi": "close",
       "comment": "Modal close button"
-    },
-    {
-      "name": "Backspace Outline",
-      "codepoint": "F0B5C",
-      "mdi": "backspace-outline",
-      "comment": "PIN keypad delete button"
     }
   ],
   "icons": [
