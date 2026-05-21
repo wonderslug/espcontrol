@@ -823,6 +823,9 @@ inline void grid_phase2(
           cfg.climate_option_value_font
             ? cfg.climate_option_value_font
             : lv_obj_get_style_text_font(s.text_lbl, LV_PART_MAIN),
+          cfg.media_title_font
+            ? cfg.media_title_font
+            : lv_obj_get_style_text_font(s.text_lbl, LV_PART_MAIN),
           cfg.icon_font,
           cfg.volume_width_compensation_percent,
           s.sensor_container, s.sensor_lbl, s.unit_lbl);
@@ -1371,6 +1374,9 @@ inline void grid_phase2(
               : lv_obj_get_style_text_font(sub_slot.text_lbl, LV_PART_MAIN),
             cfg.climate_option_value_font
               ? cfg.climate_option_value_font
+              : lv_obj_get_style_text_font(sub_slot.text_lbl, LV_PART_MAIN),
+            cfg.media_title_font
+              ? cfg.media_title_font
               : lv_obj_get_style_text_font(sub_slot.text_lbl, LV_PART_MAIN),
             cfg.icon_font,
             cfg.volume_width_compensation_percent,

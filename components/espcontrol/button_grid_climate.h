@@ -71,6 +71,7 @@ struct ClimateControlCtx {
   const lv_font_t *label_font = nullptr;
   const lv_font_t *option_title_font = nullptr;
   const lv_font_t *option_value_font = nullptr;
+  const lv_font_t *option_menu_font = nullptr;
   const lv_font_t *icon_font = nullptr;
 };
 
@@ -944,13 +945,15 @@ inline void climate_open_inline_option_list(ClimateControlCtx *ctx, const std::s
       bool selected = climate_option_selected(ctx, section_kind, option);
       lv_obj_t *btn = lv_btn_create(parent);
       lv_obj_set_width(btn, lv_pct(100));
-      lv_obj_set_height(btn, 70);
+      lv_obj_set_height(btn, 86);
       lv_obj_set_style_radius(btn, 0, LV_PART_MAIN);
       lv_obj_set_style_bg_opa(btn, LV_OPA_TRANSP, LV_PART_MAIN);
       lv_obj_set_style_border_width(btn, 0, LV_PART_MAIN);
       lv_obj_set_style_shadow_width(btn, 0, LV_PART_MAIN);
-      lv_obj_set_style_pad_left(btn, 0, LV_PART_MAIN);
-      lv_obj_set_style_pad_right(btn, 0, LV_PART_MAIN);
+      lv_obj_set_style_pad_top(btn, 12, LV_PART_MAIN);
+      lv_obj_set_style_pad_bottom(btn, 12, LV_PART_MAIN);
+      lv_obj_set_style_pad_left(btn, 14, LV_PART_MAIN);
+      lv_obj_set_style_pad_right(btn, 14, LV_PART_MAIN);
       lv_obj_set_style_pad_column(btn, 0, LV_PART_MAIN);
       lv_obj_set_layout(btn, LV_LAYOUT_FLEX);
       lv_obj_set_style_flex_flow(btn, LV_FLEX_FLOW_ROW, LV_PART_MAIN);
@@ -962,7 +965,7 @@ inline void climate_open_inline_option_list(ClimateControlCtx *ctx, const std::s
       lv_label_set_text(label, climate_option_label(option).c_str());
       lv_obj_set_style_text_color(label, lv_color_hex(selected ? ctx->accent_color : DARK_TEXT_SOFT), LV_PART_MAIN);
       lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN);
-      if (ctx->label_font) lv_obj_set_style_text_font(label, ctx->label_font, LV_PART_MAIN);
+      if (ctx->option_menu_font) lv_obj_set_style_text_font(label, ctx->option_menu_font, LV_PART_MAIN);
 
       ClimateOptionClick *click = new ClimateOptionClick();
       click->ctx = ctx;
@@ -1014,37 +1017,40 @@ inline void climate_open_option_menu(ClimateControlCtx *ctx, const std::string &
   }, LV_EVENT_CLICKED, nullptr);
 
   lv_obj_t *box = lv_obj_create(ui.menu_overlay);
-  lv_obj_set_width(box, climate_option_menu_width(*options, kind));
+  lv_obj_set_width(box, climate_option_menu_width(*options, kind) + 40);
   lv_obj_set_height(box, LV_SIZE_CONTENT);
   lv_obj_set_style_bg_color(box, lv_color_hex(DARK_BACKGROUND_SECONDARY), LV_PART_MAIN);
   lv_obj_set_style_bg_opa(box, LV_OPA_COVER, LV_PART_MAIN);
   lv_obj_set_style_border_width(box, 0, LV_PART_MAIN);
   lv_obj_set_style_radius(box, 14, LV_PART_MAIN);
-  lv_obj_set_style_pad_all(box, 10, LV_PART_MAIN);
-  lv_obj_set_style_pad_row(box, 6, LV_PART_MAIN);
+  lv_obj_set_style_pad_all(box, 14, LV_PART_MAIN);
+  lv_obj_set_style_pad_row(box, 10, LV_PART_MAIN);
   lv_obj_set_layout(box, LV_LAYOUT_FLEX);
   lv_obj_set_style_flex_flow(box, LV_FLEX_FLOW_COLUMN, LV_PART_MAIN);
   lv_obj_align(box, LV_ALIGN_CENTER, 0, 0);
   lv_obj_clear_flag(box, LV_OBJ_FLAG_SCROLLABLE);
 
+  lv_coord_t option_h = ctx->option_menu_font ? ctx->option_menu_font->line_height + 24 : 68;
+  if (option_h < 68) option_h = 68;
+
   for (const auto &option : *options) {
     lv_obj_t *btn = lv_btn_create(box);
     lv_obj_set_width(btn, lv_pct(100));
-    lv_obj_set_height(btn, 50);
+    lv_obj_set_height(btn, option_h);
     lv_obj_set_style_radius(btn, 0, LV_PART_MAIN);
     lv_obj_set_style_bg_opa(btn, LV_OPA_TRANSP, LV_PART_MAIN);
     lv_obj_set_style_border_width(btn, 0, LV_PART_MAIN);
     lv_obj_set_style_shadow_width(btn, 0, LV_PART_MAIN);
-    lv_obj_set_style_pad_top(btn, 4, LV_PART_MAIN);
-    lv_obj_set_style_pad_bottom(btn, 4, LV_PART_MAIN);
-    lv_obj_set_style_pad_left(btn, 0, LV_PART_MAIN);
-    lv_obj_set_style_pad_right(btn, 0, LV_PART_MAIN);
+    lv_obj_set_style_pad_top(btn, 12, LV_PART_MAIN);
+    lv_obj_set_style_pad_bottom(btn, 12, LV_PART_MAIN);
+    lv_obj_set_style_pad_left(btn, 12, LV_PART_MAIN);
+    lv_obj_set_style_pad_right(btn, 12, LV_PART_MAIN);
     lv_obj_t *label = lv_label_create(btn);
     lv_label_set_text(label, climate_option_label(option).c_str());
     lv_label_set_long_mode(label, LV_LABEL_LONG_CLIP);
     lv_obj_set_style_text_color(label, lv_color_hex(DARK_TEXT_PRIMARY), LV_PART_MAIN);
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN);
-    if (ctx->label_font) lv_obj_set_style_text_font(label, ctx->label_font, LV_PART_MAIN);
+    if (ctx->option_menu_font) lv_obj_set_style_text_font(label, ctx->option_menu_font, LV_PART_MAIN);
     lv_obj_center(label);
     ClimateOptionClick *click = new ClimateOptionClick();
     click->ctx = ctx;
@@ -1237,10 +1243,13 @@ inline void climate_control_layout_modal(ClimateControlCtx *ctx) {
       lv_obj_set_style_pad_left(ui.option_list_view, layout.inset, LV_PART_MAIN);
       lv_obj_set_style_pad_right(ui.option_list_view, layout.inset, LV_PART_MAIN);
       lv_obj_set_style_pad_bottom(ui.option_list_view, list_bottom, LV_PART_MAIN);
-      lv_coord_t title_row_h = ctx->label_font ? ctx->label_font->line_height : 28;
+      lv_coord_t title_row_h = ctx->option_title_font ? ctx->option_title_font->line_height : 28;
       lv_coord_t row_gap = layout.short_side < 520 ? 6 : 8;
-      lv_coord_t default_row_h = layout.short_side < 520 ? 54 : 68;
-      lv_coord_t min_row_h = title_row_h + 6;
+      lv_coord_t option_row_pad_y = control_modal_scaled_px(12, layout.short_side);
+      if (option_row_pad_y < 10) option_row_pad_y = 10;
+      lv_coord_t option_text_h = ctx->option_menu_font ? ctx->option_menu_font->line_height : title_row_h;
+      lv_coord_t default_row_h = layout.short_side < 520 ? 72 : 86;
+      lv_coord_t min_row_h = option_text_h + option_row_pad_y * 2;
       lv_obj_set_style_pad_row(ui.option_list_view, row_gap, LV_PART_MAIN);
 
       auto fit_option_rows = [&](lv_obj_t *container, lv_coord_t available_h) {
@@ -1571,7 +1580,8 @@ inline ClimateControlCtx *create_climate_control_context(
     uint32_t accent_color, uint32_t secondary_color, uint32_t tertiary_color,
     const lv_font_t *number_font, const lv_font_t *unit_font,
     const lv_font_t *label_font, const lv_font_t *option_title_font,
-    const lv_font_t *option_value_font, const lv_font_t *icon_font,
+    const lv_font_t *option_value_font, const lv_font_t *option_menu_font,
+    const lv_font_t *icon_font,
     int width_compensation_percent,
     lv_obj_t *sensor_container, lv_obj_t *value_lbl, lv_obj_t *unit_lbl) {
   ClimateControlCtx *ctx = new ClimateControlCtx();
@@ -1597,6 +1607,7 @@ inline ClimateControlCtx *create_climate_control_context(
   ctx->label_font = label_font;
   ctx->option_title_font = option_title_font ? option_title_font : label_font;
   ctx->option_value_font = option_value_font ? option_value_font : label_font;
+  ctx->option_menu_font = option_menu_font ? option_menu_font : ctx->option_value_font;
   ctx->icon_font = icon_font;
   ctx->width_compensation_percent = normalize_width_compensation_percent(width_compensation_percent);
   if (btn) lv_obj_set_user_data(btn, ctx);
