@@ -13,6 +13,8 @@ constexpr int CLIMATE_DEFAULT_MIN_TENTHS = 50;
 constexpr int CLIMATE_DEFAULT_MAX_TENTHS = 350;
 constexpr int CLIMATE_DEFAULT_STEP_TENTHS = 5;
 constexpr uint32_t CLIMATE_TEMP_DEBOUNCE_MS = 450;
+constexpr int CLIMATE_MODAL_ARC_SIZE_PERCENT = 94;
+constexpr lv_coord_t CLIMATE_MODAL_ARC_UP_REF_PX = 16;
 
 struct ClimateControlCtx {
   std::string entity_id;
@@ -412,13 +414,13 @@ inline void climate_apply_background_arc_width(lv_obj_t *arc, const ControlModal
 
 inline ControlModalLayout climate_control_calc_layout(ClimateControlCtx *ctx) {
   ControlModalLayout layout = control_modal_calc_layout(ctx ? ctx->width_compensation_percent : 100);
-  layout.arc_size = layout.arc_size * 86 / 100;
+  layout.arc_size = layout.arc_size * CLIMATE_MODAL_ARC_SIZE_PERCENT / 100;
   if (layout.arc_size < 74) layout.arc_size = 74;
 
   int width_percent = normalize_width_compensation_percent(ctx ? ctx->width_compensation_percent : 100);
   lv_coord_t visible_arc_w = compensated_width(layout.arc_size, width_percent);
   layout.arc_center_x = (layout.arc_size - visible_arc_w) / 2;
-  layout.arc_center_y = -control_modal_scaled_px(8, layout.short_side);
+  layout.arc_center_y = -control_modal_scaled_px(CLIMATE_MODAL_ARC_UP_REF_PX, layout.short_side);
   layout.value_center_y = layout.arc_center_y + layout.arc_stroke / 2;
   layout.controls_center_y = layout.arc_center_y + layout.arc_size / 2 -
     layout.btn_size / 2 - layout.inset +
