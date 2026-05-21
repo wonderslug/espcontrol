@@ -464,6 +464,10 @@ inline uint32_t alarm_control_active_color(AlarmCardCtx *ctx, const std::string 
   return ctx ? ctx->on_color : DEFAULT_SLIDER_COLOR;
 }
 
+inline uint32_t alarm_control_inactive_color(AlarmCardCtx *ctx) {
+  return ctx ? ctx->off_color : DEFAULT_OFF_COLOR;
+}
+
 inline void alarm_control_update_modal(AlarmCardCtx *ctx) {
   AlarmControlModalUi &ui = alarm_control_modal_ui();
   if (!ctx || ui.active != ctx) return;
@@ -475,7 +479,8 @@ inline void alarm_control_update_modal(AlarmCardCtx *ctx) {
     lv_obj_t *btn = ui.mode_btn[i];
     if (!btn) continue;
     bool selected = active_mode == modes[i];
-    uint32_t bg = selected ? alarm_control_active_color(ctx, modes[i]) : DARK_TRACK_BACKGROUND;
+    uint32_t bg = selected ? alarm_control_active_color(ctx, modes[i])
+                           : alarm_control_inactive_color(ctx);
     lv_obj_set_style_bg_color(btn, lv_color_hex(bg), LV_PART_MAIN);
     lv_obj_set_style_bg_color(btn, lv_color_hex(bg),
       static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_PRESSED));
@@ -719,7 +724,7 @@ inline lv_obj_t *alarm_control_create_mode_button(
   lv_obj_set_size(btn, width, height);
   apply_width_compensation(btn, ctx ? ctx->width_compensation_percent : 100);
   lv_obj_set_style_radius(btn, radius, LV_PART_MAIN);
-  lv_obj_set_style_bg_color(btn, lv_color_hex(DARK_TRACK_BACKGROUND), LV_PART_MAIN);
+  lv_obj_set_style_bg_color(btn, lv_color_hex(alarm_control_inactive_color(ctx)), LV_PART_MAIN);
   lv_obj_set_style_bg_opa(btn, LV_OPA_COVER, LV_PART_MAIN);
   lv_obj_set_style_border_width(btn, 0, LV_PART_MAIN);
   lv_obj_set_style_shadow_width(btn, 0, LV_PART_MAIN);
@@ -796,7 +801,7 @@ inline void alarm_control_open_modal(AlarmCardCtx *ctx) {
     alarm_control_hide_modal();
   }, LV_EVENT_CLICKED, nullptr);
 
-  lv_coord_t rail_w = layout.panel_w * 52 / 100;
+  lv_coord_t rail_w = layout.panel_w * 58 / 100;
   if (rail_w < control_modal_scaled_px(156, layout.short_side))
     rail_w = control_modal_scaled_px(156, layout.short_side);
   if (rail_w > layout.panel_w - layout.inset * 2) rail_w = layout.panel_w - layout.inset * 2;
@@ -822,13 +827,19 @@ inline void alarm_control_open_modal(AlarmCardCtx *ctx) {
   lv_obj_align(ui.rail, LV_ALIGN_CENTER, 0, 0);
 
   static const char *modes[3] = {"home", "away", "disarm"};
-  lv_coord_t btn_h = rail_h / 3;
-  lv_coord_t btn_w = rail_w;
+  lv_coord_t button_inset = control_modal_scaled_px(8, layout.short_side);
+  if (button_inset < 4) button_inset = 4;
+  lv_coord_t button_gap = control_modal_scaled_px(8, layout.short_side);
+  if (button_gap < 4) button_gap = 4;
+  lv_coord_t btn_w = rail_w - button_inset * 2;
+  lv_coord_t btn_h = (rail_h - button_inset * 2 - button_gap * 2) / 3;
+  if (btn_w < 1) btn_w = rail_w;
+  if (btn_h < 1) btn_h = rail_h / 3;
   for (int i = 0; i < 3; i++) {
     ui.mode_btn[i] = alarm_control_create_mode_button(
       ui.rail, ctx, modes[i], btn_w, btn_h, control_radius,
       icon_font, label_font, &ui.mode_icon[i], &ui.mode_label[i]);
-    lv_obj_set_pos(ui.mode_btn[i], 0, i * btn_h);
+    lv_obj_set_pos(ui.mode_btn[i], button_inset, button_inset + i * (btn_h + button_gap));
     ui.actions[i].card = ctx;
     ui.actions[i].mode = modes[i];
     ui.actions[i].requires_pin = alarm_action_requires_pin(ctx->options, ui.actions[i].mode);
