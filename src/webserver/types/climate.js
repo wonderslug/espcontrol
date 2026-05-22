@@ -179,7 +179,7 @@ registerButtonType("climate", {
     if (numberMode === "icon") {
       var iconName = b.icon && b.icon !== "Auto" ? b.icon : "Thermostat";
       return {
-        iconHtml: '<span class="sp-btn-icon mdi mdi-' + iconSlug(iconName) + '"></span>',
+        iconHtml: '<span class="sp-btn-icon sp-climate-card-icon mdi mdi-' + iconSlug(iconName) + '"></span>',
         labelHtml:
           '<span class="sp-btn-label-row"><span class="sp-btn-label">' +
           helpers.escHtml(label) + '</span><span class="sp-type-badge mdi mdi-thermostat"></span></span>',

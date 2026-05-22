@@ -1,9 +1,8 @@
 # =============================================================================
 # FONTS (DEVICE OVERRIDE) - Smaller fonts for the 480x480 square display
 # =============================================================================
-# Supplements the common fonts with smaller variants for the main UI.
-# These _sm variants are referenced by the device theme, LVGL config, and
-# setup screens.
+# Supplements the common fonts with smaller variants for the main UI. Font
+# sizes that match the common set are reused instead of being declared again.
 # Hebrew glyphs are pulled from gfonts://Heebo via `extras`, since Roboto
 # does not include the Hebrew block.
 # =============================================================================
@@ -16,15 +15,12 @@ font:
     bpp: 4
     glyphs: !include ../../../common/assets/icon_glyphs.yaml
 
-  # Button labels (22px)
-  - file: "gfonts://Roboto"
-    id: label_font_sm
-    size: 22
+  # Climate card icons (25% smaller than main page icons)
+  - file: 'https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf'
+    id: climate_card_icon_font_sm
+    size: 33
     bpp: 4
-    glyphs: !include ../../../common/assets/text_glyphs.yaml
-    extras:
-      - file: "gfonts://Heebo"
-        glyphs: !include ../../../common/assets/hebrew_glyphs.yaml
+    glyphs: !include ../../../common/assets/icon_glyphs.yaml
 
   # Climate modal mode/value text (smaller than normal button labels)
   - file: "gfonts://Roboto"
@@ -62,15 +58,6 @@ font:
     glyphs: !include ../../../common/assets/text_glyphs.yaml
     extras:
       - file: "gfonts://Heebo@Light"
-        glyphs: !include ../../../common/assets/hebrew_glyphs.yaml
-
-  # Top bar clock and temperature (20px)
-  - file: "gfonts://Roboto"
-    id: clockbar_font_sm
-    size: 20
-    bpp: 4
-    extras:
-      - file: "gfonts://Heebo"
         glyphs: !include ../../../common/assets/hebrew_glyphs.yaml
 
   # Top bar network status icon

@@ -18,7 +18,7 @@ lvgl:
       - label:
           text: "-°C / -°C"
           id: temperatures
-          text_font: clockbar_font_sm
+          text_font: clockbar_font
           align: top_left
           x: 8
           y: 6
@@ -28,7 +28,7 @@ lvgl:
       - label:
           text: "--:--"
           id: display_time
-          text_font: clockbar_font_sm
+          text_font: clockbar_font
           align: top_mid
           x: 0
           y: 6

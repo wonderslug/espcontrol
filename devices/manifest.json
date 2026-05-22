@@ -81,8 +81,9 @@
           "mediaTitle": "media_title_font",
           "volumeNumber": "volume_modal_number_font_600",
           "volumeLabel": "volume_modal_label_font_600",
-          "climateOptionTitle": "climate_option_title_font_600",
-          "climateOptionValue": "label_font_lt"
+          "climateCardIcon": "climate_card_icon_font_600",
+          "climateOptionTitle": "label_font",
+          "climateOptionValue": "label_font"
         },
         "display": {
           "wrapTallLabels": true,
@@ -167,6 +168,7 @@
           "mediaTitle": "media_title_font_lg",
           "volumeNumber": "volume_modal_number_font_lg",
           "volumeLabel": "label_font_lg",
+          "climateCardIcon": "climate_card_icon_font_480",
           "climateOptionTitle": "climate_option_title_font_lg",
           "climateOptionValue": "label_font_lg"
         },
@@ -251,7 +253,8 @@
           "mediaTitle": "media_title_font_lt",
           "volumeNumber": "volume_modal_number_font_800",
           "volumeLabel": "volume_modal_label_font_800",
-          "climateOptionTitle": "climate_option_title_font_800",
+          "climateCardIcon": "climate_card_icon_font_800",
+          "climateOptionTitle": "climate_option_title_font",
           "climateOptionValue": "label_font_lt"
         },
         "display": {
@@ -336,6 +339,7 @@
           "mediaTitle": "media_title_font_md_square",
           "volumeNumber": "volume_modal_number_font_md_square",
           "volumeLabel": "volume_modal_label_font_md_square",
+          "climateCardIcon": "climate_card_icon_font_md_square",
           "climateOptionTitle": "climate_option_title_font_md_square",
           "climateOptionValue": "label_font_md_square"
         },
@@ -429,8 +433,9 @@
           "largeSensor": "statistics_font_sm_xl",
           "mediaTitle": "media_title_font_sm",
           "volumeNumber": "volume_modal_number_font",
-          "volumeLabel": "label_font_sm",
-          "climateOptionTitle": "climate_option_value_font_sm",
+          "volumeLabel": "label_font",
+          "climateCardIcon": "climate_card_icon_font_sm",
+          "climateOptionTitle": "climate_option_title_font",
           "climateOptionValue": "climate_option_value_font_sm"
         },
         "display": {

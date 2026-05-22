@@ -64,6 +64,8 @@ var CSS =
   ".sp-drag-active .sp-btn:hover{filter:none}" +
   ".sp-btn.sp-selected{border-color:var(--accent)}" +
   ".sp-btn-icon{font-size:var(--btn-icon);line-height:1;color:#fff}" +
+  ".sp-climate-card-icon{font-size:calc(var(--btn-icon)*.75);position:absolute;left:var(--btn-pad);top:50%;" +
+  "transform:translateY(-50%)}" +
   ".sp-btn-label{font-size:var(--btn-label);line-height:1.2;color:#fff;" +
   "display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:var(--btn-lines);" +
   "overflow:hidden;word-break:break-word;min-height:0}" +

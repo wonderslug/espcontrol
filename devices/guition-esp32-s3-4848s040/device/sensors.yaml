@@ -43,8 +43,9 @@ esphome:
             cfg.large_sensor_unit_offset_percent = -10;
             cfg.media_title_font = id(media_title_font_sm)->get_lv_font();
             cfg.volume_number_font = id(volume_modal_number_font)->get_lv_font();
-            cfg.volume_label_font = id(label_font_sm)->get_lv_font();
-            cfg.climate_option_title_font = id(climate_option_value_font_sm)->get_lv_font();
+            cfg.volume_label_font = id(label_font)->get_lv_font();
+            cfg.climate_card_icon_font = id(climate_card_icon_font_sm)->get_lv_font();
+            cfg.climate_option_title_font = id(climate_option_title_font)->get_lv_font();
             cfg.climate_option_value_font = id(climate_option_value_font_sm)->get_lv_font();
             cfg.temperature_unit = id(temperature_unit_select).current_option();
             cfg.timezone = id(timezone_select).current_option();
@@ -122,8 +123,9 @@ esphome:
             cfg.large_sensor_unit_offset_percent = -10;
             cfg.media_title_font = id(media_title_font_sm)->get_lv_font();
             cfg.volume_number_font = id(volume_modal_number_font)->get_lv_font();
-            cfg.volume_label_font = id(label_font_sm)->get_lv_font();
-            cfg.climate_option_title_font = id(climate_option_value_font_sm)->get_lv_font();
+            cfg.volume_label_font = id(label_font)->get_lv_font();
+            cfg.climate_card_icon_font = id(climate_card_icon_font_sm)->get_lv_font();
+            cfg.climate_option_title_font = id(climate_option_title_font)->get_lv_font();
             cfg.climate_option_value_font = id(climate_option_value_font_sm)->get_lv_font();
             cfg.temperature_unit = id(temperature_unit_select).current_option();
             cfg.timezone = id(timezone_select).current_option();

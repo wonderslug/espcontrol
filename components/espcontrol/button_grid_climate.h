@@ -74,6 +74,7 @@ struct ClimateControlCtx {
   const lv_font_t *option_title_font = nullptr;
   const lv_font_t *option_value_font = nullptr;
   const lv_font_t *option_menu_font = nullptr;
+  const lv_font_t *card_icon_font = nullptr;
   const lv_font_t *icon_font = nullptr;
 };
 
@@ -501,8 +502,11 @@ inline void climate_update_card(ClimateControlCtx *ctx) {
   bool show_icon = ctx->number_display == "icon";
   if (ctx->icon_lbl) {
     if (show_icon) {
+      if (ctx->card_icon_font)
+        lv_obj_set_style_text_font(ctx->icon_lbl, ctx->card_icon_font, LV_PART_MAIN);
       lv_label_set_text(ctx->icon_lbl,
         climate_temperature_controls_enabled(ctx) ? ctx->icon_on_glyph : ctx->icon_off_glyph);
+      lv_obj_align(ctx->icon_lbl, LV_ALIGN_LEFT_MID, 0, 0);
       lv_obj_clear_flag(ctx->icon_lbl, LV_OBJ_FLAG_HIDDEN);
     } else {
       lv_obj_add_flag(ctx->icon_lbl, LV_OBJ_FLAG_HIDDEN);
@@ -1207,7 +1211,10 @@ inline void climate_control_layout_modal(ClimateControlCtx *ctx) {
     control_modal_scaled_px(CLIMATE_MODAL_STEP_BUTTONS_UP_REF_PX, layout.short_side);
   lv_coord_t title_center_y = value_center_y -
     (value_h / 2 + layout.title_gap + title_h / 2);
-  lv_coord_t chip_h = layout.short_side < 520 ? 72 : 94;
+  bool roomy_landscape = layout.panel_w >= 900 && layout.panel_h <= 520;
+  lv_coord_t chip_h = layout.short_side < 520
+    ? (roomy_landscape ? 86 : 72)
+    : 94;
   lv_coord_t chip_gap = control_modal_scaled_px(24, layout.short_side);
   if (chip_gap < 16) chip_gap = 16;
 
@@ -1247,7 +1254,8 @@ inline void climate_control_layout_modal(ClimateControlCtx *ctx) {
   lv_obj_set_height(ui.chips, chip_h);
   lv_obj_set_style_pad_column(ui.chips, chip_gap, LV_PART_MAIN);
   lv_coord_t option_chip_w = compensated_width(
-    layout.short_side < 520 ? 180 : 240, ctx->width_compensation_percent);
+    layout.short_side < 520 && !roomy_landscape ? 180 : 240,
+    ctx->width_compensation_percent);
   if (ui.mode_chip) {
     lv_obj_set_size(ui.mode_chip, option_chip_w, chip_h);
     lv_obj_set_style_radius(ui.mode_chip, chip_h / 2, LV_PART_MAIN);
@@ -1556,10 +1564,12 @@ inline void climate_control_open_modal(ClimateControlCtx *ctx) {
   lv_obj_clear_flag(ui.chips, LV_OBJ_FLAG_SCROLLABLE);
 
   ui.mode_chip = climate_create_option_chip(ui.chips, find_icon("Fire"), "Mode",
-    ctx->icon_font, ctx->option_title_font, ctx->option_value_font,
+    ctx->card_icon_font ? ctx->card_icon_font : ctx->icon_font,
+    ctx->option_title_font, ctx->option_value_font,
     ctx->width_compensation_percent);
   ui.preset_chip = climate_create_option_chip(ui.chips, find_icon("Air Filter"), "Preset",
-    ctx->icon_font, ctx->option_title_font, ctx->option_value_font,
+    ctx->card_icon_font ? ctx->card_icon_font : ctx->icon_font,
+    ctx->option_title_font, ctx->option_value_font,
     ctx->width_compensation_percent);
   ui.fan_chip = climate_create_chip(ui.chips, "Fan None", ctx->label_font, DARK_TRACK_BACKGROUND, ctx->width_compensation_percent, true);
   ui.swing_chip = climate_create_chip(ui.chips, "Swing None", ctx->label_font, DARK_TRACK_BACKGROUND, ctx->width_compensation_percent, true);
@@ -1591,12 +1601,19 @@ inline void setup_climate_control_button(lv_obj_t *btn, lv_obj_t *icon_lbl,
                                          lv_obj_t *sensor_lbl,
                                          lv_obj_t *unit_lbl,
                                          lv_obj_t *text_lbl,
-                                         const ParsedCfg &p) {
+                                         const ParsedCfg &p,
+                                         const lv_font_t *card_icon_font) {
   bool show_icon = normalize_climate_number_display(cfg_option_value(p.options, "number_display")) == "icon";
   if (icon_lbl) {
+    if (show_icon && card_icon_font)
+      lv_obj_set_style_text_font(icon_lbl, card_icon_font, LV_PART_MAIN);
     lv_label_set_text(icon_lbl, (p.icon.empty() || p.icon == "Auto") ? find_icon("Thermostat") : find_icon(p.icon.c_str()));
-    if (show_icon) lv_obj_clear_flag(icon_lbl, LV_OBJ_FLAG_HIDDEN);
-    else lv_obj_add_flag(icon_lbl, LV_OBJ_FLAG_HIDDEN);
+    if (show_icon) {
+      lv_obj_align(icon_lbl, LV_ALIGN_LEFT_MID, 0, 0);
+      lv_obj_clear_flag(icon_lbl, LV_OBJ_FLAG_HIDDEN);
+    } else {
+      lv_obj_add_flag(icon_lbl, LV_OBJ_FLAG_HIDDEN);
+    }
   }
   if (sensor_container) {
     if (show_icon) lv_obj_add_flag(sensor_container, LV_OBJ_FLAG_HIDDEN);
@@ -1621,7 +1638,7 @@ inline ClimateControlCtx *create_climate_control_context(
     const lv_font_t *number_font, const lv_font_t *unit_font,
     const lv_font_t *label_font, const lv_font_t *option_title_font,
     const lv_font_t *option_value_font, const lv_font_t *option_menu_font,
-    const lv_font_t *icon_font,
+    const lv_font_t *card_icon_font, const lv_font_t *icon_font,
     int width_compensation_percent,
     lv_obj_t *sensor_container, lv_obj_t *value_lbl, lv_obj_t *unit_lbl) {
   ClimateControlCtx *ctx = new ClimateControlCtx();
@@ -1648,6 +1665,7 @@ inline ClimateControlCtx *create_climate_control_context(
   ctx->option_title_font = option_title_font ? option_title_font : label_font;
   ctx->option_value_font = option_value_font ? option_value_font : label_font;
   ctx->option_menu_font = option_menu_font ? option_menu_font : ctx->option_value_font;
+  ctx->card_icon_font = card_icon_font ? card_icon_font : icon_font;
   ctx->icon_font = icon_font;
   ctx->width_compensation_percent = normalize_width_compensation_percent(width_compensation_percent);
   if (btn) lv_obj_set_user_data(btn, ctx);

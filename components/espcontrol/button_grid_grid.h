@@ -26,6 +26,7 @@ struct GridConfig {
   const lv_font_t *media_title_font;
   const lv_font_t *volume_number_font;
   const lv_font_t *volume_label_font = nullptr;
+  const lv_font_t *climate_card_icon_font = nullptr;
   const lv_font_t *climate_option_title_font = nullptr;
   const lv_font_t *climate_option_value_font = nullptr;
   const lv_font_t *volume_icon_font = nullptr;
@@ -200,7 +201,8 @@ inline void setup_card_visual(BtnSlot &s, const ParsedCfg &p,
   }
   if (p.type == "climate") {
     setup_climate_control_button(
-      s.btn, s.icon_lbl, s.sensor_container, s.sensor_lbl, s.unit_lbl, s.text_lbl, p);
+      s.btn, s.icon_lbl, s.sensor_container, s.sensor_lbl, s.unit_lbl,
+      s.text_lbl, p, cfg.climate_card_icon_font ? cfg.climate_card_icon_font : cfg.icon_font);
     return;
   }
   if (brightness_slider_type(p.type) || p.type == "cover") {
@@ -826,6 +828,7 @@ inline void grid_phase2(
           cfg.media_title_font
             ? cfg.media_title_font
             : lv_obj_get_style_text_font(s.text_lbl, LV_PART_MAIN),
+          cfg.climate_card_icon_font ? cfg.climate_card_icon_font : cfg.icon_font,
           cfg.icon_font,
           cfg.volume_width_compensation_percent,
           s.sensor_container, s.sensor_lbl, s.unit_lbl);
@@ -1378,6 +1381,7 @@ inline void grid_phase2(
             cfg.media_title_font
               ? cfg.media_title_font
               : lv_obj_get_style_text_font(sub_slot.text_lbl, LV_PART_MAIN),
+            cfg.climate_card_icon_font ? cfg.climate_card_icon_font : cfg.icon_font,
             cfg.icon_font,
             cfg.volume_width_compensation_percent,
             sub_slot.sensor_container, sub_slot.sensor_lbl, sub_slot.unit_lbl);
