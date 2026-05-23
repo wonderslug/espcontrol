@@ -158,6 +158,7 @@ const climatePreviewButton = {
 const climatePreviewC = hooks.buttonTypePreviewFor("climate", climatePreviewButton, {
   temperatureUnit: "\u00b0C",
 });
+assert.strictEqual(climatePreviewC.buttonClass, "sp-climate-card", "climate preview exposes shared card class");
 assert(climatePreviewC.iconHtml.includes("\u00b0C"), "climate preview uses Celsius unit");
 const climatePreviewF = hooks.buttonTypePreviewFor("climate", climatePreviewButton, {
   temperatureUnit: "\u00b0F",

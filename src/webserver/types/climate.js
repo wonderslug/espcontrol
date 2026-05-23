@@ -176,24 +176,26 @@ registerButtonType("climate", {
     } else if (labelMode === "target") {
       label = targetVal + unit;
     }
+    function climateLabelHtml() {
+      return '<span class="sp-btn-label-row"><span class="sp-btn-label">' +
+        helpers.escHtml(label) + '</span><span class="sp-type-badge mdi mdi-thermostat"></span></span>';
+    }
     if (numberMode === "icon") {
       var iconName = b.icon && b.icon !== "Auto" ? b.icon : "Thermostat";
       return {
+        buttonClass: "sp-climate-card",
         iconHtml: '<span class="sp-btn-icon sp-climate-card-icon mdi mdi-' + iconSlug(iconName) + '"></span>',
-        labelHtml:
-          '<span class="sp-btn-label-row"><span class="sp-btn-label">' +
-          helpers.escHtml(label) + '</span><span class="sp-type-badge mdi mdi-thermostat"></span></span>',
+        labelHtml: climateLabelHtml(),
       };
     }
     return {
+      buttonClass: "sp-climate-card",
       iconHtml:
         '<span class="sp-sensor-preview">' +
           '<span class="sp-sensor-value">' + numberVal + '</span>' +
           '<span class="sp-sensor-unit">' + unit + '</span>' +
         '</span>',
-      labelHtml:
-        '<span class="sp-btn-label-row"><span class="sp-btn-label">' +
-        helpers.escHtml(label) + '</span><span class="sp-type-badge mdi mdi-thermostat"></span></span>',
+      labelHtml: climateLabelHtml(),
     };
   },
 });

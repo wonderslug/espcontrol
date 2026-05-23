@@ -560,6 +560,24 @@ inline std::string climate_card_label(ClimateControlCtx *ctx) {
   return ctx->configured_label.empty() ? "Climate" : ctx->configured_label;
 }
 
+inline void climate_layout_card_icon(lv_obj_t *icon_lbl) {
+  if (!icon_lbl) return;
+  lv_obj_align(icon_lbl, LV_ALIGN_LEFT_MID, 0, 0);
+}
+
+inline void climate_layout_card_sensor(lv_obj_t *sensor_container) {
+  if (!sensor_container) return;
+  lv_obj_align(sensor_container, LV_ALIGN_TOP_LEFT, 0, 0);
+  lv_obj_move_foreground(sensor_container);
+}
+
+inline void climate_layout_card_label(lv_obj_t *label_lbl) {
+  if (!label_lbl) return;
+  lv_obj_align(label_lbl, LV_ALIGN_BOTTOM_LEFT, 0, 0);
+  configure_button_label_wrap(label_lbl);
+  lv_obj_move_foreground(label_lbl);
+}
+
 inline void climate_update_card(ClimateControlCtx *ctx) {
   if (!ctx) return;
   std::string value = climate_card_value(ctx);
@@ -570,7 +588,7 @@ inline void climate_update_card(ClimateControlCtx *ctx) {
         lv_obj_set_style_text_font(ctx->icon_lbl, ctx->card_icon_font, LV_PART_MAIN);
       lv_label_set_text(ctx->icon_lbl,
         climate_temperature_controls_enabled(ctx) ? ctx->icon_on_glyph : ctx->icon_off_glyph);
-      lv_obj_align(ctx->icon_lbl, LV_ALIGN_LEFT_MID, 0, 0);
+      climate_layout_card_icon(ctx->icon_lbl);
       lv_obj_clear_flag(ctx->icon_lbl, LV_OBJ_FLAG_HIDDEN);
     } else {
       lv_obj_add_flag(ctx->icon_lbl, LV_OBJ_FLAG_HIDDEN);
@@ -578,11 +596,17 @@ inline void climate_update_card(ClimateControlCtx *ctx) {
   }
   if (ctx->sensor_container) {
     if (show_icon) lv_obj_add_flag(ctx->sensor_container, LV_OBJ_FLAG_HIDDEN);
-    else lv_obj_clear_flag(ctx->sensor_container, LV_OBJ_FLAG_HIDDEN);
+    else {
+      lv_obj_clear_flag(ctx->sensor_container, LV_OBJ_FLAG_HIDDEN);
+      climate_layout_card_sensor(ctx->sensor_container);
+    }
   }
   if (!show_icon && ctx->value_lbl) lv_label_set_text(ctx->value_lbl, value.c_str());
   if (!show_icon && ctx->unit_lbl) lv_label_set_text(ctx->unit_lbl, (value.empty() || value == "--") ? "" : display_temperature_unit_symbol());
-  if (ctx->label_lbl) lv_label_set_text(ctx->label_lbl, climate_card_label(ctx).c_str());
+  if (ctx->label_lbl) {
+    lv_label_set_text(ctx->label_lbl, climate_card_label(ctx).c_str());
+    climate_layout_card_label(ctx->label_lbl);
+  }
   if (ctx->btn) {
     if (climate_is_active(ctx)) lv_obj_add_state(ctx->btn, LV_STATE_CHECKED);
     else lv_obj_clear_state(ctx->btn, LV_STATE_CHECKED);
@@ -1714,7 +1738,7 @@ inline void setup_climate_control_button(lv_obj_t *btn, lv_obj_t *icon_lbl,
       lv_obj_set_style_text_font(icon_lbl, card_icon_font, LV_PART_MAIN);
     lv_label_set_text(icon_lbl, (p.icon.empty() || p.icon == "Auto") ? find_icon("Thermostat") : find_icon(p.icon.c_str()));
     if (show_icon) {
-      lv_obj_align(icon_lbl, LV_ALIGN_LEFT_MID, 0, 0);
+      climate_layout_card_icon(icon_lbl);
       lv_obj_clear_flag(icon_lbl, LV_OBJ_FLAG_HIDDEN);
     } else {
       lv_obj_add_flag(icon_lbl, LV_OBJ_FLAG_HIDDEN);
@@ -1723,16 +1747,13 @@ inline void setup_climate_control_button(lv_obj_t *btn, lv_obj_t *icon_lbl,
   if (sensor_container) {
     if (show_icon) lv_obj_add_flag(sensor_container, LV_OBJ_FLAG_HIDDEN);
     else lv_obj_clear_flag(sensor_container, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_align(sensor_container, LV_ALIGN_TOP_LEFT, 0, 0);
-    lv_obj_move_foreground(sensor_container);
+    climate_layout_card_sensor(sensor_container);
   }
   if (sensor_lbl) lv_label_set_text(sensor_lbl, "--");
   if (unit_lbl) lv_label_set_text(unit_lbl, "");
   if (text_lbl) {
     lv_label_set_text(text_lbl, p.label.empty() ? "Climate" : p.label.c_str());
-    lv_obj_align(text_lbl, LV_ALIGN_BOTTOM_LEFT, 0, 0);
-    configure_button_label_wrap(text_lbl);
-    lv_obj_move_foreground(text_lbl);
+    climate_layout_card_label(text_lbl);
   }
   apply_push_button_transition(btn);
 }

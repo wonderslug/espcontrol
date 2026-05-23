@@ -1453,7 +1453,9 @@ function renderPreview() {
         : null;
 
       var btn = document.createElement("div");
-      btn.className = "sp-btn" + sizeClass(slotSz) +
+      btn.className = "sp-btn" +
+        (typePreview && typePreview.buttonClass ? " " + typePreview.buttonClass : "") +
+        sizeClass(slotSz) +
         (c.selected.indexOf(slot) !== -1 ? " sp-selected" : "");
       btn.style.backgroundColor = "#" + (color.length === 6 ? color : "313131");
       btn.draggable = !isConfigLocked();

@@ -71,6 +71,8 @@ var CSS =
   "overflow:hidden;word-break:break-word;min-height:0}" +
   ".sp-sensor-badge{position:absolute;top:var(--sensor-top);right:var(--sensor-right);font-size:var(--sensor-fs);opacity:.5}" +
   ".sp-sensor-preview{display:flex;align-items:baseline;gap:.18em;color:#fff}" +
+  ".sp-climate-card .sp-sensor-preview{position:absolute;left:var(--btn-pad);top:var(--btn-pad)}" +
+  ".sp-climate-card .sp-btn-label-row{margin-top:auto}" +
   ".sp-btn-big .sp-sensor-preview-large .sp-sensor-value{font-size:calc(var(--btn-icon)*2.5);font-weight:100}" +
   ".sp-btn-big .sp-sensor-preview-large .sp-sensor-unit{transform:translateY(var(--large-sensor-unit-offset-y,-20px))}" +
   ".sp-forecast-preview{white-space:nowrap;gap:0}" +
