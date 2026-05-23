@@ -1298,6 +1298,17 @@ assertButtonRoundTrip(hooks, "vacuum start action card", {
   precision: "",
 }, false);
 
+assertButtonRoundTrip(hooks, "vacuum return to base action card", {
+  entity: "vacuum.k11_vacuum_784c",
+  label: "Dock Vacuum",
+  icon: "Robot Vacuum",
+  icon_on: "Auto",
+  sensor: "vacuum.return_to_base",
+  unit: "",
+  type: "action",
+  precision: "",
+}, false);
+
 assertButtonRoundTrip(hooks, "input button action card", {
   entity: "input_button.doorbell",
   label: "Doorbell",
