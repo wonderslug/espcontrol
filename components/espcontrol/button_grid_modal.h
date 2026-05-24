@@ -136,6 +136,10 @@ struct ControlModalNestedShell {
   lv_obj_t *panel = nullptr;
 };
 
+struct ControlModalToastShell {
+  lv_obj_t *box = nullptr;
+};
+
 inline ControlModalCloseCallback &control_modal_nested_close_callback() {
   static ControlModalCloseCallback callback = nullptr;
   return callback;
@@ -409,6 +413,28 @@ inline ControlModalNestedShell control_modal_open_nested_menu(lv_coord_t width,
   shell.panel = lv_obj_create(shell.overlay);
   lv_obj_set_width(shell.panel, width);
   control_modal_style_nested_panel(shell.panel, radius);
+  return shell;
+}
+
+inline void control_modal_style_toast_box(lv_obj_t *box, lv_coord_t radius,
+                                          uint32_t bg_color) {
+  if (!box) return;
+  lv_obj_set_style_bg_color(box, lv_color_hex(bg_color), LV_PART_MAIN);
+  lv_obj_set_style_bg_opa(box, LV_OPA_COVER, LV_PART_MAIN);
+  lv_obj_set_style_border_width(box, 0, LV_PART_MAIN);
+  lv_obj_set_style_shadow_width(box, 0, LV_PART_MAIN);
+  lv_obj_set_style_radius(box, radius, LV_PART_MAIN);
+  lv_obj_set_style_pad_all(box, 12, LV_PART_MAIN);
+  lv_obj_clear_flag(box, LV_OBJ_FLAG_SCROLLABLE);
+}
+
+inline ControlModalToastShell control_modal_open_toast(lv_coord_t width,
+                                                       lv_coord_t radius,
+                                                       uint32_t bg_color) {
+  ControlModalToastShell shell;
+  shell.box = lv_obj_create(lv_layer_top());
+  lv_obj_set_width(shell.box, width);
+  control_modal_style_toast_box(shell.box, radius, bg_color);
   return shell;
 }
 

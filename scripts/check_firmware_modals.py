@@ -16,7 +16,6 @@ FORBIDDEN_ALLOCATIONS = (
 )
 LAYER_TOP_ALLOWLIST = {
     "button_grid_modal.h",
-    "button_grid_alarm.h",
 }
 
 

@@ -560,15 +560,8 @@ inline void alarm_show_failure(AlarmCardCtx *ctx, const std::string &message) {
   alarm_hide_toast();
   AlarmToastUi &ui = alarm_toast_ui();
   lv_coord_t width = alarm_failure_banner_width(ctx);
-  ui.box = lv_obj_create(lv_layer_top());
-  lv_obj_set_width(ui.box, width);
-  lv_obj_set_style_bg_color(ui.box, lv_color_hex(ALARM_TRIGGERED_COLOR), LV_PART_MAIN);
-  lv_obj_set_style_bg_opa(ui.box, LV_OPA_COVER, LV_PART_MAIN);
-  lv_obj_set_style_border_width(ui.box, 0, LV_PART_MAIN);
-  lv_obj_set_style_shadow_width(ui.box, 0, LV_PART_MAIN);
-  lv_obj_set_style_radius(ui.box, 10, LV_PART_MAIN);
-  lv_obj_set_style_pad_all(ui.box, 12, LV_PART_MAIN);
-  lv_obj_clear_flag(ui.box, LV_OBJ_FLAG_SCROLLABLE);
+  ControlModalToastShell shell = control_modal_open_toast(width, 10, ALARM_TRIGGERED_COLOR);
+  ui.box = shell.box;
 
   lv_obj_t *label = lv_label_create(ui.box);
   lv_label_set_text(label, message.empty() ? "Alarm action failed" : message.c_str());
