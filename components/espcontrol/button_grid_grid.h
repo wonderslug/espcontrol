@@ -36,6 +36,29 @@ struct GridConfig {
   std::function<void()> resume_home_idle;
 };
 
+inline DisplayProfile display_profile_from_grid_config(const GridConfig &cfg) {
+  DisplayProfile profile;
+  profile.fonts.icon = cfg.icon_font;
+  profile.fonts.sensor = cfg.sp_sensor_font;
+  profile.fonts.large_sensor = cfg.sp_large_sensor_font;
+  profile.fonts.media_title = cfg.media_title_font;
+  profile.fonts.volume_number = cfg.volume_number_font;
+  profile.fonts.volume_label = cfg.volume_label_font;
+  profile.fonts.climate_card_icon = cfg.climate_card_icon_font;
+  profile.fonts.climate_option_title = cfg.climate_option_title_font;
+  profile.fonts.climate_option_value = cfg.climate_option_value_font;
+  profile.fonts.volume_icon = cfg.volume_icon_font;
+  profile.width.vertical_axis = cfg.width_compensation_vertical;
+  profile.width.main_percent = cfg.width_compensation_percent;
+  profile.width.volume_percent = cfg.volume_width_compensation_percent;
+  profile.large_numbers.font = cfg.sp_large_sensor_font;
+  profile.large_numbers.unit_offset_percent = cfg.large_sensor_unit_offset_percent;
+  profile.color.red_percent = cfg.color_correction_red_percent;
+  profile.color.green_percent = cfg.color_correction_green_percent;
+  profile.color.blue_percent = cfg.color_correction_blue_percent;
+  return profile;
+}
+
 inline void configure_grid_layout(lv_obj_t *page, int num_slots, int cols) {
   if (!page) return;
   int slot_count = bounded_grid_slots(num_slots);
