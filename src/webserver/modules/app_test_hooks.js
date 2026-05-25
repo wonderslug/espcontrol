@@ -9,6 +9,9 @@ if (typeof globalThis !== "undefined" && globalThis.__ESPCONTROL_TEST_HOOKS__) {
     cardContractCardKeys: cardContractCardKeys,
     cardContractCardLabel: cardContractCardLabel,
     cardContractAllowInSubpage: cardContractAllowInSubpage,
+    cardContractPickerKey: cardContractPickerKey,
+    cardContractExperimental: cardContractExperimental,
+    cardContractHidden: cardContractHidden,
     cardContractDefaultConfig: cardContractDefaultConfig,
     cardContractDomains: cardContractDomains,
     cardContractMigrationAlias: cardContractMigrationAlias,
@@ -67,6 +70,19 @@ if (typeof globalThis !== "undefined" && globalThis.__ESPCONTROL_TEST_HOOKS__) {
       var config = typeDef && typeDef.defaultConfig;
       if (typeof config === "function") config = config();
       return config ? EspControlModel.cloneCardConfig(config) : null;
+    },
+    buttonTypeRuntimeSpec: function (type) {
+      var typeDef = BUTTON_TYPES[type || ""];
+      var metadata = typeDef && typeDef.cardMetadata;
+      var entity = metadata && metadata.entity;
+      return typeDef ? {
+        label: buttonTypeRegistryValue(typeDef, "label", typeDef.key || "Toggle"),
+        allowInSubpage: !!buttonTypeRegistryValue(typeDef, "allowInSubpage", false),
+        pickerKey: buttonTypeRegistryValue(typeDef, "pickerKey", "") || "",
+        experimental: buttonTypeRegistryValue(typeDef, "experimental", "") || "",
+        hidden: !!buttonTypeRegistryValue(typeDef, "hidden", false),
+        domains: entity && entity.domains ? cardMetadataValue(entity.domains, {}, {}) || [] : [],
+      } : null;
     },
     parseSubpageConfig: parseSubpageConfig,
     serializeSubpageConfig: serializeSubpageConfig,

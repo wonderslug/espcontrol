@@ -655,6 +655,21 @@ function cardContractAllowInSubpage(type) {
   return !!(card && card.allowInSubpage);
 }
 
+function cardContractPickerKey(type) {
+  var card = cardContractCard(type);
+  return card && card.pickerKey ? card.pickerKey : "";
+}
+
+function cardContractExperimental(type) {
+  var card = cardContractCard(type);
+  return card && card.experimental ? card.experimental : "";
+}
+
+function cardContractHidden(type) {
+  var card = cardContractCard(type);
+  return !!(card && card.hidden);
+}
+
 function cardContractDefaultConfig(type) {
   var card = cardContractCard(type);
   var defaults = card && card.default ? card.default : CARD_CONTRACT_CARDS[""].default;

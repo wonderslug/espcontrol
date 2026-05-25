@@ -775,7 +775,8 @@ function addSingleCardMenuItems(slot) {
   addCtxItem("pencil", "Edit Card", function () { openCardSettings(slot); });
 
   var ctxTypeDef = BUTTON_TYPES[(b && b.type) || ""];
-  if (ctxTypeDef && ctxTypeDef.contextMenuItems && (!c.isSub || ctxTypeDef.allowInSubpage)) {
+  if (ctxTypeDef && ctxTypeDef.contextMenuItems &&
+      (!c.isSub || buttonTypeRegistryValue(ctxTypeDef, "allowInSubpage", false))) {
     ctxTypeDef.contextMenuItems(slot, b, { addCtxItem: addCtxItem });
   }
 

@@ -4,7 +4,7 @@ var SENSOR_CARD_METADATA = {
     label: "Sensor Entity",
     idSuffix: "sensor",
     placeholder: "e.g. sensor.living_room_temperature",
-    domains: ["sensor", "binary_sensor", "text_sensor"],
+    domains: function () { return cardContractDomains("sensor"); },
     bindName: "sensor",
     rerender: true,
     requiredMessage: "Add a sensor entity before saving.",
@@ -33,8 +33,11 @@ var SENSOR_CARD_METADATA = {
 };
 
 registerButtonType("sensor", {
-  label: "Sensor",
-  allowInSubpage: true,
+  label: function () { return cardContractCardLabel("sensor"); },
+  allowInSubpage: function () { return cardContractAllowInSubpage("sensor"); },
+  pickerKey: function () { return cardContractPickerKey("sensor"); },
+  experimental: function () { return cardContractExperimental("sensor"); },
+  hidden: function () { return cardContractHidden("sensor"); },
   hideLabel: true,
   defaultConfig: function () { return cardContractDefaultConfig("sensor"); },
   cardMetadata: SENSOR_CARD_METADATA,

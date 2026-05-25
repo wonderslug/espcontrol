@@ -238,6 +238,18 @@ assert.deepStrictEqual(
   buttonShape(hooks.cardContractDefaultConfig("sensor")),
   "sensor card type default is spec-backed"
 );
+function assertButtonTypeSpecBacked(type, description) {
+  const spec = hooks.buttonTypeRuntimeSpec(type);
+  assert(spec, `${description} runtime spec exists`);
+  assert.strictEqual(spec.label, hooks.cardContractCardLabel(type), `${description} picker label is spec-backed`);
+  assert.strictEqual(spec.allowInSubpage, hooks.cardContractAllowInSubpage(type), `${description} subpage visibility is spec-backed`);
+  assert.strictEqual(spec.pickerKey, hooks.cardContractPickerKey(type), `${description} picker key is spec-backed`);
+  assert.strictEqual(spec.experimental, hooks.cardContractExperimental(type), `${description} experimental flag is spec-backed`);
+  assert.strictEqual(spec.hidden, hooks.cardContractHidden(type), `${description} hidden flag is spec-backed`);
+  assert.deepStrictEqual(Array.from(spec.domains), Array.from(hooks.cardContractDomains(type)), `${description} entity domains are spec-backed`);
+}
+assertButtonTypeSpecBacked("", "switch card");
+assertButtonTypeSpecBacked("sensor", "sensor card");
 assert.deepStrictEqual(Object.assign({}, hooks.cardContractMigrationAlias("weather_forecast")), {
   type: "weather",
   precision: "tomorrow",

@@ -473,11 +473,12 @@ function renderButtonSettings(forceOpen) {
 
   var rawTypeDef = BUTTON_TYPES[b.type || ""] || BUTTON_TYPES[""];
   var typeDef = rawTypeDef;
-  if (rawTypeDef && rawTypeDef.experimental && !isExperimentalEnabled(rawTypeDef.experimental)) {
+  var rawExperimental = buttonTypeRegistryValue(rawTypeDef, "experimental", "");
+  if (rawExperimental && !isExperimentalEnabled(rawExperimental)) {
     typeDef = hiddenExperimentalButtonTypeDef(rawTypeDef);
   }
   {
-    var selectedTypeKey = (rawTypeDef && rawTypeDef.pickerKey) || (b.type || "");
+    var selectedTypeKey = buttonTypeRegistryValue(rawTypeDef, "pickerKey", "") || (b.type || "");
     var typeOpts = buttonTypePickerOptionList(c.isSub, selectedTypeKey);
     var tf = document.createElement("div");
     tf.className = "sp-field";
@@ -538,7 +539,8 @@ function renderButtonSettings(forceOpen) {
     isSub: c.isSub,
   };
 
-  if (typeDef && typeDef.renderSettingsBeforeLabel && (!c.isSub || typeDef.allowInSubpage)) {
+  if (typeDef && typeDef.renderSettingsBeforeLabel &&
+      (!c.isSub || buttonTypeRegistryValue(typeDef, "allowInSubpage", false))) {
     typeDef.renderSettingsBeforeLabel(panel, b, slot, typeHelpers);
   }
 
@@ -553,7 +555,8 @@ function renderButtonSettings(forceOpen) {
     bindField(labelInp, "label", true);
   }
 
-  if (typeDef && typeDef.renderSettings && (!c.isSub || typeDef.allowInSubpage)) {
+  if (typeDef && typeDef.renderSettings &&
+      (!c.isSub || buttonTypeRegistryValue(typeDef, "allowInSubpage", false))) {
     typeDef.renderSettings(panel, b, slot, typeHelpers);
   } else {
     // Toggle fallback: entity, icons, sensor data

@@ -6,25 +6,37 @@ function previewHtmlValue(typePreview, key, fallback) {
     : fallback;
 }
 
+function buttonTypeRegistryValue(typeDef, key, fallback) {
+  if (!typeDef || !Object.prototype.hasOwnProperty.call(typeDef, key)) return fallback;
+  var value = typeDef[key];
+  if (typeof value === "function") value = value();
+  return value == null ? fallback : value;
+}
+
 function buttonTypePickerOptionList(isSub, selectedTypeKey) {
   var typeOpts = [];
   var selectedHiddenExperimental = null;
   for (var k in BUTTON_TYPES) {
     var td = BUTTON_TYPES[k];
-    if (td.pickerKey && td.pickerKey !== td.key) continue;
-    if (isSub && !td.allowInSubpage) continue;
+    var pickerKey = buttonTypeRegistryValue(td, "pickerKey", "");
+    var allowInSubpage = !!buttonTypeRegistryValue(td, "allowInSubpage", false);
+    var experimental = buttonTypeRegistryValue(td, "experimental", "");
+    var label = buttonTypeRegistryValue(td, "label", td.key || "Toggle");
+    if (pickerKey && pickerKey !== td.key) continue;
+    if (isSub && !allowInSubpage) continue;
     if (td.isAvailable && !td.isAvailable({ isSub: isSub }) && selectedTypeKey !== td.key) continue;
-    var experimentalHidden = td.experimental && !isExperimentalEnabled(td.experimental);
+    var experimentalHidden = experimental && !isExperimentalEnabled(experimental);
     if (experimentalHidden) {
       if (selectedTypeKey === td.key) selectedHiddenExperimental = td;
       continue;
     }
-    typeOpts.push({ key: td.key, label: td.label, disabled: false });
+    typeOpts.push({ key: td.key, label: label, disabled: false });
   }
   if (selectedHiddenExperimental) {
     typeOpts.push({
       key: selectedHiddenExperimental.key,
-      label: selectedHiddenExperimental.label + " (experimental)",
+      label: buttonTypeRegistryValue(selectedHiddenExperimental, "label", selectedHiddenExperimental.key || "Toggle") +
+        " (experimental)",
       disabled: true,
     });
   }
@@ -99,7 +111,9 @@ function renderPreview() {
       var color = (b.type === "sensor" || b.type === "door_window" || b.type === "weather" || b.type === "weather_forecast" || b.type === "calendar" || b.type === "timezone")
         ? state.sensorColor : state.offColor;
       var previewTypeDef = BUTTON_TYPES[b.type || ""] || null;
-      if (previewTypeDef && c.isSub && !previewTypeDef.allowInSubpage) previewTypeDef = null;
+      if (previewTypeDef && c.isSub && !buttonTypeRegistryValue(previewTypeDef, "allowInSubpage", false)) {
+        previewTypeDef = null;
+      }
       var slotSz = c.sizes[slot];
       var typePreview = previewTypeDef && previewTypeDef.renderPreview
         ? previewTypeDef.renderPreview(b, { escHtml: escHtml, cardSize: slotSz || 1 })

@@ -3,7 +3,7 @@ var SWITCH_CARD_METADATA = {
   entity: {
     label: "Entity",
     placeholder: "e.g. light.kitchen",
-    domains: ["light", "switch", "input_boolean", "fan"],
+    domains: function () { return cardContractDomains(""); },
     requiredMessage: "Add an entity before saving.",
   },
   iconOff: {
@@ -111,8 +111,11 @@ var LIGHT_SWITCH_CARD_METADATA = {
 };
 
 registerButtonType("", {
-  label: "Switch",
-  allowInSubpage: true,
+  label: function () { return cardContractCardLabel(""); },
+  allowInSubpage: function () { return cardContractAllowInSubpage(""); },
+  pickerKey: function () { return cardContractPickerKey(""); },
+  experimental: function () { return cardContractExperimental(""); },
+  hidden: function () { return cardContractHidden(""); },
   defaultConfig: function () { return cardContractDefaultConfig(""); },
   cardMetadata: SWITCH_CARD_METADATA,
   renderSettings: function (panel, b, slot, helpers) {
