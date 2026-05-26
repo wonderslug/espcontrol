@@ -24,6 +24,38 @@ You can also right-click an empty space on the home screen and choose **Create S
 
 Subpages can contain Switch, Lights, Action, Trigger, Sensor, Doors & Windows, Slider, Cover, Garage Door, Lock, Date & Time, World Clock, Weather, Media, Climate, and Internal Switches cards. Subpages cannot contain another Subpage card.
 
+## Open a Page From Home Assistant
+
+You can ask Home Assistant to wake the panel and open a page directly. This is useful in automations, scripts, dashboards, or voice routines where you want the panel to jump to a relevant page.
+
+Use the ESPHome action named after your device:
+
+```yaml
+action: esphome.<device_name>_navigate
+data:
+  target: "Lights"
+```
+
+Replace `<device_name>` with the ESPHome device name shown in Home Assistant. For example, if the device is called `hall_panel`, the action is:
+
+```yaml
+action: esphome.hall_panel_navigate
+data:
+  target: "Lights"
+```
+
+The `target` value can be:
+
+- `home` or `main` to open the home screen.
+- The **Label** you set on a Subpage card, such as `Lights`, `Heating`, or `Media`. Matching is not case-sensitive, so `lights` and `Lights` work the same way.
+- `slot:3` to open the subpage attached to home screen slot 3. This is mainly a fallback for troubleshooting; using the subpage label is easier.
+
+You do not need to know a page number. Use the same label you gave the Subpage card on the home screen.
+
+If two subpages use the same label, the first matching home screen slot opens. To avoid surprises, give each subpage a unique label. If Home Assistant sends a label or slot that does not exist, the panel logs a warning and stays on the current page.
+
+The panel wakes before navigating, so the action works when the screen is off, dimmed, or showing the clock screensaver. It does not change long-press behavior. If you use the [Home screen timeout](/features/idle), the panel will still return to the home screen using that normal setting.
+
 ## Show State
 
 Turn on **Show State** if you want the Subpage card on the home screen to show state.
