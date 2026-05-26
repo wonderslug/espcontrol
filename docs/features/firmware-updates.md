@@ -25,6 +25,12 @@ These are configured from the **Settings** tab in the [Setup](/features/setup) u
 
 The update usually takes a minute or two. The display may show a loading screen briefly during the restart.
 
+## Compatibility Notes
+
+Firmware updates preserve the panel's existing cards, subpages, colours, brightness, clock, screensaver, and backup settings. The setup page still reads the same saved card string format after an update, so existing cards do not need to be recreated.
+
+Backup imports remain compatible across firmware updates. If you move a backup between different panel sizes, the import may rearrange cards to fit the new screen while keeping supported cards and subpages intact.
+
 ## When New Cards Appear
 
 Some features, especially new card types, need both the web setup page and the panel firmware. If the setup page shows a new card type but the panel does not display it correctly after you apply the configuration, check for a firmware update and install the latest version.
