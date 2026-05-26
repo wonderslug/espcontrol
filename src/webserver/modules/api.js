@@ -272,6 +272,17 @@ function rememberedPostUrls(domain, name, objectIds, action) {
   return urls;
 }
 
+function hasRememberedPostPath(domain, name, objectIds) {
+  var keys = [domain + ":" + name, domain + "-" + esphomeObjectId(name)];
+  (objectIds || []).forEach(function (objectId) {
+    keys.push(domain + ":" + objectId);
+    keys.push(domain + "-" + objectId);
+  });
+  return keys.some(function (key) {
+    return !!state.entityPostPaths[key];
+  });
+}
+
 function entityPostUrls(domain, name, objectIds, action) {
   var urls = rememberedPostUrls(domain, name, objectIds || [], action);
   (objectIds || []).forEach(function (objectId) {
@@ -327,7 +338,10 @@ function saveSubpageEntity(slot) {
   }
   state.subpageSavePending[slot] = full;
   for (var ki = 0; ki < keys.length; ki++) {
-    postText(entityNameForSlot(keys[ki], slot), chunks[ki] || "");
+    var chunkName = entityNameForSlot(keys[ki], slot);
+    var chunk = chunks[ki] || "";
+    if (!chunk && ki > 0 && !hasRememberedPostPath("text", chunkName, [])) continue;
+    postText(chunkName, chunk);
   }
 }
 
