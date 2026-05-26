@@ -640,6 +640,52 @@ const mediaNowPlayingPreview = hooks.buttonTypePreviewFor("media", {
 assert(mediaNowPlayingPreview.iconHtml.includes("Midnight City"), "media now-playing preview keeps title text");
 assert(mediaNowPlayingPreview.labelHtml.includes("sp-media-now-artist"), "media now-playing preview keeps artist styling");
 
+const issue243Backup = {
+  version: 1,
+  device: "guition-esp32-p4-jc4880p443",
+  exported_at: "2026-05-24T08:30:00.103Z",
+  button_order: "2,5,1,6,3,4",
+  button_on_color: "FF8C00",
+  button_off_color: "313131",
+  sensor_card_color: "212121",
+  buttons: [
+    { entity: "light.office", label: "Office", icon: "Lightbulb Outline", icon_on: "Lightbulb", sensor: "", unit: "", type: "light_brightness", precision: "", options: "" },
+    { entity: "alarm_control_panel.alarmo", label: "Alarm", icon: "Auto", icon_on: "Auto", sensor: "indicator", unit: "", type: "subpage", precision: "", options: "" },
+    { entity: "light.hallway", label: "Hallway", icon: "Lightbulb Outline", icon_on: "Lightbulb", sensor: "", unit: "", type: "light_brightness", precision: "", options: "" },
+    { entity: "light.kitchen", label: "Kitchen", icon: "Lightbulb Outline", icon_on: "Lightbulb", sensor: "", unit: "", type: "light_brightness", precision: "", options: "" },
+    { entity: "light.office_led", label: "Office LED", icon: "Lightbulb Outline", icon_on: "Lightbulb", sensor: "", unit: "", type: "light_brightness", precision: "", options: "" },
+    { entity: "media_player.office", label: "Sonos", icon: "Music", icon_on: "Play Pause", sensor: "indicator", unit: "", type: "subpage", precision: "", options: "" },
+  ],
+  subpages: {
+    2: "~B,,,1,,2|AA,alarm_control_panel.alarmo,Disarm,Shield Off,,disarm|AA,alarm_control_panel.alarmo,Arm Away,Shield Lock,,away,,,pin_arm=0|",
+    6: "~B,1,3,2x|M,media_player.office,,,,play_pause,,state|M,media_player.office,,,,now_playing,,progress|M,media_player.office,Volume,,,volume||",
+  },
+  settings: { temperature_unit: "\u00b0C", timezone: "Australia/Sydney (GMT+10)", clock_format: "24h" },
+  screen: { brightness_day: 70, brightness_night: 30 },
+};
+const issue243Plan = hooks.planBackupImport(issue243Backup, {
+  device: "guition-esp32-p4-jc4880p443",
+  slots: 6,
+});
+assert.deepStrictEqual(
+  plain(issue243Plan.buttons.map((button) => button.type)),
+  ["light_brightness", "subpage", "light_brightness", "light_brightness", "light_brightness", "subpage"],
+  "issue #243 import keeps brightness cards as brightness cards"
+);
+assert.deepStrictEqual(
+  plain(issue243Plan.buttons.filter((button) => button.type === "light_brightness").map((button) => button.entity)),
+  ["light.office", "light.hallway", "light.kitchen", "light.office_led"],
+  "issue #243 import keeps all brightness light entities"
+);
+assert.strictEqual(issue243Plan.button_order, "2,5,1,6,3,4", "issue #243 import keeps the JC4880 layout");
+assert.strictEqual(hooks.serializeButtonConfig(issue243Plan.buttons[0]), "light.office;Office;Lightbulb Outline;Lightbulb;;;light_brightness");
+assert.deepStrictEqual(plain(Object.keys(issue243Plan.subpages).sort()), ["2", "6"], "issue #243 import keeps both subpages");
+assert.deepStrictEqual(
+  plain(issue243Plan.subpages["6"].buttons.filter((button) => button.entity).map((button) => button.type)),
+  ["media", "media", "media"],
+  "issue #243 media subpage survives import"
+);
+
 assert.strictEqual(hooks.normalizeScreensaverAction("Screen Dimmed"), "dim");
 assert.strictEqual(hooks.previewHtmlValue({ labelHtml: "" }, "labelHtml", "fallback"), "");
 assert.strictEqual(hooks.previewHtmlValue({}, "labelHtml", "fallback"), "fallback");

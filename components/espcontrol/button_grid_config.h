@@ -544,6 +544,23 @@ inline int parse_precision(const std::string &s) {
   return (v < 0) ? 0 : (v > 3) ? 3 : v;
 }
 
+inline int clamp_percent_value(int pct) {
+  if (pct < 0) return 0;
+  if (pct > 100) return 100;
+  return pct;
+}
+
+inline bool light_brightness_to_percent(float brightness, int &pct) {
+  if (!std::isfinite(brightness)) return false;
+  if (brightness <= 0.0f) {
+    pct = 0;
+    return true;
+  }
+  pct = clamp_percent_value((int)((brightness * 100.0f + 127.0f) / 255.0f));
+  if (pct < 1) pct = 1;
+  return true;
+}
+
 inline std::string trim_display_unit(const std::string &unit) {
   size_t start = 0;
   while (start < unit.size() &&

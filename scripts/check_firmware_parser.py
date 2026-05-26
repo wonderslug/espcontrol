@@ -19,6 +19,7 @@ LAYOUT_HEADER = ROOT / "components" / "espcontrol" / "button_grid_layout.h"
 
 CPP_SOURCE = r'''
 #include <cassert>
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -112,6 +113,14 @@ int main() {
   assert(normalize_width_compensation_percent(25) == 50);
   assert(normalize_width_compensation_percent(175) == 150);
   assert(width_compensation_scale(100) == 256);
+  assert(clamp_percent_value(-1) == 0);
+  assert(clamp_percent_value(101) == 100);
+  int brightness_pct = -1;
+  assert(light_brightness_to_percent(0.0f, brightness_pct) && brightness_pct == 0);
+  assert(light_brightness_to_percent(1.0f, brightness_pct) && brightness_pct == 1);
+  assert(light_brightness_to_percent(128.0f, brightness_pct) && brightness_pct == 50);
+  assert(light_brightness_to_percent(255.0f, brightness_pct) && brightness_pct == 100);
+  assert(!light_brightness_to_percent(NAN, brightness_pct));
 
   OrderResult parsed;
   parse_order_string("1,2d,3w,4b,5t,6x,99", 9, parsed);

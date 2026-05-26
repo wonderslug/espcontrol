@@ -7,11 +7,13 @@
 // Context attached to each LVGL slider via user_data
 struct SliderCtx {
   std::string entity_id;
-  lv_obj_t *fill;
-  bool horizontal;
-  bool cover_tilt;
-  bool inverted;
-  lv_coord_t radius;
+  lv_obj_t *fill = nullptr;
+  bool horizontal = false;
+  bool cover_tilt = false;
+  bool inverted = false;
+  lv_coord_t radius = 0;
+  bool logged_state = false;
+  bool logged_level = false;
   bool media_position = false;
   float media_duration = 0.0f;
   float media_position_seconds = 0.0f;
@@ -132,8 +134,12 @@ inline void slider_fit_to_button(lv_obj_t *slider, lv_obj_t *btn, bool horizonta
 
 // Resize the colored fill overlay to reflect the current slider percentage
 inline void slider_update_fill(lv_obj_t *fill, lv_obj_t *btn, int pct, bool horizontal, bool inverted, lv_coord_t r) {
+  if (!fill || !btn) return;
+  if (pct < 0) pct = 0;
+  if (pct > 100) pct = 100;
   lv_coord_t bw = lv_obj_get_width(btn);
   lv_coord_t bh = lv_obj_get_height(btn);
+  if (bw <= 0 || bh <= 0) return;
   lv_obj_set_style_radius(fill, r, LV_PART_MAIN);
   if (horizontal) {
     lv_coord_t w = (lv_coord_t)((int32_t)bw * pct / 100);
@@ -213,6 +219,7 @@ inline void slider_refresh_geometry(lv_obj_t *slider) {
 }
 
 inline void slider_bind_geometry_refresh(lv_obj_t *btn, lv_obj_t *slider) {
+  if (!btn || !slider) return;
   lv_obj_add_event_cb(btn, [](lv_event_t *e) {
     lv_obj_t *sl = (lv_obj_t *)lv_event_get_user_data(e);
     slider_refresh_geometry(sl);
@@ -222,11 +229,13 @@ inline void slider_bind_geometry_refresh(lv_obj_t *btn, lv_obj_t *slider) {
 
 // Create an invisible LVGL slider with a colored fill overlay inside a button
 inline lv_obj_t *setup_slider_widget(lv_obj_t *btn, uint32_t on_color, bool horizontal) {
+  if (!btn) return nullptr;
   lv_obj_set_style_pad_all(btn, 0,
     static_cast<lv_style_selector_t>(LV_PART_MAIN));
   lv_obj_clear_flag(btn, LV_OBJ_FLAG_CLICKABLE);
 
   lv_obj_t *fill = lv_obj_create(btn);
+  if (!fill) return nullptr;
   lv_obj_set_size(fill, 0, 0);
   lv_obj_set_style_bg_color(fill, lv_color_hex(on_color), LV_PART_MAIN);
   lv_obj_set_style_bg_opa(fill, LV_OPA_COVER, LV_PART_MAIN);
@@ -236,6 +245,11 @@ inline lv_obj_t *setup_slider_widget(lv_obj_t *btn, uint32_t on_color, bool hori
   lv_obj_clear_flag(fill, LV_OBJ_FLAG_SCROLLABLE);
 
   lv_obj_t *slider = lv_slider_create(btn);
+  if (!slider) {
+    lv_obj_del(fill);
+    lv_obj_add_flag(btn, LV_OBJ_FLAG_CLICKABLE);
+    return nullptr;
+  }
   lv_slider_set_range(slider, 0, 100);
   lv_slider_set_value(slider, 0, LV_ANIM_OFF);
   lv_obj_update_layout(btn);
@@ -298,18 +312,39 @@ inline void setup_cover_command_card(BtnSlot &s, const ParsedCfg &p) {
 
 // Full slider button setup: visual + event handlers + HA action on release
 inline void setup_slider_visual(BtnSlot &s, const ParsedCfg &p, uint32_t on_color) {
+  ESP_LOGI("slider", "Setup brightness slider for %s (%s)",
+    p.entity.c_str(), p.type.c_str());
   setup_toggle_visual(s, p);
   if (p.type == "cover")
     lv_label_set_text(s.icon_lbl, slider_icon_off(p.type, p.entity, p.icon));
 
   bool horizontal = false;
   lv_obj_t *slider = setup_slider_widget(s.btn, on_color, horizontal);
+  if (!slider) {
+    ESP_LOGW("slider", "Slider setup failed for %s; falling back to toggle card",
+      p.entity.c_str());
+    setup_toggle_visual(s, p);
+    if (s.btn) lv_obj_add_flag(s.btn, LV_OBJ_FLAG_CLICKABLE);
+    if (s.icon_lbl) lv_obj_clear_flag(s.icon_lbl, LV_OBJ_FLAG_HIDDEN);
+    if (s.sensor_container) lv_obj_add_flag(s.sensor_container, LV_OBJ_FLAG_HIDDEN);
+    return;
+  }
+  ESP_LOGI("slider", "Slider object created for %s", p.entity.c_str());
   lv_coord_t pad = lv_obj_get_style_radius(s.btn, LV_PART_MAIN) + 4;
   lv_obj_align(s.icon_lbl, LV_ALIGN_TOP_LEFT, pad, pad);
   lv_obj_align(s.text_lbl, LV_ALIGN_BOTTOM_LEFT, pad, -pad);
   lv_obj_set_user_data(s.sensor_container, (void *)slider);
 
   lv_obj_t *fill = lv_obj_get_child(s.btn, 0);
+  if (!fill) {
+    ESP_LOGW("slider", "Slider fill missing for %s; falling back to toggle card",
+      p.entity.c_str());
+    setup_toggle_visual(s, p);
+    if (s.btn) lv_obj_add_flag(s.btn, LV_OBJ_FLAG_CLICKABLE);
+    if (s.icon_lbl) lv_obj_clear_flag(s.icon_lbl, LV_OBJ_FLAG_HIDDEN);
+    if (s.sensor_container) lv_obj_add_flag(s.sensor_container, LV_OBJ_FLAG_HIDDEN);
+    return;
+  }
   // Intentionally leaked -- lives for the lifetime of the display
   SliderCtx *ctx = new SliderCtx();
   ctx->entity_id = p.entity;
@@ -323,6 +358,7 @@ inline void setup_slider_visual(BtnSlot &s, const ParsedCfg &p, uint32_t on_colo
 
   lv_obj_add_event_cb(slider, [](lv_event_t *e) {
     lv_obj_t *sl = static_cast<lv_obj_t *>(lv_event_get_target(e));
+    if (!sl) return;
     SliderCtx *c = (SliderCtx *)lv_obj_get_user_data(sl);
     if (!c) return;
     int val = lv_slider_get_value(sl);
@@ -332,6 +368,7 @@ inline void setup_slider_visual(BtnSlot &s, const ParsedCfg &p, uint32_t on_colo
 
   lv_obj_add_event_cb(slider, [](lv_event_t *e) {
     lv_obj_t *sl = static_cast<lv_obj_t *>(lv_event_get_target(e));
+    if (!sl) return;
     SliderCtx *c = (SliderCtx *)lv_obj_get_user_data(sl);
     if (c && !c->entity_id.empty()) {
       if (!c->available) return;
@@ -341,6 +378,37 @@ inline void setup_slider_visual(BtnSlot &s, const ParsedCfg &p, uint32_t on_colo
   }, LV_EVENT_RELEASED, nullptr);
 }
 
+inline int slider_clamp_pct(int pct) {
+  return clamp_percent_value(pct);
+}
+
+inline bool slider_parse_pct(esphome::StringRef val, int &pct) {
+  if (ha_state_unavailable_ref(val)) return false;
+  float pct_f = 0.0f;
+  if (!parse_float_ref(val, pct_f) || !std::isfinite(pct_f)) return false;
+  pct = slider_clamp_pct((int)(pct_f + 0.5f));
+  return true;
+}
+
+inline bool slider_parse_light_brightness_pct(esphome::StringRef val, int &pct) {
+  if (ha_state_unavailable_ref(val)) return false;
+  float bri = 0.0f;
+  if (!parse_float_ref(val, bri) || !std::isfinite(bri)) return false;
+  return light_brightness_to_percent(bri, pct);
+}
+
+inline bool slider_entity_is_light(const std::string &entity_id) {
+  return entity_id.size() > 6 && entity_id.compare(0, 6, "light.") == 0;
+}
+
+inline void slider_set_value_safe(lv_obj_t *slider, int pct) {
+  if (slider) lv_slider_set_value(slider, slider_clamp_pct(pct), LV_ANIM_OFF);
+}
+
+inline void slider_set_icon_safe(lv_obj_t *icon_lbl, const char *icon) {
+  if (icon_lbl && icon) lv_label_set_text(icon_lbl, icon);
+}
+
 // Subscribe to HA state for a slider entity (light brightness, fan percentage, or cover position/tilt)
 inline void subscribe_slider_state(lv_obj_t *btn_ptr, lv_obj_t *icon_lbl,
                                   lv_obj_t *slider,
@@ -348,6 +416,11 @@ inline void subscribe_slider_state(lv_obj_t *btn_ptr, lv_obj_t *icon_lbl,
                                   const char *icon_off, const char *icon_on,
                                   const std::string &entity_id,
                                   bool cover_tilt = false) {
+  if (!slider) {
+    ESP_LOGW("slider", "Skipping slider subscriptions for %s: slider missing",
+      entity_id.c_str());
+    return;
+  }
   SliderCtx *sctx = (SliderCtx *)lv_obj_get_user_data(slider);
   lv_obj_t *fill = sctx ? sctx->fill : nullptr;
   bool horiz = sctx ? sctx->horizontal : false;
@@ -355,20 +428,27 @@ inline void subscribe_slider_state(lv_obj_t *btn_ptr, lv_obj_t *icon_lbl,
   lv_coord_t rad = sctx ? sctx->radius : 0;
   bool is_cover = is_cover_entity(entity_id);
   bool is_fan = is_fan_entity(entity_id);
+  bool is_light = slider_entity_is_light(entity_id);
+  ESP_LOGI("slider", "Subscribing slider state for %s", entity_id.c_str());
   ha_subscribe_state(
     entity_id,
     std::function<void(esphome::StringRef)>(
       [slider, btn_ptr, fill, horiz, inv, rad, icon_lbl, has_icon_on, icon_off, icon_on, sctx](esphome::StringRef state) {
+        if (sctx && !sctx->logged_state) {
+          sctx->logged_state = true;
+          ESP_LOGI("slider", "First slider state for %s: %s",
+            sctx->entity_id.c_str(), string_ref_limited(state, HA_SHORT_STATE_MAX_LEN).c_str());
+        }
         bool unavailable = ha_state_unavailable_ref(state);
         if (sctx) sctx->available = !unavailable;
         apply_control_availability(btn_ptr, slider, !unavailable);
         bool on = is_entity_on_ref(state);
         if (!on) {
-          lv_slider_set_value(slider, 0, LV_ANIM_OFF);
-          if (fill) slider_update_fill(fill, btn_ptr, inv ? 100 : 0, horiz, inv, rad);
+          slider_set_value_safe(slider, 0);
+          slider_update_fill(fill, btn_ptr, inv ? 100 : 0, horiz, inv, rad);
         }
         if (has_icon_on)
-          lv_label_set_text(icon_lbl, on ? icon_on : icon_off);
+          slider_set_icon_safe(icon_lbl, on ? icon_on : icon_off);
       })
   );
   if (is_cover) {
@@ -376,17 +456,11 @@ inline void subscribe_slider_state(lv_obj_t *btn_ptr, lv_obj_t *icon_lbl,
       entity_id, std::string(cover_tilt ? "current_tilt_position" : "current_position"),
       std::function<void(esphome::StringRef)>(
         [slider, btn_ptr, fill, horiz, inv, rad, icon_lbl, has_icon_on, icon_off, icon_on](esphome::StringRef val) {
-          float pos = 0.0f;
-          if (parse_float_ref(val, pos)) {
-            int pct = (int)(pos + 0.5f);
-            if (pct < 0) pct = 0;
-            if (pct > 100) pct = 100;
-            lv_slider_set_value(slider, pct, LV_ANIM_OFF);
-            int fill_pct = inv ? 100 - pct : pct;
-            if (fill) slider_update_fill(fill, btn_ptr, fill_pct, horiz, inv, rad);
-            if (has_icon_on) {
-              lv_label_set_text(icon_lbl, pct > 0 ? icon_on : icon_off);
-            }
+          int pct = 0;
+          if (slider_parse_pct(val, pct)) {
+            slider_set_value_safe(slider, pct);
+            slider_update_fill(fill, btn_ptr, inv ? 100 - pct : pct, horiz, inv, rad);
+            if (has_icon_on) slider_set_icon_safe(icon_lbl, pct > 0 ? icon_on : icon_off);
           }
         })
     );
@@ -395,33 +469,37 @@ inline void subscribe_slider_state(lv_obj_t *btn_ptr, lv_obj_t *icon_lbl,
       entity_id, std::string("percentage"),
       std::function<void(esphome::StringRef)>(
         [slider, btn_ptr, fill, horiz, inv, rad](esphome::StringRef val) {
-          float pct_f = 0.0f;
-          if (parse_float_ref(val, pct_f)) {
-            int pct = (int)(pct_f + 0.5f);
-            if (pct < 0) pct = 0;
-            if (pct > 100) pct = 100;
-            lv_slider_set_value(slider, pct, LV_ANIM_OFF);
-            int fill_pct = inv ? 100 - pct : pct;
-            if (fill) slider_update_fill(fill, btn_ptr, fill_pct, horiz, inv, rad);
+          int pct = 0;
+          if (slider_parse_pct(val, pct)) {
+            slider_set_value_safe(slider, pct);
+            slider_update_fill(fill, btn_ptr, inv ? 100 - pct : pct, horiz, inv, rad);
+          }
+        })
+    );
+  } else if (is_light) {
+    ha_subscribe_attribute(
+      entity_id, std::string("brightness"),
+      std::function<void(esphome::StringRef)>(
+        [slider, btn_ptr, fill, horiz, inv, rad, sctx](esphome::StringRef val) {
+          if (sctx && !sctx->logged_level) {
+            sctx->logged_level = true;
+            ESP_LOGI("slider", "First brightness for %s: %s",
+              sctx->entity_id.c_str(), string_ref_limited(val, HA_SHORT_STATE_MAX_LEN).c_str());
+          }
+          int pct = 0;
+          if (slider_parse_light_brightness_pct(val, pct)) {
+            slider_set_value_safe(slider, pct);
+            slider_update_fill(fill, btn_ptr, inv ? 100 - pct : pct, horiz, inv, rad);
+          } else {
+            ESP_LOGW("slider", "Ignoring invalid brightness for %s: %s",
+              sctx ? sctx->entity_id.c_str() : "",
+              string_ref_limited(val, HA_SHORT_STATE_MAX_LEN).c_str());
           }
         })
     );
   } else {
-    ha_subscribe_attribute(
-      entity_id, std::string("brightness"),
-      std::function<void(esphome::StringRef)>(
-        [slider, btn_ptr, fill, horiz, inv, rad](esphome::StringRef val) {
-          float bri = 0.0f;
-          if (parse_float_ref(val, bri)) {
-            int pct = (int)((bri * 100.0f + 127.0f) / 255.0f);
-            if (pct < 1) pct = 1;
-            if (pct > 100) pct = 100;
-            lv_slider_set_value(slider, pct, LV_ANIM_OFF);
-            int fill_pct = inv ? 100 - pct : pct;
-            if (fill) slider_update_fill(fill, btn_ptr, fill_pct, horiz, inv, rad);
-          }
-        })
-    );
+    ESP_LOGW("slider", "No brightness attribute subscription for non-light slider entity %s",
+      entity_id.c_str());
   }
 }
 
