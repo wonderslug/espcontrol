@@ -1,7 +1,7 @@
 // Experimental Home Assistant todo card.
 var TODO_CARD_METADATA = {
   entity: {
-    label: "Todo Entity",
+    label: "Entity",
     idSuffix: "todo-entity",
     placeholder: "e.g. todo.shopping",
     domains: function () { return cardContractDomains("todo"); },
@@ -37,10 +37,10 @@ var TODO_CARD_METADATA = {
     },
   },
   labelDisplay: {
-    label: "Label",
+    label: "Card Label",
     options: [
-      ["label", "Label"],
-      ["count", "Item Counter"],
+      ["label", "List Name"],
+      ["count", "Item Count"],
     ],
     value: function (b) {
       return todoCardLabelShowsCount(b) ? "count" : "label";
@@ -93,19 +93,15 @@ registerButtonType("todo", {
   renderSettings: function (panel, b, slot, helpers) {
     normalizeTodoConfig(b);
     helpers.renderCardEntityField(panel, b, helpers, TODO_CARD_METADATA);
+    helpers.renderCardTextField(panel, b, helpers, TODO_CARD_METADATA.labelField);
 
     helpers.renderCardSegmentControl(panel, b, helpers, Object.assign({}, TODO_CARD_METADATA.labelDisplay, {
       onSelect: function (button, cardHelpers, value) {
         setTodoCardLabelShowsCount(button, value === "count");
         cardHelpers.saveField("options", button.options);
-        syncLabelField();
         scheduleRender();
       },
     }));
-    var labelSection = condField();
-    labelSection.classList.add("sp-climate-settings-gap");
-    helpers.renderCardTextField(labelSection, b, helpers, TODO_CARD_METADATA.labelField);
-    panel.appendChild(labelSection);
 
     helpers.renderCardSegmentControl(panel, b, helpers, Object.assign({}, TODO_CARD_METADATA.countDisplay, {
       onSelect: function (button, cardHelpers, value) {
@@ -121,13 +117,9 @@ registerButtonType("todo", {
     panel.appendChild(iconSection);
 
     helpers.renderCardOptionToggle(panel, b, helpers, TODO_CARD_METADATA.completedDisplay);
-    function syncLabelField() {
-      labelSection.classList.toggle("sp-visible", !todoCardLabelShowsCount(b));
-    }
     function syncIconPicker() {
       iconSection.classList.toggle("sp-visible", !todoCardShowCount(b));
     }
-    syncLabelField();
     syncIconPicker();
   },
   renderPreview: function (b, helpers) {

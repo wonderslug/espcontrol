@@ -830,7 +830,7 @@ var CARD_CONTRACT_CARDS = {
       },
       {
         "name": "label_display",
-        "label": "Label",
+        "label": "Card Label",
         "kind": "choice",
         "values": [
           "label",
