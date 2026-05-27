@@ -102,6 +102,11 @@ int main() {
   assert(todo.icon == "Check");
   assert(todo.icon_on == "Auto");
   assert(todo.type == "todo");
+  assert(todo.options == "");
+
+  auto todo_icon = parse_cfg("todo.shopping;Shopping;Check;Auto;;;todo;;count_display=icon");
+  assert(todo_icon.options == "count_display=icon");
+  assert(!todo_card_show_count(todo_icon));
 
   assert(cfg_option_token_present("large_numbers,active_color", "active_color"));
   assert(cfg_option_value("state_entity=sensor.room%2Ctemp,state_unit=%25", "state_entity") == "sensor.room,temp");

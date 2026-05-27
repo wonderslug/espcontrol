@@ -22,6 +22,15 @@ var TODO_CARD_METADATA = {
     field: "icon",
     fallback: "Check",
   },
+  countDisplay: {
+    label: "Show Item Count",
+    idSuffix: "todo-show-count",
+    checked: function (b) { return todoCardShowCount(b); },
+    onChange: function (button, cardHelpers, checked) {
+      setTodoCardShowCount(button, checked);
+      cardHelpers.saveField("options", button.options);
+    },
+  },
   preview: {
     badge: "check",
   },
@@ -32,7 +41,7 @@ function normalizeTodoConfig(b) {
   b.sensor = "";
   b.unit = "";
   b.precision = "";
-  b.options = "";
+  b.options = normalizeTodoOptions(b.options);
   b.icon_on = "Auto";
   if (!b.icon || b.icon === "Auto") b.icon = "Check";
 }
@@ -56,12 +65,27 @@ registerButtonType("todo", {
     normalizeTodoConfig(b);
     helpers.renderCardEntityField(panel, b, helpers, TODO_CARD_METADATA);
     helpers.renderCardTextField(panel, b, helpers, TODO_CARD_METADATA.labelField);
-    helpers.renderCardIconPicker(panel, b, helpers, TODO_CARD_METADATA.icon);
+    var iconPicker = helpers.renderCardIconPicker(panel, b, helpers, TODO_CARD_METADATA.icon);
+    var countToggle = helpers.renderCardOptionToggle(panel, b, helpers, Object.assign({}, TODO_CARD_METADATA.countDisplay, {
+      onChange: function (button, cardHelpers, checked) {
+        setTodoCardShowCount(button, checked);
+        cardHelpers.saveField("options", button.options);
+        syncIconPicker();
+        scheduleRender();
+      },
+    }));
+    function syncIconPicker() {
+      iconPicker.style.display = todoCardShowCount(b) ? "none" : "";
+      countToggle.input.checked = todoCardShowCount(b);
+    }
+    syncIconPicker();
   },
   renderPreview: function (b, helpers) {
     var label = b.label || b.entity || "Todo";
     return {
-      iconHtml: cardSensorPreviewHtml(b, helpers, "3", ""),
+      iconHtml: todoCardShowCount(b)
+        ? cardSensorPreviewHtml(b, helpers, "3", "")
+        : '<span class="sp-btn-icon mdi mdi-' + iconSlug(b.icon || "Check") + '"></span>',
       labelHtml: cardBadgeLabelHtml(helpers, label, TODO_CARD_METADATA.preview.badge),
     };
   },

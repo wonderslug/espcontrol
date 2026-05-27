@@ -31,6 +31,7 @@ struct TodoCardCtx {
   uint32_t secondary_color = DEFAULT_OFF_COLOR;
   int width_compensation_percent = 100;
   bool available = false;
+  bool show_count = true;
 };
 
 struct TodoItemClick {
@@ -77,6 +78,7 @@ inline std::string todo_card_label(TodoCardCtx *ctx) {
 inline void todo_apply_card_text(TodoCardCtx *ctx) {
   if (!ctx) return;
   if (ctx->label_lbl) lv_label_set_text(ctx->label_lbl, todo_card_label(ctx).c_str());
+  if (!ctx->show_count) return;
   if (ctx->value_lbl) lv_label_set_text(ctx->value_lbl, ctx->available ? ctx->count_text.c_str() : "--");
   if (ctx->unit_lbl) {
     const char *unit = "";
@@ -93,8 +95,14 @@ inline void setup_todo_card(BtnSlot &s, const ParsedCfg &p,
     lv_obj_set_style_bg_color(s.btn, lv_color_hex(sensor_val),
       static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_DEFAULT));
   }
-  lv_obj_clear_flag(s.icon_lbl, LV_OBJ_FLAG_HIDDEN);
-  lv_obj_clear_flag(s.sensor_container, LV_OBJ_FLAG_HIDDEN);
+  bool show_count = todo_card_show_count(p);
+  if (show_count) {
+    lv_obj_add_flag(s.icon_lbl, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_clear_flag(s.sensor_container, LV_OBJ_FLAG_HIDDEN);
+  } else {
+    lv_obj_clear_flag(s.icon_lbl, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(s.sensor_container, LV_OBJ_FLAG_HIDDEN);
+  }
   lv_label_set_text(s.icon_lbl,
     (!p.icon.empty() && p.icon != "Auto") ? find_icon(p.icon.c_str()) : find_icon("Check"));
   lv_label_set_text(s.sensor_lbl, "--");
@@ -360,6 +368,7 @@ inline TodoCardCtx *create_todo_card_context(
   ctx->label_font = label_font;
   ctx->icon_font = icon_font;
   ctx->width_compensation_percent = width_compensation_percent;
+  ctx->show_count = todo_card_show_count(p);
   lv_obj_set_user_data(s.btn, ctx);
   todo_apply_card_text(ctx);
   return ctx;

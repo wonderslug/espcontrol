@@ -232,6 +232,20 @@ inline std::string door_window_card_options_normalized(const std::string &option
   return cfg_option_token_present(options, "active_color") ? "active_color" : "";
 }
 
+inline std::string normalize_todo_count_display(const std::string &value) {
+  return value == "icon" ? "icon" : "count";
+}
+
+inline std::string todo_card_options_normalized(const std::string &options) {
+  return normalize_todo_count_display(cfg_option_value(options, "count_display")) == "icon"
+    ? "count_display=icon"
+    : "";
+}
+
+inline bool todo_card_show_count(const ParsedCfg &p) {
+  return normalize_todo_count_display(cfg_option_value(p.options, "count_display")) != "icon";
+}
+
 inline std::string normalize_climate_label_display(const std::string &value) {
   return card_runtime_climate_label_display(value);
 }
@@ -427,6 +441,14 @@ inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
     if (p.icon.empty() || p.icon == "Auto") p.icon = "Flash";
     p.options = webhook_card_options_normalized(p.options);
   }
+  if (p.type == "todo") {
+    p.sensor.clear();
+    p.unit.clear();
+    p.precision.clear();
+    p.icon_on = "Auto";
+    if (p.icon.empty() || p.icon == "Auto") p.icon = "Check";
+    p.options = todo_card_options_normalized(p.options);
+  }
   if (p.type == "light_switch") {
     p.sensor.clear();
     p.unit.clear();
@@ -458,7 +480,7 @@ inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
     if (p.icon_on.empty() || p.icon_on == "Auto") p.icon_on = door_window_open_icon_name(p.precision);
     p.options = door_window_card_options_normalized(p.options);
   }
-  if (!p.type.empty() && p.type != "action" && p.type != "alarm" && p.type != "alarm_action" && p.type != "climate" && p.type != "garage" && p.type != "webhook" && p.type != "sensor" && p.type != "door_window" && !fan_card_type(p.type) && !card_large_numbers_supported(p)) {
+  if (!p.type.empty() && p.type != "action" && p.type != "alarm" && p.type != "alarm_action" && p.type != "climate" && p.type != "garage" && p.type != "webhook" && p.type != "todo" && p.type != "sensor" && p.type != "door_window" && !fan_card_type(p.type) && !card_large_numbers_supported(p)) {
     p.options.clear();
   }
   if (p.type == "sensor") {

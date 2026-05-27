@@ -129,7 +129,7 @@ inline SubpageBtn normalize_subpage_btn(SubpageBtn b) {
     b.sensor.clear();
     b.unit.clear();
     b.precision.clear();
-    b.options.clear();
+    b.options = todo_card_options_normalized(b.options);
     b.icon_on = "Auto";
     if (b.icon.empty() || b.icon == "Auto") b.icon = "Check";
   }

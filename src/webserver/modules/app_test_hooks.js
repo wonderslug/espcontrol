@@ -30,6 +30,8 @@ if (typeof globalThis !== "undefined" && globalThis.__ESPCONTROL_TEST_HOOKS__) {
     switchConfirmationYesText: switchConfirmationYesText,
     switchConfirmationNoText: switchConfirmationNoText,
     sensorActiveColorEnabled: sensorActiveColorEnabled,
+    normalizeTodoCountDisplayMode: normalizeTodoCountDisplayMode,
+    todoCardShowCount: todoCardShowCount,
     dateTimeModeOptionValues: dateTimeModeOptionValues,
     normalizeDateTimeCardMode: normalizeDateTimeCardMode,
     weatherModeOptionValues: weatherModeOptionValues,

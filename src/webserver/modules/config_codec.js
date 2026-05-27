@@ -170,6 +170,7 @@ var ALARM_LABEL_DISPLAY_OPTION = "label_display";
 var GARAGE_LABEL_DISPLAY_OPTION = "label_display";
 var CLIMATE_LABEL_DISPLAY_OPTION = "label_display";
 var CLIMATE_NUMBER_DISPLAY_OPTION = "number_display";
+var TODO_COUNT_DISPLAY_OPTION = "count_display";
 var ALARM_ACTIONS = [
   { value: "away", label: "Arm Away", service: "alarm_control_panel.alarm_arm_away", icon: "Shield Lock" },
   { value: "home", label: "Arm Home", service: "alarm_control_panel.alarm_arm_home", icon: "Shield Home" },
@@ -309,6 +310,30 @@ function sensorLargeNumbersEnabled(b) {
 function setSensorLargeNumbersEnabled(b, enabled) {
   if (!b) return "";
   b.options = setConfigOption(b.options, SENSOR_LARGE_NUMBERS_OPTION, enabled);
+  return b.options;
+}
+
+function normalizeTodoCountDisplayMode(value) {
+  value = String(value || "").trim();
+  var spec = cardContractOptionSpec("todo", TODO_COUNT_DISPLAY_OPTION);
+  var values = spec && spec.values ? spec.values : ["count", "icon"];
+  return values.indexOf(value) >= 0 ? value : "count";
+}
+
+function normalizeTodoOptions(options) {
+  return normalizeTodoCountDisplayMode(configOptionValue(options, TODO_COUNT_DISPLAY_OPTION)) === "icon"
+    ? setConfigOptionValue("", TODO_COUNT_DISPLAY_OPTION, "icon")
+    : "";
+}
+
+function todoCardShowCount(b) {
+  return normalizeTodoCountDisplayMode(configOptionValue(b && b.options, TODO_COUNT_DISPLAY_OPTION)) !== "icon";
+}
+
+function setTodoCardShowCount(b, enabled) {
+  if (!b) return "";
+  b.options = setConfigOptionValue(b.options, TODO_COUNT_DISPLAY_OPTION, enabled ? "" : "icon");
+  b.options = normalizeTodoOptions(b.options);
   return b.options;
 }
 
@@ -791,6 +816,13 @@ function buttonConfigFields(b) {
     iconOn = webhookButton.icon_on || "Auto";
     precision = webhookButton.precision || "";
     options = webhookButton.options || "";
+  } else if (type === "todo") {
+    sensor = "";
+    unit = "";
+    precision = "";
+    iconOn = "Auto";
+    if (!icon || icon === "Auto") icon = "Check";
+    options = normalizeTodoOptions(options);
   } else if (type === "sensor") {
     options = normalizeSensorOptions(options, precision);
   } else if (type === "door_window") {

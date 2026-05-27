@@ -334,6 +334,15 @@ const todoPreview = hooks.buttonTypePreviewFor("todo", {
 assert(todoPreview.iconHtml.includes("sp-sensor-value"), "todo preview shows an item count");
 assert(todoPreview.labelHtml.includes("Shopping"), "todo preview uses the configured label");
 assert(todoPreview.labelHtml.includes("mdi-check"), "todo preview uses the check badge");
+const todoIconPreview = hooks.buttonTypePreviewFor("todo", {
+  entity: "todo.shopping",
+  label: "Shopping",
+  icon: "Check",
+  type: "todo",
+  options: "count_display=icon",
+});
+assert(todoIconPreview.iconHtml.includes("mdi-check"), "todo preview can show the icon instead of the item count");
+assert(!todoIconPreview.iconHtml.includes("sp-sensor-value"), "todo icon preview hides the item count");
 assert.deepStrictEqual(Array.from(hooks.buttonTypeRuntimeSpec("todo").domains), ["todo"], "todo entity field is limited to todo entities");
 
 const legacyForecastPreview = hooks.buttonTypePreviewFor("weather_forecast", {

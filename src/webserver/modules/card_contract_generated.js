@@ -817,6 +817,18 @@ var CARD_CONTRACT_CARDS = {
     "domains": [
       "todo"
     ],
+    "options": [
+      {
+        "name": "count_display",
+        "label": "Show Item Count",
+        "kind": "choice",
+        "values": [
+          "count",
+          "icon"
+        ],
+        "defaultValue": "count"
+      }
+    ],
     "default": {
       "entity": "",
       "label": "",
