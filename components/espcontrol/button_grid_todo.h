@@ -418,11 +418,11 @@ inline uint32_t next_todo_items_call_id() {
 
 inline bool todo_begin_get_items_request(esphome::api::HomeassistantActionRequest &req,
                                          TodoCardCtx *ctx,
-                                         uint32_t call_id) {
+                                         uint32_t call_id,
+                                         const std::string &response_template) {
   if (!todo_card_context_valid(ctx) || !todo_entity_id_safe(ctx->entity_id)) return false;
   if (!ha_action_begin(req, "todo.get_items", false, 1, call_id)) return false;
   req.wants_response = true;
-  std::string response_template = todo_items_response_template(ctx->entity_id);
   req.response_template = decltype(req.response_template)(response_template);
   ha_action_add_entity(req, ctx->entity_id);
   return true;
@@ -435,7 +435,8 @@ inline void request_todo_items(TodoCardCtx *ctx) {
 
   esphome::api::HomeassistantActionRequest req;
   uint32_t call_id = next_todo_items_call_id();
-  if (!todo_begin_get_items_request(req, ctx, call_id)) {
+  std::string response_template = todo_items_response_template(ctx->entity_id);
+  if (!todo_begin_get_items_request(req, ctx, call_id, response_template)) {
     todo_modal_set_status("Could not load");
     return;
   }
