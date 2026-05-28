@@ -193,7 +193,9 @@ if (typeof globalThis !== "undefined" && globalThis.__ESPCONTROL_TEST_HOOKS__) {
       state.firmwareVersionRefreshPending = oldPending;
       return label;
     },
+    entityDetailPath: entityDetailPath,
     entityDetailPaths: entityDetailPaths,
+    entityInitialDetail: entityInitialDetail,
     entityLookupNames: entityLookupNames,
     firmwareUpdateControlsVisibleFor: function (transport, supported) {
       var oldTransport = state.networkTransport;

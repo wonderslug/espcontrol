@@ -716,12 +716,17 @@ function getJsonFirst(paths, callback) {
   return tryNext();
 }
 
-function entityDetailPath(domain, name) {
-  return "/" + encodeURIComponent(domain) + "/" + encodeURIComponent(name) + "?detail=all";
+function entityDetailPath(domain, name, detail) {
+  var query = detail === "state" ? "" : "?detail=all";
+  return "/" + encodeURIComponent(domain) + "/" + encodeURIComponent(name) + query;
 }
 
-function entityDetailPaths(domain, names) {
-  return names.map(function (name) { return entityDetailPath(domain, name); });
+function entityDetailPaths(domain, names, detail) {
+  return names.map(function (name) { return entityDetailPath(domain, name, detail); });
+}
+
+function entityInitialDetail(domain) {
+  return domain === "select" ? "state" : "all";
 }
 
 function eventStreamEnabled() {
@@ -772,7 +777,7 @@ function loadStateItems(items, handleState, concurrency) {
       while (active < limit && index < items.length) {
         var item = items[index++];
         active++;
-        getJsonQuietly(entityDetailPath(item[0], item[1])).then(function (data) {
+        getJsonQuietly(entityDetailPath(item[0], item[1], entityInitialDetail(item[0]))).then(function (data) {
           if (data) {
             loadedCount++;
             handleState(data);

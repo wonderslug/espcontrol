@@ -900,6 +900,10 @@ assert.deepStrictEqual(plain(hooks.entityDetailPaths("text_sensor", hooks.entity
   "/text_sensor/firmware_version?detail=all",
   "/text_sensor/firmware_version_sensor?detail=all",
 ]);
+assert.strictEqual(hooks.entityInitialDetail("select"), "state");
+assert.strictEqual(hooks.entityInitialDetail("text"), "all");
+assert.strictEqual(hooks.entityDetailPath("select", "Screen: Timezone", hooks.entityInitialDetail("select")), "/select/Screen%3A%20Timezone");
+assert.strictEqual(hooks.entityDetailPath("text", "Button Order", hooks.entityInitialDetail("text")), "/text/Button%20Order?detail=all");
 assert.deepStrictEqual(plain(hooks.entityLookupNames("firmware_version")), [
   "Firmware: Version",
   "firmware__version",
