@@ -914,6 +914,11 @@ var CARD_CONTRACT_CARDS = {
           "count"
         ],
         "defaultValue": "count"
+      },
+      {
+        "name": "large_numbers",
+        "label": "Large Todo Numbers",
+        "kind": "flag"
       }
     ],
     "default": {

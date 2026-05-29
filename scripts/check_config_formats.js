@@ -1562,11 +1562,26 @@ assertButtonRoundTrip(hooks, "todo button", {
 assert.deepStrictEqual(Array.from(hooks.cardContractDomains("todo")), ["todo"], "todo card only accepts todo entities");
 assert.deepStrictEqual(
   Array.from(hooks.cardContractOptions("todo"), (option) => option.name),
-  ["count_display"],
-  "todo card exposes the icon/counter display option"
+  ["count_display", "large_numbers"],
+  "todo card exposes the icon/counter display and large-number options"
 );
 assert.strictEqual(hooks.todoCardShowCount({ type: "todo", options: "" }), true, "todo shows item count by default");
 assert.strictEqual(hooks.todoCardShowCount({ type: "todo", options: "count_display=icon" }), false, "todo can show the configured icon instead of the counter");
+assert.strictEqual(
+  hooks.cardLargeNumbersEnabled({ type: "todo", options: "large_numbers" }),
+  true,
+  "todo count display supports large numbers"
+);
+assert.strictEqual(
+  hooks.parseButtonConfig("todo.shopping;Shopping;Check;Auto;;;todo;;large_numbers").options,
+  "large_numbers",
+  "todo count display preserves large number setting"
+);
+assert.strictEqual(
+  hooks.parseButtonConfig("todo.shopping;Shopping;Check;Auto;;;todo;;count_display=icon,large_numbers").options,
+  "count_display=icon",
+  "todo icon display drops large number setting"
+);
 assert.strictEqual(hooks.todoCardStatusMode({ type: "todo", options: "count_display=top_task" }), "count", "todo falls back to counter for legacy top task options");
 assert.strictEqual(hooks.todoCardShowsTopTask({ type: "todo", options: "count_display=top_task" }), false, "todo does not use top task mode");
 assert.strictEqual(hooks.todoCardLabelShowsCount({ type: "todo", options: "" }), false, "todo label is static by default");

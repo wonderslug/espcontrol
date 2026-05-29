@@ -292,9 +292,12 @@ inline std::string normalize_todo_completed_display(const std::string &value) {
 }
 
 inline std::string todo_card_options_normalized(const std::string &options) {
-  return normalize_todo_count_display(cfg_option_value(options, "count_display")) == "icon"
-    ? "count_display=icon"
-    : "";
+  bool show_count = normalize_todo_count_display(cfg_option_value(options, "count_display")) == "count";
+  std::string out = show_count ? "" : "count_display=icon";
+  if (show_count && cfg_option_token_present(options, "large_numbers")) {
+    out = "large_numbers";
+  }
+  return out;
 }
 
 inline bool todo_card_show_count(const ParsedCfg &p) {

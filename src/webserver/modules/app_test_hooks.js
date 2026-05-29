@@ -17,6 +17,7 @@ if (typeof globalThis !== "undefined" && globalThis.__ESPCONTROL_TEST_HOOKS__) {
     cardContractDomains: cardContractDomains,
     cardContractMigrationAlias: cardContractMigrationAlias,
     cardContractOptionSupportedFor: cardContractOptionSupportedFor,
+    cardLargeNumbersEnabled: cardLargeNumbersEnabled,
     SSE_ALIAS_GROUPS: SSE_ALIAS_GROUPS,
     BACKUP_CONFIG_VERSION: BACKUP_CONFIG_VERSION,
     BACKUP_FORMAT: BACKUP_FORMAT,

@@ -766,6 +766,11 @@
           "kind": "choice",
           "values": ["icon", "count"],
           "defaultValue": "count"
+        },
+        {
+          "name": "large_numbers",
+          "label": "Large Todo Numbers",
+          "kind": "flag"
         }
       ],
       "default": {

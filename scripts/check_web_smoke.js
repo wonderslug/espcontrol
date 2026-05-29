@@ -409,6 +409,14 @@ assert(todoPreview.iconHtml.includes("sp-sensor-value"), "todo preview shows an 
 assert(!todoPreview.iconHtml.includes("sp-sensor-unit"), "todo preview does not show an item unit");
 assert(todoPreview.labelHtml.includes("Shopping"), "todo preview uses the configured label");
 assert(todoPreview.labelHtml.includes("mdi-check"), "todo preview uses the check badge");
+const todoLargePreview = hooks.buttonTypePreviewFor("todo", {
+  entity: "todo.shopping",
+  label: "Shopping",
+  icon: "Check",
+  type: "todo",
+  options: "large_numbers",
+}, { cardSize: 4 });
+assert(todoLargePreview.iconHtml.includes("sp-sensor-preview-large"), "todo counter preview supports large numbers");
 const todoIconPreview = hooks.buttonTypePreviewFor("todo", {
   entity: "todo.shopping",
   label: "Shopping",

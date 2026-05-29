@@ -280,6 +280,11 @@ inline void setup_card_visual(BtnSlot &s, const ParsedCfg &p,
   }
   if (p.type == "todo") {
     setup_todo_card(s, p, palette.off_val);
+    if (large_number_square_card_layout(row_span, col_span) &&
+        card_large_numbers_enabled(p) && display_large_sensor_font(display)) {
+      apply_large_sensor_number_style(
+        s, display_large_sensor_font(display), display_large_sensor_unit_offset_percent(display));
+    }
     return;
   }
   if (p.type == "media") {

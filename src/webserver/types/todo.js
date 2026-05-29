@@ -29,6 +29,13 @@ var TODO_CARD_METADATA = {
       ["count", "Counter"],
     ],
   },
+  largeNumbers: {
+    label: "Large Todo Numbers",
+    idSuffix: "large-todo-numbers",
+    supported: function (b) {
+      return todoCardShowCount(b);
+    },
+  },
   preview: {
     badge: "check",
   },
@@ -76,11 +83,17 @@ registerButtonType("todo", {
           setTodoCardStatusMode(button, value);
           cardHelpers.saveField("options", button.options);
           syncIconField();
+          syncLargeNumbersField();
           scheduleRender();
         },
       }),
     });
+    var largeNumbersToggle = helpers.renderCardLargeNumbersToggle(panel, b, helpers, TODO_CARD_METADATA);
+    function syncLargeNumbersField() {
+      helpers.syncCardLargeNumbersToggle(largeNumbersToggle, b, helpers, todoCardShowCount(b));
+    }
     syncIconField();
+    syncLargeNumbersField();
     panel.appendChild(iconField);
   },
   renderPreview: function (b, helpers) {

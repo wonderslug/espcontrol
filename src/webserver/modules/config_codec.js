@@ -427,9 +427,13 @@ function normalizeTodoCompletedDisplayMode(value) {
 function normalizeTodoOptions(options) {
   var countMode = normalizeTodoCountDisplayMode(
     configOptionValue(options, TODO_COUNT_DISPLAY_OPTION));
-  return countMode === "icon"
+  var out = countMode === "icon"
     ? setConfigOptionValue("", TODO_COUNT_DISPLAY_OPTION, countMode)
     : "";
+  if (countMode === "count" && configOptionEnabled(options, SENSOR_LARGE_NUMBERS_OPTION)) {
+    out = setConfigOption(out, SENSOR_LARGE_NUMBERS_OPTION, true);
+  }
+  return out;
 }
 
 function todoCardShowCount(b) {
