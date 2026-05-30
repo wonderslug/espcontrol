@@ -1057,6 +1057,7 @@ struct WeatherForecastCardRef {
   std::string entity_id;
   std::string day;
   std::string label;
+  std::string status_label;
   bool valid = false;
   int high = 0;
   int low = 0;
@@ -1109,9 +1110,11 @@ inline void apply_weather_forecast_card_text(const WeatherForecastCardRef &ref,
                                              bool valid, int high, int low,
                                              const std::string &unit) {
   if (ref.label_lbl) {
-    std::string label = ref.label.empty()
-      ? (ref.day == "today" ? "Today" : "Tomorrow")
-      : ref.label;
+    std::string label = !ref.status_label.empty()
+      ? ref.status_label
+      : (ref.label.empty()
+          ? (ref.day == "today" ? "Today" : "Tomorrow")
+          : ref.label);
     lv_label_set_text(ref.label_lbl, label.c_str());
   }
   if (!ref.value_lbl || !ref.unit_lbl) return;
@@ -1148,6 +1151,7 @@ inline void apply_weather_forecast_to_entity(const std::string &entity_id,
       refs[i].high = high;
       refs[i].low = low;
       refs[i].source_unit = unit;
+      refs[i].status_label = "";
       apply_weather_forecast_card_text(refs[i], valid, high, low, unit);
     }
   }
@@ -1163,6 +1167,25 @@ inline void apply_weather_forecast_unavailable_for_entity(const std::string &ent
       refs[i].high = 0;
       refs[i].low = 0;
       refs[i].source_unit = "";
+      refs[i].status_label = "";
+      apply_weather_forecast_card_text(refs[i], false, 0, 0, "");
+    }
+  }
+}
+
+inline void apply_weather_forecast_actions_required_for_entity(const std::string &entity_id) {
+  ESP_LOGW("weather_forecast",
+    "Forecast request timed out for %s; check that this ESPHome device is allowed to perform Home Assistant actions",
+    entity_id.c_str());
+  WeatherForecastCardRef *refs = weather_forecast_card_refs();
+  int count = weather_forecast_card_count();
+  for (int i = 0; i < count; i++) {
+    if (refs[i].entity_id == entity_id) {
+      refs[i].valid = false;
+      refs[i].high = 0;
+      refs[i].low = 0;
+      refs[i].source_unit = "";
+      refs[i].status_label = "HA Actions";
       apply_weather_forecast_card_text(refs[i], false, 0, 0, "");
     }
   }
@@ -1186,7 +1209,7 @@ inline void register_weather_forecast_card(lv_obj_t *value_lbl, lv_obj_t *unit_l
     return;
   }
   weather_forecast_card_refs()[count++] = {
-    value_lbl, unit_lbl, label_lbl, entity_id, day, label, false, 0, 0, ""
+    value_lbl, unit_lbl, label_lbl, entity_id, day, label, "", false, 0, 0, ""
   };
   apply_weather_forecast_card_text(weather_forecast_card_refs()[count - 1], false, 0, 0, "");
 }
@@ -1516,10 +1539,15 @@ inline void request_weather_forecast_entity(const std::string &entity_id,
     [entity_id, day, call_id = req.call_id](const esphome::api::ActionResponse &response) {
       weather_forecast_clear_pending(call_id);
       if (!response.is_success()) {
+        std::string error_message = response.get_error_message();
         ESP_LOGW("weather_forecast", "Forecast request failed for %s: %s",
-          entity_id.c_str(), response.get_error_message().c_str());
-        apply_weather_forecast_unavailable_for_entity(entity_id);
-        weather_forecast_schedule_retry(entity_id, day, response.get_error_message().c_str());
+          entity_id.c_str(), error_message.c_str());
+        if (error_message == "timeout") {
+          apply_weather_forecast_actions_required_for_entity(entity_id);
+        } else {
+          apply_weather_forecast_unavailable_for_entity(entity_id);
+        }
+        weather_forecast_schedule_retry(entity_id, day, error_message.c_str());
         weather_forecast_send_next_queued();
         return;
       }
