@@ -12,11 +12,11 @@ EspControl lets you put the Home Assistant controls you use every day onto a ded
 
 You do not need to write code, edit YAML, or build your own ESPHome setup. Install the firmware from a web browser, connect the screen to WiFi, add it to Home Assistant, then choose what appears on the display from the screen's built-in setup page.
 
-**Documentation and install guide:** [wonderslug.github.io/espcontrol](https://wonderslug.github.io/espcontrol/) · [Upstream docs](https://jtenniswood.github.io/espcontrol/)
+**Upstream documentation and install guide:** [jtenniswood.github.io/espcontrol](https://jtenniswood.github.io/espcontrol/)
 
 ## Using This Fork
 
-This fork's firmware and web UI are served from [wonderslug.github.io/espcontrol](https://wonderslug.github.io/espcontrol) rather than the upstream site. Everything else about installation and use is identical to the upstream project — the same supported hardware, the same ESPHome/Home Assistant setup flow.
+There are no pre-built binaries for this fork — you build from this repo. Everything else about installation and use is identical to the upstream project — the same supported hardware, the same ESPHome/Home Assistant setup flow.
 
 **Option 1 — ESPHome Dashboard (recommended)**
 
@@ -25,10 +25,6 @@ Add a new ESPHome device using one of the device YAML files in the [`devices/`](
 **Option 2 — Local build**
 
 Clone this repo and compile with ESPHome directly. The `builds/` directory has ready-to-use build definitions that reference local component paths.
-
-**Option 3 — web installer**
-
-Install using the web installer on the docs site and then point the `dashboard_import` package URL at `github://wonderslug/espcontrol/devices/<device>/esphome.yaml@main` when adopting in ESPHome Dashboard.
 
 ---
 
@@ -149,7 +145,6 @@ See the [screen guides](https://jtenniswood.github.io/espcontrol/getting-started
 
 **This fork:**
 - [Fork repository](https://github.com/wonderslug/espcontrol)
-- [Fork documentation](https://wonderslug.github.io/espcontrol/)
 
 **Upstream:**
 - [Upstream documentation](https://jtenniswood.github.io/espcontrol/)
