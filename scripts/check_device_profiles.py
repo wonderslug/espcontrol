@@ -318,6 +318,9 @@ def test_current_weather_state_updates_availability() -> None:
     assert "bump_ha_subscription_generation();" in grid, (
         "dashboard reconfiguration must invalidate stale current weather subscriptions"
     )
+    assert "weather_forecast_cancel_pending_requests();" in grid, (
+        "dashboard reconfiguration must cancel stale weather forecast action responses"
+    )
 
 
 def test_trmnl_weather_forecast_queue_drains() -> None:

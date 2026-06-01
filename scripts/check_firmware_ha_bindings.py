@@ -235,6 +235,11 @@ def firmware_weather_request_errors(firmware_dir: Path, root: Path) -> list[str]
         errors.append(f"{rel}: bound pending forecast response callbacks")
     if "weather_forecast_cancel_pending_requests" not in text:
         errors.append(f"{rel}: expose a helper to cancel pending forecast callbacks")
+    if (
+        "uint32_t generation = ha_subscription_generation();" not in body
+        or "generation != ha_subscription_generation()" not in body
+    ):
+        errors.append(f"{rel}: ignore stale forecast action responses after dashboard reconfiguration")
     if "WEATHER_FORECAST_RETRY_DELAY_MS" not in text or "weather_forecast_schedule_retry" not in text:
         errors.append(f"{rel}: retry failed weather forecast requests later")
     if (

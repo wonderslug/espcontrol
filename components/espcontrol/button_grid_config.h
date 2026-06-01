@@ -1636,11 +1636,16 @@ inline void request_weather_forecast_entity(const std::string &entity_id,
   req.response_template = decltype(req.response_template)(response_template);
   ha_action_add_entity(req, entity_id);
   ha_action_add_data(req, "type", "daily");
+  uint32_t generation = ha_subscription_generation();
 
   if (!ha_register_action_response_callback(
     req.call_id,
-    [entity_id, day, call_id = req.call_id](const esphome::api::ActionResponse &response) {
+    [entity_id, day, call_id = req.call_id, generation](const esphome::api::ActionResponse &response) {
       weather_forecast_clear_pending(call_id);
+      if (generation != ha_subscription_generation()) {
+        weather_forecast_send_next_queued();
+        return;
+      }
       if (!response.is_success()) {
         std::string error_message = response.get_error_message();
         ESP_LOGW("weather_forecast", "Forecast request failed for %s: %s",
