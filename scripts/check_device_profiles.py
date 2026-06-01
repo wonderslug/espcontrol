@@ -310,6 +310,7 @@ def test_weather_card_visual_matches_preview() -> None:
     cards = BUTTON_GRID_CARDS.read_text(encoding="utf-8")
     styles = (ROOT / "src" / "webserver" / "modules" / "styles.js").read_text(encoding="utf-8")
     subpages = (ROOT / "components" / "espcontrol" / "button_grid_subpages.h").read_text(encoding="utf-8")
+    config = (ROOT / "components" / "espcontrol" / "button_grid_config.h").read_text(encoding="utf-8")
     assert ".sp-type-badge{display:none}" in styles, "web preview type badges should remain visually hidden"
     assert "set_weather_card_badge" not in cards, (
         "device weather cards should not show the hidden web preview type badge"
@@ -323,10 +324,12 @@ def test_weather_card_visual_matches_preview() -> None:
     assert 'set_weather_card_badge(s, "Weather Partly Cloudy")' not in cards, (
         "forecast weather device card should not render a visible forecast badge"
     )
+    assert '"HA Actions"' not in config, (
+        "forecast weather errors should keep the configured/default label like the web preview"
+    )
     assert 'lv_label_set_text(s.unit_lbl, display_temperature_unit_symbol())' in cards, (
         "forecast weather placeholder should show the configured unit like the web preview"
     )
-    config = (ROOT / "components" / "espcontrol" / "button_grid_config.h").read_text(encoding="utf-8")
     assert 'lv_label_set_text(ref.unit_lbl, normalized_unit.c_str())' in config, (
         "forecast weather unavailable state should keep showing the configured unit"
     )

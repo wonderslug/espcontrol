@@ -1365,7 +1365,7 @@ inline void apply_weather_forecast_actions_required_for_entity(const std::string
       refs[i].high = 0;
       refs[i].low = 0;
       refs[i].source_unit = "";
-      refs[i].status_label = "HA Actions";
+      refs[i].status_label = "";
       apply_control_availability(refs[i].btn, refs[i].btn, false, false);
       apply_weather_forecast_card_text(refs[i], false, 0, 0, "");
       notify_dashboard_content_changed();
