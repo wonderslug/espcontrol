@@ -16,7 +16,6 @@ the right size on every device.
 | `font_icon_card` | Smaller card-level icons |
 | `font_icon_status` | Status, network, and subpage indicator icons |
 | `font_text_body` | Labels, setup body copy, and normal UI text |
-| `font_text_caption` | Smaller supporting text such as top-bar text or option titles |
 | `font_text_small` | Compact supporting text on small displays, only where needed |
 | `font_text_title` | Headings and media titles |
 | `font_text_large` | Larger supporting labels, only where needed |
@@ -69,7 +68,7 @@ they describe generated UI wiring. They should map to the generic style IDs:
 | `mediaTitle` | `font_text_title` |
 | `volumeNumber` | `font_number_modal` |
 | `volumeLabel` | `font_text_body` or `font_text_large` |
-| `climateOptionTitle` | `font_text_caption` or `font_text_body` |
+| `climateOptionTitle` | `font_text_body` |
 | `climateOptionValue` | `font_text_body` or `font_text_small` |
 
 When changing the ramp, update the device font file and manifest together, then
