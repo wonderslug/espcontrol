@@ -128,11 +128,11 @@ def test_generated_yaml(profiles: dict[str, dict]) -> None:
                 assert "cfg.timezone = id(timezone_select).current_option();" in sensors, (
                     f"{slug}: automatic temperature units must use the configured timezone"
                 )
-                assert "id(font_trmnl_value_large_72)->get_lv_font()" in sensors, (
-                    f"{slug}: weather large-number cards must use a visibly larger TRMNL font"
+                assert "id(font_trmnl_value_large_80)->get_lv_font()" in sensors, (
+                    f"{slug}: weather large-number cards must use the TRMNL web preview large-number font"
                 )
-                assert "id: font_trmnl_value_large_72" in fonts_path.read_text(encoding="utf-8"), (
-                    f"{slug}: large-number font must be defined for TRMNL weather cards"
+                assert "id: font_trmnl_value_large_80\n    size: 80" in fonts_path.read_text(encoding="utf-8"), (
+                    f"{slug}: large-number font must match the TRMNL web preview metric"
                 )
                 trmnl_fonts = fonts_path.read_text(encoding="utf-8")
                 assert "id: font_trmnl_label_14\n    size: 16\n    glyphs: \" !\\\"%()+,-./0123456789:°" in trmnl_fonts, (

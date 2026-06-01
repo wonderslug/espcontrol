@@ -19,8 +19,8 @@ font:
     glyphs: " !\"%()+,-./0123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_"
 
   - file: "gfonts://Inter@700"
-    id: font_trmnl_value_large_72
-    size: 72
+    id: font_trmnl_value_large_80
+    size: 80
     glyphs: " -./0123456789:"
 
   - file: 'https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf'

@@ -737,7 +737,7 @@
         "fonts": {
           "icon": "font_trmnl_mdi_26_icons",
           "sensor": "font_trmnl_value_24",
-          "largeSensor": "font_trmnl_value_24",
+          "largeSensor": "font_trmnl_value_large_80",
           "mediaTitle": "font_trmnl_label_14",
           "volumeNumber": "font_trmnl_value_24",
           "volumeLabel": "font_trmnl_label_14"
