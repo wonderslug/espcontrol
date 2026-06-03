@@ -73,6 +73,9 @@ substitutions:
   cover_art_artist_font: "font_cover_art_artist"
   cover_art_artist_pad_top: "10"
   cover_art_artist_long_mode: "dot"
+  cover_art_time_font: "font_cover_art_time"
+  cover_art_time_pad_top: "14"
+  cover_art_progress_width: "1024"
   cover_art_text_color: "0xFFFFFF"
   cover_art_square_overlay: "false"
 

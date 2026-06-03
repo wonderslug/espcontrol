@@ -24,6 +24,21 @@ globals:
   - id: cover_art_subscribed_entity
     type: std::string
     initial_value: '""'
+  - id: cover_art_media_duration
+    type: float
+    initial_value: '0.0'
+  - id: cover_art_media_position
+    type: float
+    initial_value: '0.0'
+  - id: cover_art_position_anchor_epoch
+    type: int
+    initial_value: '0'
+  - id: cover_art_last_position_timestamp
+    type: int
+    initial_value: '0'
+  - id: cover_art_last_progress_percent
+    type: int
+    initial_value: '-1'
 
 api:
   on_client_connected:
@@ -53,6 +68,15 @@ artwork_image:
       - script.execute: cover_art_apply_downloaded_image
     on_error:
       - script.execute: cover_art_download_failed
+
+interval:
+  - interval: 1s
+    then:
+      - if:
+          condition:
+            lambda: 'return id(cover_art_screensaver_active) && id(cover_art_media_playing);'
+          then:
+            - script.execute: cover_art_refresh_progress
 
 lvgl:
   top_layer:
@@ -157,6 +181,31 @@ lvgl:
                       text_opa: 80%
                       text_align: left
                       hidden: true
+                  - label:
+                      id: cover_art_time_label
+                      text: "0:00  /  0:00"
+                      pad_top: ${cover_art_time_pad_top}
+                      width: 100%
+                      text_font: ${cover_art_time_font}
+                      text_color: ${cover_art_text_color}
+                      text_opa: 80%
+                      text_align: left
+            - bar:
+                id: cover_art_progress_bar
+                align: bottom_mid
+                y: 0
+                width: ${cover_art_progress_width}px
+                height: 4px
+                bg_color: 0x000000
+                bg_opa: 50%
+                radius: 0
+                min_value: 0
+                max_value: 100
+                value: 0
+                hidden: true
+                indicator:
+                  bg_color: ${cover_art_text_color}
+                  radius: 0
             - label:
                 id: cover_art_error_label
                 text: "Artwork unavailable"
@@ -218,6 +267,55 @@ script:
           else:
             - lvgl.widget.hide: cover_art_artist_label
 
+  - id: cover_art_refresh_progress
+    mode: restart
+    then:
+      - lambda: |-
+          float duration = id(cover_art_media_duration);
+          float position = id(cover_art_media_position);
+          auto now = id(panel_time).now();
+
+          if (id(cover_art_media_playing) && now.is_valid()) {
+            if (id(cover_art_position_anchor_epoch) != 0) {
+              position = id(cover_art_media_position) +
+                         (float)(now.timestamp - id(cover_art_position_anchor_epoch));
+            } else if (id(cover_art_last_position_timestamp) != 0) {
+              position = id(cover_art_media_position) +
+                         (float)(now.timestamp - id(cover_art_last_position_timestamp));
+            }
+          }
+
+          if (position < 0.0f) position = 0.0f;
+          if (duration > 0.0f && position > duration) position = duration;
+          id(cover_art_media_position) = position;
+          if (now.is_valid()) id(cover_art_last_position_timestamp) = now.timestamp;
+
+          int elapsed = (int) position;
+          if (elapsed < 0) elapsed = 0;
+          int total = (int) duration;
+          if (total < 0) total = 0;
+
+          char label[32];
+          if (duration >= 3600.0f) {
+            snprintf(label, sizeof(label), "%d:%02d:%02d  /  %d:%02d:%02d",
+                     elapsed / 3600, (elapsed % 3600) / 60, elapsed % 60,
+                     total / 3600, (total % 3600) / 60, total % 60);
+          } else {
+            snprintf(label, sizeof(label), "%d:%02d  /  %d:%02d",
+                     elapsed / 60, elapsed % 60, total / 60, total % 60);
+          }
+          lv_label_set_text(id(cover_art_time_label), label);
+
+          int value = 0;
+          if (duration > 0.0f) {
+            value = (int)((position / duration) * 100.0f + 0.5f);
+          }
+          if (value < 0) value = 0;
+          if (value > 100) value = 100;
+          if (value == id(cover_art_last_progress_percent)) return;
+          id(cover_art_last_progress_percent) = value;
+          lv_bar_set_value(id(cover_art_progress_bar), value, LV_ANIM_OFF);
+
   - id: cover_art_show_track_overlay
     mode: restart
     then:
@@ -226,6 +324,8 @@ script:
           lv_obj_set_style_text_line_space(id(cover_art_title_label), ${cover_art_title_line_space}, 0);
       - lvgl.widget.show: cover_art_accent_overlay
       - lvgl.widget.show: cover_art_track_panel
+      - lvgl.widget.show: cover_art_progress_bar
+      - script.execute: cover_art_refresh_progress
       - if:
           condition:
             lambda: 'return ${cover_art_square_overlay} && id(cover_art_track_overlay_duration).state > 0;'
@@ -271,6 +371,8 @@ script:
                 lv_obj_set_style_text_line_space(id(cover_art_title_label), ${cover_art_title_line_space}, 0);
             - lvgl.widget.show: cover_art_accent_overlay
             - lvgl.widget.show: cover_art_track_panel
+      - lvgl.widget.show: cover_art_progress_bar
+      - script.execute: cover_art_refresh_progress
       - script.execute: backlight_apply_brightness
 
   - id: hide_cover_art_view
@@ -284,6 +386,7 @@ script:
       - lvgl.widget.hide: cover_art_screensaver
       - lvgl.widget.hide: cover_art_accent_overlay
       - lvgl.widget.hide: cover_art_track_panel
+      - lvgl.widget.hide: cover_art_progress_bar
       - lvgl.widget.hide: cover_art_error_label
       - script.execute: clock_bar_apply
 
@@ -334,6 +437,8 @@ script:
                 std::string state_text = string_ref_limited(state, HA_SHORT_STATE_MAX_LEN);
                 bool playing = state_text == "playing";
                 id(cover_art_media_playing) = playing;
+                auto now = id(panel_time).now();
+                if (playing && now.is_valid()) id(cover_art_last_position_timestamp) = now.timestamp;
                 if (playing) id(cover_art_playback_started).execute();
                 else id(cover_art_playback_stopped).execute();
               })
@@ -394,6 +499,57 @@ script:
               })
           );
 
+          ha_subscribe_attribute(
+            cover_entity, std::string("media_duration"),
+            std::function<void(esphome::StringRef)>(
+              [cover_entity](esphome::StringRef duration) {
+                if (cover_entity != id(cover_art_media_player_entity).state) return;
+                std::string value = string_ref_limited(duration, HA_SHORT_STATE_MAX_LEN);
+                id(cover_art_media_duration) = value.empty() ? 0.0f : strtof(value.c_str(), nullptr);
+                id(cover_art_last_progress_percent) = -1;
+                if (id(cover_art_screensaver_active)) id(cover_art_refresh_progress).execute();
+              })
+          );
+
+          ha_subscribe_attribute(
+            cover_entity, std::string("media_position"),
+            std::function<void(esphome::StringRef)>(
+              [cover_entity](esphome::StringRef position) {
+                if (cover_entity != id(cover_art_media_player_entity).state) return;
+                std::string value = string_ref_limited(position, HA_SHORT_STATE_MAX_LEN);
+                id(cover_art_media_position) = value.empty() ? 0.0f : strtof(value.c_str(), nullptr);
+                auto now = id(panel_time).now();
+                id(cover_art_last_position_timestamp) = now.is_valid() ? now.timestamp : 0;
+                id(cover_art_last_progress_percent) = -1;
+                if (id(cover_art_screensaver_active)) id(cover_art_refresh_progress).execute();
+              })
+          );
+
+          ha_subscribe_attribute(
+            cover_entity, std::string("media_position_updated_at"),
+            std::function<void(esphome::StringRef)>(
+              [cover_entity](esphome::StringRef updated_at) {
+                if (cover_entity != id(cover_art_media_player_entity).state) return;
+                std::string value = string_ref_limited(updated_at, HA_STATE_TEXT_MAX_LEN);
+                int yr, mo, dy, hr, mn, sc;
+                if (sscanf(value.c_str(), "%d-%d-%dT%d:%d:%d", &yr, &mo, &dy, &hr, &mn, &sc) != 6 &&
+                    sscanf(value.c_str(), "%d-%d-%d %d:%d:%d", &yr, &mo, &dy, &hr, &mn, &sc) != 6) {
+                  return;
+                }
+                int y = yr;
+                int m = mo;
+                if (m <= 2) {
+                  y--;
+                  m += 12;
+                }
+                long days = 365L * y + y / 4 - y / 100 + y / 400 + (153 * (m - 3) + 2) / 5 + dy - 719469;
+                id(cover_art_position_anchor_epoch) = (int)(days * 86400L + hr * 3600 + mn * 60 + sc);
+                id(cover_art_last_position_timestamp) = id(cover_art_position_anchor_epoch);
+                id(cover_art_last_progress_percent) = -1;
+                if (id(cover_art_screensaver_active)) id(cover_art_refresh_progress).execute();
+              })
+          );
+
   - id: cover_art_playback_started
     mode: restart
     then:
@@ -428,4 +584,12 @@ script:
       - globals.set:
           id: cover_art_media_subpage_opened
           value: 'false'
+      - lambda: |-
+          id(cover_art_media_position) = 0.0f;
+          id(cover_art_media_duration) = 0.0f;
+          id(cover_art_position_anchor_epoch) = 0;
+          id(cover_art_last_position_timestamp) = 0;
+          id(cover_art_last_progress_percent) = -1;
+          lv_bar_set_value(id(cover_art_progress_bar), 0, LV_ANIM_OFF);
+          lv_label_set_text(id(cover_art_time_label), "0:00  /  0:00");
       - script.execute: hide_cover_art_view

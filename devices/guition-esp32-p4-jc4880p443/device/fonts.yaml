@@ -67,6 +67,13 @@ font:
       - file: "gfonts://Heebo@Light"
         glyphs: !include ../../../common/assets/hebrew_glyphs.yaml
 
+  # Media cover-art screensaver elapsed time
+  - file: "gfonts://Roboto"
+    id: font_cover_art_time
+    size: 24
+    bpp: 4
+    glyphs: " 0123456789:/-"
+
   # Normal sensor values
   - file: "gfonts://Roboto@Light"
     id: font_number_value
