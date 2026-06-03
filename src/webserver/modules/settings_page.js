@@ -1,6 +1,6 @@
 // ── Settings Page ──────────────────────────────────────────────────────
 
-function settingsStatusHeader(title, status) {
+function settingsStatusHeader(title) {
   var header = document.createElement("div");
   header.className = "sp-settings-status-header";
 
@@ -9,13 +9,6 @@ function settingsStatusHeader(title, status) {
   label.textContent = title;
   header.appendChild(label);
 
-  if (status) {
-    var statusEl = document.createElement("div");
-    statusEl.className = "sp-settings-status-copy";
-    statusEl.textContent = status;
-    header.appendChild(statusEl);
-  }
-
   return header;
 }
 
@@ -23,10 +16,7 @@ function appendSettingsSection(parent, title, cards) {
   var visibleCards = cards.filter(Boolean);
   if (!visibleCards.length) return;
 
-  parent.appendChild(settingsStatusHeader(
-    title,
-    visibleCards.length + (visibleCards.length === 1 ? " setting" : " settings")
-  ));
+  parent.appendChild(settingsStatusHeader(title));
   visibleCards.forEach(function (card) {
     parent.appendChild(card);
   });

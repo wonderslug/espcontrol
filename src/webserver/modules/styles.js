@@ -178,7 +178,6 @@ var CSS =
   "gap:12px;margin:24px 2px 10px;color:var(--text);font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}" +
   ".sp-config>.sp-settings-status-header:first-child{margin-top:2px}" +
   ".sp-settings-status-title{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em}" +
-  ".sp-settings-status-copy{font-size:.72rem;font-weight:500;color:var(--text3);white-space:nowrap}" +
 
   ".sp-settings-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);" +
   "z-index:100;align-items:center;justify-content:center;" +
