@@ -16,6 +16,7 @@ function exportConfig() {
     settings: {
       indoor_temp_enable: state._indoorOn,
       outdoor_temp_enable: state._outdoorOn,
+      clock_bar_temperature_entities: serializeClockBarTemperatureEntities(clockBarTemperatureEntities()),
       theme: normalizeTheme(state.theme),
       indoor_temp_entity: state.indoorEntity,
       outdoor_temp_entity: state.outdoorEntity,
@@ -173,10 +174,7 @@ function importConfig() {
           screenRotationOptions: allScreenRotationOptions(),
         });
 
-        postSwitch(entityName("indoor_temp_enable"), importedSettings.indoorTempEnable);
-        postSwitch(entityName("outdoor_temp_enable"), importedSettings.outdoorTempEnable);
-        postText(entityName("indoor_temp_entity"), importedSettings.indoorTempEntity);
-        postText(entityName("outdoor_temp_entity"), importedSettings.outdoorTempEntity);
+        applyClockBarTemperatureEntities(importedSettings.clockBarTemperatureEntities, true);
         postClockBar(importedSettings.clockBar);
         applyClockBarLayoutValue(importedSettings.clockBarLayout);
         postClockBarLayout(importedSettings.clockBarLayout);
@@ -240,6 +238,8 @@ function importConfig() {
         if (hasDeveloperExperimentalFeatures) {
           postDeveloperExperimentalFeatures(importedDeveloperExperimentalFeatures);
         }
+        state.clockBarTemperatureEntities = importedSettings.clockBarTemperatureEntities;
+        state._clockBarTemperatureEntitiesReceived = true;
         state._indoorOn = importedSettings.indoorTempEnable;
         state._outdoorOn = importedSettings.outdoorTempEnable;
         state.indoorEntity = importedSettings.indoorTempEntity;
@@ -286,8 +286,6 @@ function importConfig() {
 
         syncTemperatureUi();
         syncClockBarUi();
-        syncInput(els.setIndoorEntity, state.indoorEntity);
-        syncInput(els.setOutdoorEntity, state.outdoorEntity);
         if (els.setTemperatureUnit) els.setTemperatureUnit.value = state.temperatureUnit;
         syncInput(els.setPresence, state.presenceEntity);
         syncInput(els.setMediaPlayerSleepPrevention, state.mediaPlayerSleepPreventionEntity);

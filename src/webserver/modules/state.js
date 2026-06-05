@@ -68,6 +68,8 @@ var state = {
   _outdoorVal: null,
   indoorEntity: "",
   outdoorEntity: "",
+  clockBarTemperatureEntities: [],
+  _clockBarTemperatureEntitiesReceived: false,
   temperatureUnit: "Auto",
   clockBarOn: false,
   clockBarTimeOn: true,
@@ -153,6 +155,7 @@ var state = {
   clockBarDragItem: "",
   clockBarTempRestoreIndoor: false,
   clockBarTempRestoreOutdoor: true,
+  clockBarTempRestoreEntities: [],
   subpages: {},
   subpageRaw: {},
   subpageSavePending: {},
@@ -301,6 +304,52 @@ function temperatureUnitSymbol() {
 
 function clockBarTemperatureUnitSymbol() {
   return state.temperatureDegreeSymbolOn ? "\u00B0" : "";
+}
+
+function normalizeClockBarTemperatureEntities(value) {
+  var input = Array.isArray(value) ? value : String(value || "").split(/[|,\n]/);
+  var out = [];
+  input.forEach(function (entry) {
+    entry = String(entry || "").trim();
+    if (entry && out.indexOf(entry) === -1) out.push(entry);
+  });
+  return out.slice(0, 6);
+}
+
+function serializeClockBarTemperatureEntities(list) {
+  return normalizeClockBarTemperatureEntities(list).join("|");
+}
+
+function legacyClockBarTemperatureEntities() {
+  var list = [];
+  if (state._outdoorOn && state.outdoorEntity) list.push(state.outdoorEntity);
+  if (state._indoorOn && state.indoorEntity) list.push(state.indoorEntity);
+  return normalizeClockBarTemperatureEntities(list);
+}
+
+function clockBarTemperatureEntities() {
+  var list = normalizeClockBarTemperatureEntities(state.clockBarTemperatureEntities);
+  if (!list.length && !state._clockBarTemperatureEntitiesReceived) return legacyClockBarTemperatureEntities();
+  return list;
+}
+
+function applyClockBarTemperatureEntities(list, postDevice) {
+  state.clockBarTemperatureEntities = normalizeClockBarTemperatureEntities(list);
+  state._clockBarTemperatureEntitiesReceived = true;
+  state._outdoorOn = state.clockBarTemperatureEntities.length > 0;
+  state._indoorOn = state.clockBarTemperatureEntities.length > 1;
+  state.outdoorEntity = state.clockBarTemperatureEntities[0] || "";
+  state.indoorEntity = state.clockBarTemperatureEntities[1] || "";
+  if (postDevice) {
+    postText(entityName("clock_bar_temperature_entities"), serializeClockBarTemperatureEntities(state.clockBarTemperatureEntities));
+    postSwitch(entityName("outdoor_temp_enable"), state._outdoorOn);
+    postSwitch(entityName("indoor_temp_enable"), state._indoorOn);
+    postText(entityName("outdoor_temp_entity"), state.outdoorEntity);
+    postText(entityName("indoor_temp_entity"), state.indoorEntity);
+  }
+  syncTemperatureUi();
+  updateTempPreview();
+  updateClockBarItemUi();
 }
 
 function appendScreenRotationOption(select, opt) {
@@ -541,6 +590,7 @@ function syncScreenScheduleUi() {
 }
 
 function syncTemperatureUi() {
+  if (els.clockBarTemperatureList) renderClockBarTemperatureList(els.clockBarTemperatureList);
   if (els.setIndoorToggle) els.setIndoorToggle.checked = !!state._indoorOn;
   if (els.setIndoorField) {
     els.setIndoorField.className = "sp-cond-field" + (state._indoorOn ? " sp-visible" : "");

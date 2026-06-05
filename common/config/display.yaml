@@ -72,7 +72,7 @@ script:
           }
           if (!visible) return;
 
-          refresh_temp_label_values(id(temperatures), id(main_page)->obj,
+          refresh_clock_bar_temperature_label_values(id(temperatures), id(main_page)->obj,
                                     visible,
                                     id(indoor_temp_enable).state,
                                     id(outdoor_temp_enable).state,
@@ -136,7 +136,7 @@ switch:
       sorting_group_id: sg_display
     on_turn_on:
       - lambda: |-
-          refresh_temp_label_values(id(temperatures), id(main_page)->obj,
+          refresh_clock_bar_temperature_label_values(id(temperatures), id(main_page)->obj,
                                     id(clock_bar_enabled).state &&
                                       !id(is_clock_showing) &&
                                       !id(cover_art_screensaver_active),
@@ -145,7 +145,7 @@ switch:
                                     id(indoor_temp), id(outdoor_temp));
     on_turn_off:
       - lambda: |-
-          refresh_temp_label_values(id(temperatures), id(main_page)->obj,
+          refresh_clock_bar_temperature_label_values(id(temperatures), id(main_page)->obj,
                                     id(clock_bar_enabled).state &&
                                       !id(is_clock_showing) &&
                                       !id(cover_art_screensaver_active),
@@ -165,7 +165,7 @@ switch:
       sorting_group_id: sg_display
     on_turn_on:
       - lambda: |-
-          refresh_temp_label_values(id(temperatures), id(main_page)->obj,
+          refresh_clock_bar_temperature_label_values(id(temperatures), id(main_page)->obj,
                                     id(clock_bar_enabled).state &&
                                       !id(is_clock_showing) &&
                                       !id(cover_art_screensaver_active),
@@ -174,7 +174,7 @@ switch:
                                     id(indoor_temp), id(outdoor_temp));
     on_turn_off:
       - lambda: |-
-          refresh_temp_label_values(id(temperatures), id(main_page)->obj,
+          refresh_clock_bar_temperature_label_values(id(temperatures), id(main_page)->obj,
                                     id(clock_bar_enabled).state &&
                                       !id(is_clock_showing) &&
                                       !id(cover_art_screensaver_active),
@@ -195,7 +195,7 @@ switch:
     on_turn_on:
       - lambda: |-
           set_display_temperature_degree_symbol(true);
-          refresh_temp_label_values(id(temperatures), id(main_page)->obj,
+          refresh_clock_bar_temperature_label_values(id(temperatures), id(main_page)->obj,
                                     id(clock_bar_enabled).state &&
                                       !id(is_clock_showing) &&
                                       !id(cover_art_screensaver_active),
@@ -205,7 +205,7 @@ switch:
     on_turn_off:
       - lambda: |-
           set_display_temperature_degree_symbol(false);
-          refresh_temp_label_values(id(temperatures), id(main_page)->obj,
+          refresh_clock_bar_temperature_label_values(id(temperatures), id(main_page)->obj,
                                     id(clock_bar_enabled).state &&
                                       !id(is_clock_showing) &&
                                       !id(cover_art_screensaver_active),
@@ -395,7 +395,7 @@ select:
             set_display_temperature_unit(id(temperature_unit_select).current_option(),
                                          id(timezone_select).current_option());
             refresh_temperature_unit_labels();
-            refresh_temp_label_values(id(temperatures), id(main_page)->obj,
+            refresh_clock_bar_temperature_label_values(id(temperatures), id(main_page)->obj,
                                       id(clock_bar_enabled).state &&
                                         !id(is_clock_showing) &&
                                         !id(cover_art_screensaver_active),
@@ -422,6 +422,22 @@ text:
     on_value:
       then:
         - script.execute: clock_bar_apply
+
+  - platform: template
+    name: "${entity_clock_bar_temperature_entities}"
+    internal: true
+    id: clock_bar_temperature_entities
+    optimistic: true
+    restore_value: true
+    initial_value: ""
+    min_length: 0
+    max_length: 240
+    mode: text
+    entity_category: config
+    icon: "mdi:thermometer-lines"
+    update_interval: never
+    web_server:
+      sorting_group_id: sg_display
 
   - platform: template
     name: "${entity_indoor_temp_entity}"

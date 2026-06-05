@@ -88,7 +88,7 @@ function updateClock() {
 }
 
 function clockBarTemperatureActive() {
-  return !!(state._indoorOn || state._outdoorOn);
+  return clockBarTemperatureEntities().length > 0;
 }
 
 var CLOCK_BAR_SECTIONS = ["left", "middle", "right"];
@@ -353,14 +353,10 @@ function setClockBarItemSelected(item, open) {
 function addClockBarItem(item) {
   if (isConfigLocked()) return;
   if (item === "temperature") {
-    var restoreIndoor = !!state.clockBarTempRestoreIndoor;
-    var restoreOutdoor = !!state.clockBarTempRestoreOutdoor;
-    if (!restoreIndoor && !restoreOutdoor) restoreOutdoor = true;
-    state._indoorOn = restoreIndoor;
-    state._outdoorOn = restoreOutdoor;
-    postSwitch(entityName("indoor_temp_enable"), state._indoorOn);
-    postSwitch(entityName("outdoor_temp_enable"), state._outdoorOn);
-    syncTemperatureUi();
+    var restore = normalizeClockBarTemperatureEntities(state.clockBarTempRestoreEntities);
+    if (!restore.length) restore = legacyClockBarTemperatureEntities();
+    if (!restore.length) restore = ["sensor.outdoor_temperature"];
+    applyClockBarTemperatureEntities(restore, true);
     updateTempPreview();
   } else if (item === "time") {
     state.clockBarTimeOn = true;
@@ -381,11 +377,8 @@ function deleteClockBarItem(item) {
   if (item === "temperature") {
     state.clockBarTempRestoreIndoor = !!state._indoorOn;
     state.clockBarTempRestoreOutdoor = !!state._outdoorOn;
-    state._indoorOn = false;
-    state._outdoorOn = false;
-    postSwitch(entityName("indoor_temp_enable"), false);
-    postSwitch(entityName("outdoor_temp_enable"), false);
-    syncTemperatureUi();
+    state.clockBarTempRestoreEntities = clockBarTemperatureEntities();
+    applyClockBarTemperatureEntities([], true);
     updateTempPreview();
   } else if (item === "time") {
     state.clockBarTimeOn = false;
@@ -450,15 +443,13 @@ function updateTempPreview() {
   var show = state.clockBarOn && clockBarTemperatureActive();
   els.temp.className = "sp-temp" + (show ? " sp-visible" : "");
   var unit = clockBarTemperatureUnitSymbol();
-  var indoor = state._indoorVal != null ? state._indoorVal : "24";
-  var outdoor = state._outdoorVal != null ? state._outdoorVal : "17";
-  if (state._indoorOn && state._outdoorOn) {
-    els.temp.textContent = outdoor + unit + " / " + indoor + unit;
-  } else if (state._outdoorOn) {
-    els.temp.textContent = outdoor + unit;
-  } else if (state._indoorOn) {
-    els.temp.textContent = indoor + unit;
-  }
+  var sampleValues = ["17", "24", "21", "19", "22", "18"];
+  var values = clockBarTemperatureEntities().map(function (_, index) {
+    if (index === 0 && state._outdoorVal != null) return state._outdoorVal;
+    if (index === 1 && state._indoorVal != null) return state._indoorVal;
+    return sampleValues[index] || "--";
+  });
+  els.temp.textContent = values.map(function (value) { return value + unit; }).join(" / ");
 }
 
 function normalizeNetworkTransport(value) {

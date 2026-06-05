@@ -6,7 +6,7 @@ description:
 
 # Clock Bar
 
-The clock bar is the narrow status area at the top of the panel. It can show the current time, indoor and outdoor temperatures, and a small network status icon.
+The clock bar is the narrow status area at the top of the panel. It can show the current time, one or more temperature sensors, and a small network status icon.
 
 You will find these controls in **Settings > Display > Clock Bar** on the panel web page.
 
@@ -14,8 +14,7 @@ You will find these controls in **Settings > Display > Clock Bar** on the panel 
 
 - **Show Clock Bar** - turns the whole top bar on or off.
 - **Show Time** - shows or hides the time in the clock bar.
-- **Indoor Temperature** - shows a Home Assistant temperature sensor in the clock bar.
-- **Outdoor Temperature** - shows a second temperature sensor, such as an outdoor or weather sensor.
+- **Temperature** - shows Home Assistant temperature sensors in the clock bar. Add more rows to show multiple temperatures.
 - **Show Degree Symbol** - controls whether temperature values include the degree/unit suffix.
 - **Show Network Status Icon** - shows WiFi strength or Ethernet status at the right edge of the clock bar.
 

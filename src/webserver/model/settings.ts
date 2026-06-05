@@ -5,6 +5,16 @@ export function normalizeTemperatureUnit(value: unknown): string {
   return "Auto";
 }
 
+export function normalizeClockBarTemperatureEntities(value: unknown): string[] {
+  const input = Array.isArray(value) ? value : String(value || "").split(/[|,\n]/);
+  const out: string[] = [];
+  for (const entry of input) {
+    const entity = String(entry || "").trim();
+    if (entity && out.indexOf(entity) === -1) out.push(entity);
+  }
+  return out.slice(0, 6);
+}
+
 export function normalizeLanguage(value: unknown): string {
   const language = String(value == null ? "" : value).trim().toLowerCase();
   return language || "en";
@@ -188,6 +198,7 @@ export interface BackupPanelSettingsState {
   outdoorTempEnable: boolean;
   indoorTempEntity: string;
   outdoorTempEntity: string;
+  clockBarTemperatureEntities: string[];
   clockBar: boolean;
   clockBarLayout: string;
   clockBarTime: boolean;
@@ -262,11 +273,24 @@ export function normalizeBackupPanelSettings(
     objectValue(settings, "clock_brightness_night") != null ? settings.clock_brightness_night : settings.clock_brightness,
     clockBrightnessDay,
   );
+  const legacyTemperatureEntities: string[] = [];
+  if (settings.outdoor_temp_enable && settings.outdoor_temp_entity) {
+    legacyTemperatureEntities.push(String(settings.outdoor_temp_entity));
+  }
+  if (settings.indoor_temp_enable && settings.indoor_temp_entity) {
+    legacyTemperatureEntities.push(String(settings.indoor_temp_entity));
+  }
+  const clockBarTemperatureEntities = normalizeClockBarTemperatureEntities(
+    objectValue(settings, "clock_bar_temperature_entities") != null
+      ? settings.clock_bar_temperature_entities
+      : legacyTemperatureEntities,
+  );
   return {
-    indoorTempEnable: !!settings.indoor_temp_enable,
-    outdoorTempEnable: !!settings.outdoor_temp_enable,
-    indoorTempEntity: String(settings.indoor_temp_entity || ""),
-    outdoorTempEntity: String(settings.outdoor_temp_entity || ""),
+    indoorTempEnable: clockBarTemperatureEntities.length > 1,
+    outdoorTempEnable: clockBarTemperatureEntities.length > 0,
+    indoorTempEntity: clockBarTemperatureEntities[1] || "",
+    outdoorTempEntity: clockBarTemperatureEntities[0] || "",
+    clockBarTemperatureEntities,
     clockBar: objectValue(settings, "clock_bar") != null ? !!settings.clock_bar : false,
     clockBarLayout: String(settings.clock_bar_layout || current.clockBarLayout),
     clockBarTime: objectValue(settings, "clock_bar_time") != null ? !!settings.clock_bar_time : true,

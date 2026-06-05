@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <cmath>
 #include <cstring>
+#include <vector>
 #include "esphome/components/lvgl/lvgl_esphome.h"
 #include "sun_calc.h"
 #include "temperature_unit.h"
@@ -86,6 +87,40 @@ inline void format_clock_bar_temperature_pair(char *buf, size_t size,
   snprintf(buf, size, "%s%s / %s%s", outdoor_text ? outdoor_text : "-", suffix,
            indoor_text ? indoor_text : "-",
            suffix);
+}
+
+inline std::vector<float> &clock_bar_temperature_values() {
+  static std::vector<float> values;
+  return values;
+}
+
+inline void set_clock_bar_temperature_value_count(size_t count) {
+  clock_bar_temperature_values().assign(count, NAN);
+}
+
+inline bool clock_bar_temperature_has_items() {
+  return !clock_bar_temperature_values().empty();
+}
+
+inline void format_clock_bar_temperature_list(char *buf, size_t size,
+                                              const std::vector<float> &values) {
+  if (size == 0) return;
+  buf[0] = '\0';
+  const char *suffix = display_clock_bar_temperature_suffix();
+  size_t used = 0;
+  for (size_t i = 0; i < values.size(); i++) {
+    char value_buf[16];
+    if (std::isnan(values[i])) snprintf(value_buf, sizeof(value_buf), "-");
+    else format_fixed_decimal(value_buf, sizeof(value_buf), values[i], 0);
+    int written = snprintf(buf + used, size - used, "%s%s%s",
+                           i == 0 ? "" : " / ", value_buf, suffix);
+    if (written < 0) break;
+    if ((size_t) written >= size - used) {
+      buf[size - 1] = '\0';
+      break;
+    }
+    used += (size_t) written;
+  }
 }
 
 inline SunCalcResult recalc_sunrise_sunset(
@@ -250,6 +285,29 @@ inline void refresh_temp_label_values(lv_obj_t *label, lv_obj_t *main_page_obj,
   } else {
     format_clock_bar_temperature_single(buf, sizeof(buf), indoor_buf);
   }
+  lv_label_set_text(label, buf);
+}
+
+inline void refresh_clock_bar_temperature_label_values(
+    lv_obj_t *label, lv_obj_t *main_page_obj, bool clock_bar_visible,
+    bool indoor_enabled, bool outdoor_enabled,
+    float indoor, float outdoor) {
+  if (!clock_bar_temperature_has_items()) {
+    refresh_temp_label_values(label, main_page_obj, clock_bar_visible,
+                              indoor_enabled, outdoor_enabled, indoor, outdoor);
+    return;
+  }
+
+  if (!label) return;
+  if (!clock_bar_visible) {
+    lv_obj_add_flag(label, LV_OBJ_FLAG_HIDDEN);
+    return;
+  }
+  if (main_page_obj && lv_scr_act() == main_page_obj) {
+    lv_obj_clear_flag(label, LV_OBJ_FLAG_HIDDEN);
+  }
+  char buf[96];
+  format_clock_bar_temperature_list(buf, sizeof(buf), clock_bar_temperature_values());
   lv_label_set_text(label, buf);
 }
 

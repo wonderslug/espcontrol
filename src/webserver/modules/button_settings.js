@@ -138,46 +138,69 @@ function clockBarSelectField(labelText, inputId, options, value, onChange) {
   return fieldWithControl(labelText, inputId, select);
 }
 
-function renderClockBarEntityControls(panel, kind, label, enabled, entityValue, entityKey, placeholder) {
-  var toggle = toggleRow(label, "sp-clockbar-" + kind + "-toggle", enabled);
-  panel.appendChild(toggle.row);
+function renderClockBarTemperatureList(container) {
+  if (!container) return;
+  var list = state._clockBarTemperatureEntitiesReceived
+    ? (state.clockBarTemperatureEntities || []).slice(0, 6)
+    : clockBarTemperatureEntities();
+  container.innerHTML = "";
+  els.setClockBarTemperatureEntities = [];
 
-  var field = condField();
-  var inputId = "sp-clockbar-" + kind + "-entity";
-  field.appendChild(fieldLabel(label + " Entity", inputId));
-  var input = entityInput(inputId, entityValue, placeholder, ["sensor"]);
-  field.appendChild(input);
-  panel.appendChild(field);
-  if (kind === "indoor") {
-    els.setIndoorToggle = toggle.input;
-    els.setIndoorField = field;
-    els.setIndoorEntity = input;
-  } else {
-    els.setOutdoorToggle = toggle.input;
-    els.setOutdoorField = field;
-    els.setOutdoorEntity = input;
-  }
+  list.forEach(function (entity, index) {
+    var row = document.createElement("div");
+    row.className = "sp-repeat-row";
 
-  function syncField() {
-    field.className = "sp-cond-field" + (toggle.input.checked ? " sp-visible" : "");
-  }
+    var field = document.createElement("div");
+    field.className = "sp-field sp-repeat-field";
+    var inputId = "sp-clockbar-temperature-entity-" + index;
+    field.appendChild(fieldLabel("Temperature Entity", inputId));
+    var input = entityInput(inputId, entity, "sensor.temperature", ["sensor"]);
+    field.appendChild(input);
+    row.appendChild(field);
 
-  toggle.input.addEventListener("change", function () {
-    if (kind === "indoor") state._indoorOn = this.checked;
-    else state._outdoorOn = this.checked;
-    postSwitch(entityName(kind + "_temp_enable"), this.checked);
-    syncField();
-    syncTemperatureUi();
-    updateTempPreview();
-    updateClockBarItemUi();
+    var remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "sp-icon-button sp-repeat-remove";
+    remove.setAttribute("aria-label", "Remove temperature");
+    remove.title = "Remove temperature";
+    remove.innerHTML = '<span class="mdi mdi-trash-can-outline"></span>';
+    row.appendChild(remove);
+
+    function saveInput() {
+      var next = clockBarTemperatureEntities();
+      next[index] = input.value.trim();
+      applyClockBarTemperatureEntities(next, true);
+    }
+    input.addEventListener("blur", saveInput);
+    input.addEventListener("change", saveInput);
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") this.blur();
+    });
+    remove.addEventListener("click", function () {
+      var next = clockBarTemperatureEntities();
+      next.splice(index, 1);
+      applyClockBarTemperatureEntities(next, true);
+    });
+
+    els.setClockBarTemperatureEntities.push(input);
+    container.appendChild(row);
   });
-  bindTextPost(input, entityName(entityKey), {
-    onBlur: function (value) {
-      if (kind === "indoor") state.indoorEntity = value;
-      else state.outdoorEntity = value;
-    },
+
+  var add = document.createElement("button");
+  add.type = "button";
+  add.className = "sp-secondary-btn sp-add-temperature";
+  add.innerHTML = '<span class="mdi mdi-plus"></span><span>Add Temperature</span>';
+  add.disabled = list.length >= 6;
+  add.addEventListener("click", function () {
+    var next = clockBarTemperatureEntities();
+    next.push("");
+    state.clockBarTemperatureEntities = next;
+    state._clockBarTemperatureEntitiesReceived = true;
+    renderClockBarTemperatureList(container);
+    var inputs = els.setClockBarTemperatureEntities || [];
+    if (inputs.length) inputs[inputs.length - 1].focus();
   });
-  syncField();
+  container.appendChild(add);
 }
 
 function renderClockBarSettings(forceOpen) {
@@ -196,10 +219,11 @@ function renderClockBarSettings(forceOpen) {
   panel.className = "sp-panel";
 
   if (item === "temperature") {
-    renderClockBarEntityControls(panel, "outdoor", "Outdoor Temperature", state._outdoorOn,
-      state.outdoorEntity, "outdoor_temp_entity", "sensor.outdoor_temperature");
-    renderClockBarEntityControls(panel, "indoor", "Indoor Temperature", state._indoorOn,
-      state.indoorEntity, "indoor_temp_entity", "sensor.indoor_temperature");
+    var tempList = document.createElement("div");
+    tempList.className = "sp-repeat-list sp-temperature-list";
+    panel.appendChild(tempList);
+    els.clockBarTemperatureList = tempList;
+    renderClockBarTemperatureList(tempList);
     var degreeSymbol = toggleRow("Show Degree Symbol", "sp-clockbar-degree-symbol", state.temperatureDegreeSymbolOn);
     panel.appendChild(degreeSymbol.row);
     degreeSymbol.input.addEventListener("change", function () {

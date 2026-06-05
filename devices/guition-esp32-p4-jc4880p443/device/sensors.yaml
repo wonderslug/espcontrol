@@ -284,6 +284,7 @@ esphome:
               id(outdoor_temp_enable).state,
               id(indoor_temp_entity).state,
               id(outdoor_temp_entity).state,
+              id(clock_bar_temperature_entities).state,
               &id(indoor_temp), &id(outdoor_temp),
               id(temperatures),
               id(presence_sensor_entity).state,

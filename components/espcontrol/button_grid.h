@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <ctime>
 #include <cmath>
+#include <algorithm>
 #include <vector>
 #include <functional>
 #include "esphome/components/api/homeassistant_service.h"

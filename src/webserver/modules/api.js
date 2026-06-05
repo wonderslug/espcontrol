@@ -129,6 +129,9 @@ function rememberConfiguredEntities() {
   }
   rememberEntityName(state.indoorEntity, "Indoor Temperature");
   rememberEntityName(state.outdoorEntity, "Outdoor Temperature");
+  clockBarTemperatureEntities().forEach(function (entityId, index) {
+    rememberEntityName(entityId, "Clock Bar Temperature " + (index + 1));
+  });
   rememberEntityName(state.presenceEntity, "Presence Sensor");
   rememberEntityName(state.mediaPlayerSleepPreventionEntity, "Media Player");
   rememberEntityName(state.coverArtMediaPlayerEntity, "Cover Art Media Player");
