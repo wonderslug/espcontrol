@@ -63,6 +63,9 @@ globals:
   - id: cover_art_subscribed_entity
     type: std::string
     initial_value: '""'
+  - id: cover_art_subscription_generation
+    type: int
+    initial_value: '0'
   - id: cover_art_empty_entity_logged
     type: bool
     initial_value: 'false'
@@ -1240,15 +1243,18 @@ script:
           id(cover_art_empty_entity_logged) = false;
           const bool already_subscribed = cover_entity == id(cover_art_subscribed_entity);
           if (!already_subscribed) {
+            id(cover_art_subscription_generation)++;
             id(cover_art_subscribed_entity) = cover_entity;
             ESP_LOGI("cover_art", "Subscribing to artwork entity: %s", cover_entity.c_str());
           } else {
             ESP_LOGI("cover_art", "Refreshing artwork entity: %s", cover_entity.c_str());
           }
+          const int subscription_generation = id(cover_art_subscription_generation);
 
           std::function<void(esphome::StringRef)> handle_playback_state =
-            [cover_entity](esphome::StringRef state) {
+            [cover_entity, subscription_generation](esphome::StringRef state) {
               if (!id(cover_art_screensaver_enabled).state ||
+                  subscription_generation != id(cover_art_subscription_generation) ||
                   cover_entity != id(cover_art_media_player_entity).state) return;
               std::string state_text = string_ref_limited(state, HA_SHORT_STATE_MAX_LEN);
               ESP_LOGI("cover_art", "Playback state for %s: '%s' (active=%s, was_playing=%s)",
@@ -1293,8 +1299,9 @@ script:
                    state_requested ? "requested" : "failed", cover_entity.c_str());
 
           std::function<void(esphome::StringRef)> handle_media_title =
-            [cover_entity](esphome::StringRef title) {
+            [cover_entity, subscription_generation](esphome::StringRef title) {
               if (!id(cover_art_screensaver_enabled).state ||
+                  subscription_generation != id(cover_art_subscription_generation) ||
                   cover_entity != id(cover_art_media_player_entity).state) return;
               std::string next = string_ref_limited(title, HA_STATE_TEXT_MAX_LEN);
               if (next == "unknown" || next == "unavailable") next.clear();
@@ -1320,8 +1327,9 @@ script:
           ESP_LOGI("cover_art", "Title refresh %s", title_requested ? "requested" : "failed");
 
           std::function<void(esphome::StringRef)> handle_media_artist =
-            [cover_entity](esphome::StringRef artist) {
+            [cover_entity, subscription_generation](esphome::StringRef artist) {
               if (!id(cover_art_screensaver_enabled).state ||
+                  subscription_generation != id(cover_art_subscription_generation) ||
                   cover_entity != id(cover_art_media_player_entity).state) return;
               std::string next = string_ref_limited(artist, HA_STATE_TEXT_MAX_LEN);
               if (next == "unknown" || next == "unavailable") next.clear();
@@ -1337,8 +1345,9 @@ script:
           ESP_LOGI("cover_art", "Artist refresh %s", artist_requested ? "requested" : "failed");
 
           auto handle_picture_change =
-            [cover_entity](esphome::StringRef picture, bool local) {
+            [cover_entity, subscription_generation](esphome::StringRef picture, bool local) {
               if (!id(cover_art_screensaver_enabled).state ||
+                  subscription_generation != id(cover_art_subscription_generation) ||
                   cover_entity != id(cover_art_media_player_entity).state) return;
 
               constexpr size_t COVER_ART_URL_MAX_LEN = 4096;
@@ -1417,8 +1426,9 @@ script:
                    local_picture_requested ? "requested" : "failed");
 
           std::function<void(esphome::StringRef)> handle_media_duration =
-            [cover_entity](esphome::StringRef duration) {
+            [cover_entity, subscription_generation](esphome::StringRef duration) {
               if (!id(cover_art_screensaver_enabled).state ||
+                  subscription_generation != id(cover_art_subscription_generation) ||
                   cover_entity != id(cover_art_media_player_entity).state) return;
               std::string value = string_ref_limited(duration, HA_SHORT_STATE_MAX_LEN);
               float next_duration = value.empty() ? 0.0f : strtof(value.c_str(), nullptr);
@@ -1431,8 +1441,9 @@ script:
           ha_get_attribute(cover_entity, std::string("media_duration"), handle_media_duration);
 
           std::function<void(esphome::StringRef)> handle_media_position =
-            [cover_entity](esphome::StringRef position) {
+            [cover_entity, subscription_generation](esphome::StringRef position) {
               if (!id(cover_art_screensaver_enabled).state ||
+                  subscription_generation != id(cover_art_subscription_generation) ||
                   cover_entity != id(cover_art_media_player_entity).state) return;
               std::string value = string_ref_limited(position, HA_SHORT_STATE_MAX_LEN);
               float next_position = value.empty() ? 0.0f : strtof(value.c_str(), nullptr);
@@ -1454,8 +1465,9 @@ script:
           ha_get_attribute(cover_entity, std::string("media_position"), handle_media_position);
 
           std::function<void(esphome::StringRef)> handle_media_position_updated_at =
-            [cover_entity](esphome::StringRef updated_at) {
+            [cover_entity, subscription_generation](esphome::StringRef updated_at) {
               if (!id(cover_art_screensaver_enabled).state ||
+                  subscription_generation != id(cover_art_subscription_generation) ||
                   cover_entity != id(cover_art_media_player_entity).state) return;
               std::string value = string_ref_limited(updated_at, HA_STATE_TEXT_MAX_LEN);
               int yr, mo, dy, hr, mn, sc;

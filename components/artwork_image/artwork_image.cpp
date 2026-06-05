@@ -241,6 +241,10 @@ void ArtworkImage::request_update_url(const std::string &url) {
     return;
   }
   if (this->is_busy_()) {
+    if (effective_url == this->url_) {
+      ESP_LOGI(TAG, "Artwork update already in progress for URL; ignoring duplicate request");
+      return;
+    }
     this->queue_pending_update_(effective_url);
     ESP_LOGI(TAG, "Cancelling in-flight artwork update for newer URL");
     this->end_connection_();

@@ -160,7 +160,7 @@ inline bool ha_cancel_action_response_callback(uint32_t call_id, const char *err
 
 inline bool ha_subscribe_state(const std::string &entity_id,
                                HomeAssistantStateCallback callback) {
-  if (!ha_api_available() || entity_id.empty()) return false;
+  if (!ha_api_available() || entity_id.empty() || !callback) return false;
   auto callback_ref = std::make_shared<HomeAssistantStateCallback>(std::move(callback));
   const uint32_t generation = ha_subscription_generation();
   ha_unavailable_state_retry_refs().push_back({
@@ -182,26 +182,38 @@ inline bool ha_subscribe_state(const std::string &entity_id,
 
 inline bool ha_get_state(const std::string &entity_id,
                          HomeAssistantStateCallback callback) {
-  if (!ha_api_available() || entity_id.empty()) return false;
+  if (!ha_api_available() || entity_id.empty() || !callback) return false;
+  auto callback_ref = std::make_shared<HomeAssistantStateCallback>(std::move(callback));
   esphome::api::global_api_server->get_home_assistant_state(
-    entity_id, {}, std::move(callback));
+    entity_id, {},
+    [callback_ref](esphome::StringRef state) {
+      if (callback_ref && *callback_ref) (*callback_ref)(state);
+    });
   return true;
 }
 
 inline bool ha_subscribe_attribute(const std::string &entity_id,
                                    const std::string &attribute,
                                    HomeAssistantStateCallback callback) {
-  if (!ha_api_available() || entity_id.empty()) return false;
+  if (!ha_api_available() || entity_id.empty() || !callback) return false;
+  auto callback_ref = std::make_shared<HomeAssistantStateCallback>(std::move(callback));
   esphome::api::global_api_server->subscribe_home_assistant_state(
-    entity_id, attribute, std::move(callback));
+    entity_id, attribute,
+    [callback_ref](esphome::StringRef state) {
+      if (callback_ref && *callback_ref) (*callback_ref)(state);
+    });
   return true;
 }
 
 inline bool ha_get_attribute(const std::string &entity_id,
                              const std::string &attribute,
                              HomeAssistantStateCallback callback) {
-  if (!ha_api_available() || entity_id.empty()) return false;
+  if (!ha_api_available() || entity_id.empty() || !callback) return false;
+  auto callback_ref = std::make_shared<HomeAssistantStateCallback>(std::move(callback));
   esphome::api::global_api_server->get_home_assistant_state(
-    entity_id, attribute, std::move(callback));
+    entity_id, attribute,
+    [callback_ref](esphome::StringRef state) {
+      if (callback_ref && *callback_ref) (*callback_ref)(state);
+    });
   return true;
 }
