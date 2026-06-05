@@ -354,7 +354,7 @@ function applyClockBarTemperatureEntities(list, postDevice) {
   state.outdoorEntity = configured[0] || "";
   state.indoorEntity = configured[1] || "";
   if (postDevice) {
-    postText(entityName("clock_bar_temperature_entities"), serializeClockBarTemperatureEntities(state.clockBarTemperatureEntities));
+    postClockBarTemperatureEntities(serializeClockBarTemperatureEntities(state.clockBarTemperatureEntities));
     postSwitch(entityName("outdoor_temp_enable"), state._outdoorOn);
     postSwitch(entityName("indoor_temp_enable"), state._indoorOn);
     postText(entityName("outdoor_temp_entity"), state.outdoorEntity);

@@ -421,7 +421,7 @@ function addClockBarItem(item) {
       next[tempIndex] = restore[tempIndex] || "";
       if (!next[tempIndex] && tempIndex === 0) next[tempIndex] = "sensor.outdoor_temperature";
     }
-    applyClockBarTemperatureEntities(next, true);
+    applyClockBarTemperatureEntities(next, false);
     updateTempPreview();
   } else if (item === "time") {
     state.clockBarTimeOn = true;

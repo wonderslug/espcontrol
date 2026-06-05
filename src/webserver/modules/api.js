@@ -324,6 +324,26 @@ function post(url, fallbackUrl, errorMessage) {
   return _postQueue;
 }
 
+function postOptional(url) {
+  var urls = Array.isArray(url) ? url.slice() : [url];
+  _postQueue = _postQueue.then(function () {
+    var index = 0;
+    function tryNext() {
+      return fetch(urls[index], { method: "POST" }).then(function (r) {
+        if (r.ok || index >= urls.length - 1) return r;
+        index++;
+        return tryNext();
+      });
+    }
+    return tryNext().catch(function () {
+      setConfigLocked(true, "Reconnecting to device\u2026");
+      showBanner("Cannot reach device \u2014 is it connected?", "error");
+      setTimeout(connectEvents, 5000);
+    });
+  });
+  return _postQueue;
+}
+
 function postText(name, value) {
   var encodedValue = encodeURIComponent(value);
   return post(entityPostUrls("text", name, [], "set?value=" + encodedValue));
@@ -602,6 +622,12 @@ function postClockBarLayout(value) {
     value,
     CLOCK_BAR_UNAVAILABLE
   );
+}
+
+function postClockBarTemperatureEntities(value) {
+  var name = entityName("clock_bar_temperature_entities");
+  var objectIds = entityObjectIds("clock_bar_temperature_entities");
+  return postOptional(entityPostUrls("text", name, objectIds, "set?value=" + encodeURIComponent(value)));
 }
 
 var CLOCK_BAR_TIME_UNAVAILABLE =
