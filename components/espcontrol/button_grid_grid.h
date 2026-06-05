@@ -1889,7 +1889,8 @@ inline void grid_phase3(
     const std::string &indoor_entity, const std::string &outdoor_entity,
     const std::string &temperature_entities,
     float *indoor_temp_ptr, float *outdoor_temp_ptr,
-    lv_obj_t *temp_label,
+    lv_obj_t **temperature_labels,
+    size_t temperature_label_count,
     const std::string &presence_entity,
     bool *presence_detected_ptr,
     const std::string &media_player_entity,
@@ -1897,13 +1898,13 @@ inline void grid_phase3(
     std::function<void()> wake_callback,
     std::function<void()> sleep_callback) {
   ESP_LOGI("sensors", "Phase 3: temp/presence/media subscriptions start (%lu ms)", esphome::millis());
+  set_clock_bar_temperature_labels(temperature_labels, temperature_label_count);
+  lv_obj_t *temp_label = temperature_label_count > 0 ? temperature_labels[0] : nullptr;
 
   std::vector<std::string> clock_bar_entities = parse_clock_bar_temperature_entities(temperature_entities);
   if (!clock_bar_entities.empty()) {
     set_clock_bar_temperature_value_count(clock_bar_entities.size());
-    char buf[96];
-    format_clock_bar_temperature_list(buf, sizeof(buf), clock_bar_temperature_values());
-    lv_label_set_text(temp_label, buf);
+    refresh_clock_bar_temperature_label_values(nullptr, true, false, false, NAN, NAN);
 
     for (size_t i = 0; i < clock_bar_entities.size(); i++) {
       ha_subscribe_state(
@@ -1914,8 +1915,7 @@ inline void grid_phase3(
             if (parse_float_ref(state, val)) {
               std::vector<float> &values = clock_bar_temperature_values();
               if (i < values.size()) values[i] = val;
-              refresh_clock_bar_temperature_label_values(temp_label, nullptr, true,
-                                                         false, false, NAN, NAN);
+              refresh_clock_bar_temperature_label_values(nullptr, true, false, false, NAN, NAN);
             }
           })
       );

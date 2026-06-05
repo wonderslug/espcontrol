@@ -74,6 +74,11 @@ esphome:
         - lvgl.page.show: loading_page
         - lambda: |-
             lv_obj_add_flag(id(temperatures), LV_OBJ_FLAG_HIDDEN);
+            lv_obj_add_flag(id(temperature_2), LV_OBJ_FLAG_HIDDEN);
+            lv_obj_add_flag(id(temperature_3), LV_OBJ_FLAG_HIDDEN);
+            lv_obj_add_flag(id(temperature_4), LV_OBJ_FLAG_HIDDEN);
+            lv_obj_add_flag(id(temperature_5), LV_OBJ_FLAG_HIDDEN);
+            lv_obj_add_flag(id(temperature_6), LV_OBJ_FLAG_HIDDEN);
             lv_obj_add_flag(id(display_time), LV_OBJ_FLAG_HIDDEN);
             lv_obj_add_flag(id(network_status_button), LV_OBJ_FLAG_HIDDEN);
         - delay: 100ms

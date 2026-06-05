@@ -528,31 +528,45 @@ function emptyButtonConfig(type) {
   return EspControlModel.emptyCardConfig(type);
 }
 
+function newCardDraftKey(isSub, homeSlot, pos, slot) {
+  return (isSub ? "sub:" + homeSlot : "main") + ":new:" + pos + ":" + slot;
+}
+
+function beginNewCardDraft(pos, slot, isSub) {
+  state.settingsDraft = {
+    key: newCardDraftKey(isSub, state.editingSubpage, pos, slot),
+    slot: slot,
+    homeSlot: state.editingSubpage,
+    isSub: isSub,
+    isNew: true,
+    pos: pos,
+    dirty: false,
+    typeSelected: false,
+    button: emptyButtonConfig(),
+  };
+  if (isSub) {
+    state.subpageSelectedSlots = [slot];
+    state.subpageLastClicked = slot;
+  } else {
+    state.selectedSlots = [slot];
+    state.lastClickedSlot = slot;
+  }
+  renderPreview();
+  renderButtonSettings(true);
+}
+
 function addSlot(pos) {
   if (isConfigLocked()) return;
   var c = ctx();
+  if (pos < 0 || pos >= c.maxSlots || c.grid[pos] !== 0) return;
   if (c.isSub) {
     var sp = getSubpage(state.editingSubpage);
     var newSlot = subpageFirstFreeSlot(sp);
-    while (sp.buttons.length < newSlot) {
-      sp.buttons.push(emptyButtonConfig());
-    }
-    sp.grid[pos] = newSlot;
-    sp.order = serializeSubpageGrid(sp);
-    saveSubpageConfig(state.editingSubpage);
-    state.subpageSelectedSlots = [newSlot];
-    state.subpageLastClicked = newSlot;
-    renderPreview();
-    renderButtonSettings(true);
+    beginNewCardDraft(pos, newSlot, true);
   } else {
     var slot = firstFreeSlot();
     if (slot < 0) return;
-    state.grid[pos] = slot;
-    postText(entityName("button_order"), serializeGrid(state.grid));
-    state.selectedSlots = [slot];
-    state.lastClickedSlot = slot;
-    renderPreview();
-    renderButtonSettings(true);
+    beginNewCardDraft(pos, slot, false);
   }
 }
 

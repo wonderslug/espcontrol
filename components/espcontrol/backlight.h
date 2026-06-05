@@ -20,6 +20,8 @@
 #include <esp_system.h>
 #endif
 
+static const size_t CLOCK_BAR_TEMPERATURE_SLOT_COUNT = 6;
+
 // ── Sunrise/sunset recalculation ─────────────────────────────────────
 
 struct SunCalcResult {
@@ -92,6 +94,19 @@ inline void format_clock_bar_temperature_pair(char *buf, size_t size,
 inline std::vector<float> &clock_bar_temperature_values() {
   static std::vector<float> values;
   return values;
+}
+
+inline std::vector<lv_obj_t *> &clock_bar_temperature_labels() {
+  static std::vector<lv_obj_t *> labels;
+  return labels;
+}
+
+inline void set_clock_bar_temperature_labels(lv_obj_t **labels, size_t count) {
+  std::vector<lv_obj_t *> &out = clock_bar_temperature_labels();
+  out.clear();
+  for (size_t i = 0; labels && i < count && i < CLOCK_BAR_TEMPERATURE_SLOT_COUNT; i++) {
+    out.push_back(labels[i]);
+  }
 }
 
 inline void set_clock_bar_temperature_value_count(size_t count) {
@@ -289,35 +304,53 @@ inline void refresh_temp_label_values(lv_obj_t *label, lv_obj_t *main_page_obj,
 }
 
 inline void refresh_clock_bar_temperature_label_values(
-    lv_obj_t *label, lv_obj_t *main_page_obj, bool clock_bar_visible,
+    lv_obj_t *main_page_obj, bool clock_bar_visible,
     bool indoor_enabled, bool outdoor_enabled,
     float indoor, float outdoor) {
   if (!clock_bar_temperature_has_items()) {
-    refresh_temp_label_values(label, main_page_obj, clock_bar_visible,
+    std::vector<lv_obj_t *> &labels = clock_bar_temperature_labels();
+    lv_obj_t *legacy_label = labels.empty() ? nullptr : labels[0];
+    refresh_temp_label_values(legacy_label, main_page_obj, clock_bar_visible,
                               indoor_enabled, outdoor_enabled, indoor, outdoor);
+    for (size_t i = 1; i < labels.size(); i++) {
+      if (labels[i]) lv_obj_add_flag(labels[i], LV_OBJ_FLAG_HIDDEN);
+    }
     return;
   }
 
-  if (!label) return;
+  std::vector<lv_obj_t *> &labels = clock_bar_temperature_labels();
   if (!clock_bar_visible) {
-    lv_obj_add_flag(label, LV_OBJ_FLAG_HIDDEN);
+    for (size_t i = 0; i < labels.size(); i++) {
+      if (labels[i]) lv_obj_add_flag(labels[i], LV_OBJ_FLAG_HIDDEN);
+    }
     return;
   }
-  if (main_page_obj && lv_scr_act() == main_page_obj) {
-    lv_obj_clear_flag(label, LV_OBJ_FLAG_HIDDEN);
+  std::vector<float> &values = clock_bar_temperature_values();
+  const bool show_on_screen = !main_page_obj || lv_scr_act() == main_page_obj;
+  for (size_t i = 0; i < labels.size(); i++) {
+    lv_obj_t *label = labels[i];
+    if (!label) continue;
+    if (i >= values.size()) {
+      lv_obj_add_flag(label, LV_OBJ_FLAG_HIDDEN);
+      continue;
+    }
+    char value_buf[16];
+    if (std::isnan(values[i])) snprintf(value_buf, sizeof(value_buf), "-");
+    else format_fixed_decimal(value_buf, sizeof(value_buf), values[i], 0);
+    char buf[24];
+    format_clock_bar_temperature_single(buf, sizeof(buf), value_buf);
+    lv_label_set_text(label, buf);
+    if (show_on_screen) lv_obj_clear_flag(label, LV_OBJ_FLAG_HIDDEN);
   }
-  char buf[96];
-  format_clock_bar_temperature_list(buf, sizeof(buf), clock_bar_temperature_values());
-  lv_label_set_text(label, buf);
 }
 
 // ── Clock bar layout helpers ────────────────────────────────────────
 
 enum ClockBarItemId {
   CLOCK_BAR_ITEM_TEMPERATURE = 0,
-  CLOCK_BAR_ITEM_TIME = 1,
-  CLOCK_BAR_ITEM_NETWORK = 2,
-  CLOCK_BAR_ITEM_COUNT = 3,
+  CLOCK_BAR_ITEM_TIME = CLOCK_BAR_TEMPERATURE_SLOT_COUNT,
+  CLOCK_BAR_ITEM_NETWORK = CLOCK_BAR_TEMPERATURE_SLOT_COUNT + 1,
+  CLOCK_BAR_ITEM_COUNT = CLOCK_BAR_TEMPERATURE_SLOT_COUNT + 2,
 };
 
 enum ClockBarSectionId {
@@ -347,6 +380,18 @@ inline int clock_bar_section_id(const char *start, size_t len) {
 
 inline int clock_bar_item_id(const char *start, size_t len) {
   if (clock_bar_token_matches(start, len, "temperature")) return CLOCK_BAR_ITEM_TEMPERATURE;
+  const char prefix[] = "temperature_";
+  const size_t prefix_len = sizeof(prefix) - 1;
+  if (len > prefix_len && strncmp(start, prefix, prefix_len) == 0) {
+    int slot = 0;
+    for (size_t i = prefix_len; i < len; i++) {
+      if (start[i] < '0' || start[i] > '9') return -1;
+      slot = slot * 10 + (start[i] - '0');
+    }
+    if (slot >= 2 && slot <= CLOCK_BAR_TEMPERATURE_SLOT_COUNT) {
+      return CLOCK_BAR_ITEM_TEMPERATURE + slot - 1;
+    }
+  }
   if (clock_bar_token_matches(start, len, "time")) return CLOCK_BAR_ITEM_TIME;
   if (clock_bar_token_matches(start, len, "network")) return CLOCK_BAR_ITEM_NETWORK;
   return -1;
@@ -417,18 +462,22 @@ inline void align_clock_bar_widget(lv_obj_t *obj, int section, int order, int co
 }
 
 inline void apply_clock_bar_layout(const std::string &layout_text,
-                                   lv_obj_t *temperatures,
+                                   lv_obj_t **temperature_labels,
+                                   size_t temperature_label_count,
                                    lv_obj_t *display_time,
                                    lv_obj_t *network_status_button,
                                    int left_x, int label_y,
                                    int right_x, int network_y,
                                    int item_gap) {
   ClockBarParsedLayout layout = parse_clock_bar_layout(layout_text);
-  align_clock_bar_widget(temperatures,
-                         layout.section[CLOCK_BAR_ITEM_TEMPERATURE],
-                         layout.order[CLOCK_BAR_ITEM_TEMPERATURE],
-                         layout.count[layout.section[CLOCK_BAR_ITEM_TEMPERATURE]],
-                         left_x, label_y, right_x, item_gap);
+  for (size_t i = 0; i < temperature_label_count && i < CLOCK_BAR_TEMPERATURE_SLOT_COUNT; i++) {
+    int item = CLOCK_BAR_ITEM_TEMPERATURE + (int) i;
+    align_clock_bar_widget(temperature_labels[i],
+                           layout.section[item],
+                           layout.order[item],
+                           layout.section[item] >= 0 ? layout.count[layout.section[item]] : 0,
+                           left_x, label_y, right_x, item_gap);
+  }
   align_clock_bar_widget(display_time,
                          layout.section[CLOCK_BAR_ITEM_TIME],
                          layout.order[CLOCK_BAR_ITEM_TIME],

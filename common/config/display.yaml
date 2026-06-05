@@ -37,8 +37,18 @@ script:
           int clock_bar_gap = ${screen_width} / 8;
           if (clock_bar_gap < 92) clock_bar_gap = 92;
           if (clock_bar_gap > 120) clock_bar_gap = 120;
+          lv_obj_t *temperature_labels[] = {
+            id(temperatures),
+            id(temperature_2),
+            id(temperature_3),
+            id(temperature_4),
+            id(temperature_5),
+            id(temperature_6),
+          };
+          set_clock_bar_temperature_labels(temperature_labels, 6);
           apply_clock_bar_layout(id(clock_bar_layout).state,
-                                 id(temperatures),
+                                 temperature_labels,
+                                 6,
                                  id(display_time),
                                  id(network_status_button),
                                  ${screen_width} >= 700 ? 12 : 8,
@@ -54,7 +64,9 @@ script:
 
           if (!visible) {
             lv_obj_add_flag(id(display_time), LV_OBJ_FLAG_HIDDEN);
-            lv_obj_add_flag(id(temperatures), LV_OBJ_FLAG_HIDDEN);
+            for (lv_obj_t *label : temperature_labels) {
+              lv_obj_add_flag(label, LV_OBJ_FLAG_HIDDEN);
+            }
             network_status_hide_modal();
           }
 
@@ -72,7 +84,7 @@ script:
           }
           if (!visible) return;
 
-          refresh_clock_bar_temperature_label_values(id(temperatures), id(main_page)->obj,
+          refresh_clock_bar_temperature_label_values(id(main_page)->obj,
                                     visible,
                                     id(indoor_temp_enable).state,
                                     id(outdoor_temp_enable).state,
@@ -136,7 +148,7 @@ switch:
       sorting_group_id: sg_display
     on_turn_on:
       - lambda: |-
-          refresh_clock_bar_temperature_label_values(id(temperatures), id(main_page)->obj,
+          refresh_clock_bar_temperature_label_values(id(main_page)->obj,
                                     id(clock_bar_enabled).state &&
                                       !id(is_clock_showing) &&
                                       !id(cover_art_screensaver_active),
@@ -145,7 +157,7 @@ switch:
                                     id(indoor_temp), id(outdoor_temp));
     on_turn_off:
       - lambda: |-
-          refresh_clock_bar_temperature_label_values(id(temperatures), id(main_page)->obj,
+          refresh_clock_bar_temperature_label_values(id(main_page)->obj,
                                     id(clock_bar_enabled).state &&
                                       !id(is_clock_showing) &&
                                       !id(cover_art_screensaver_active),
@@ -165,7 +177,7 @@ switch:
       sorting_group_id: sg_display
     on_turn_on:
       - lambda: |-
-          refresh_clock_bar_temperature_label_values(id(temperatures), id(main_page)->obj,
+          refresh_clock_bar_temperature_label_values(id(main_page)->obj,
                                     id(clock_bar_enabled).state &&
                                       !id(is_clock_showing) &&
                                       !id(cover_art_screensaver_active),
@@ -174,7 +186,7 @@ switch:
                                     id(indoor_temp), id(outdoor_temp));
     on_turn_off:
       - lambda: |-
-          refresh_clock_bar_temperature_label_values(id(temperatures), id(main_page)->obj,
+          refresh_clock_bar_temperature_label_values(id(main_page)->obj,
                                     id(clock_bar_enabled).state &&
                                       !id(is_clock_showing) &&
                                       !id(cover_art_screensaver_active),
@@ -195,7 +207,7 @@ switch:
     on_turn_on:
       - lambda: |-
           set_display_temperature_degree_symbol(true);
-          refresh_clock_bar_temperature_label_values(id(temperatures), id(main_page)->obj,
+          refresh_clock_bar_temperature_label_values(id(main_page)->obj,
                                     id(clock_bar_enabled).state &&
                                       !id(is_clock_showing) &&
                                       !id(cover_art_screensaver_active),
@@ -205,7 +217,7 @@ switch:
     on_turn_off:
       - lambda: |-
           set_display_temperature_degree_symbol(false);
-          refresh_clock_bar_temperature_label_values(id(temperatures), id(main_page)->obj,
+          refresh_clock_bar_temperature_label_values(id(main_page)->obj,
                                     id(clock_bar_enabled).state &&
                                       !id(is_clock_showing) &&
                                       !id(cover_art_screensaver_active),
@@ -395,7 +407,7 @@ select:
             set_display_temperature_unit(id(temperature_unit_select).current_option(),
                                          id(timezone_select).current_option());
             refresh_temperature_unit_labels();
-            refresh_clock_bar_temperature_label_values(id(temperatures), id(main_page)->obj,
+            refresh_clock_bar_temperature_label_values(id(main_page)->obj,
                                       id(clock_bar_enabled).state &&
                                         !id(is_clock_showing) &&
                                         !id(cover_art_screensaver_active),

@@ -14,7 +14,7 @@ You will find these controls in **Settings > Display > Clock Bar** on the panel 
 
 - **Show Clock Bar** - turns the whole top bar on or off.
 - **Show Time** - shows or hides the time in the clock bar.
-- **Temperature** - shows Home Assistant temperature sensors in the clock bar. Add more rows to show multiple temperatures.
+- **Temperature** - shows one Home Assistant temperature sensor as a small clock-bar item. Add another Temperature item if you want to show another sensor.
 - **Show Degree Symbol** - controls whether temperature values include the degree/unit suffix.
 - **Show Network Status Icon** - shows WiFi strength or Ethernet status at the right edge of the clock bar.
 

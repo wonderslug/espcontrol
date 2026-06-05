@@ -281,11 +281,18 @@ async function assertSettingsPage(page, label, options = {}) {
   await page.waitForSelector("#sp-screen.sp-page.active");
 }
 
-async function assertEmptyCellSettings(page, label) {
+async function assertEmptyCellSettings(page, posts, label) {
   const emptyCell = page.locator(".sp-empty-cell:not(.sp-info-only-hidden)").first();
   if ((await emptyCell.count()) === 0) return;
+  const pos = await emptyCell.getAttribute("data-pos");
+  const before = posts.length;
   await emptyCell.click();
   await page.waitForSelector(".sp-settings-overlay.sp-visible");
+  await page.waitForTimeout(100);
+  assert.strictEqual(posts.length, before, `${label}: opening a new card draft should not post immediately`);
+  assert(await page.locator("#sp-inp-type").isVisible(), `${label}: new card draft shows the card type picker`);
+  assert.strictEqual(await page.locator(".sp-settings-modal .sp-save-btn").count(), 0, `${label}: new card draft hides Save until a type is selected`);
+  assert.strictEqual(await page.locator(".sp-settings-modal .sp-delete-btn").count(), 0, `${label}: new card draft hides Delete before save`);
   const modalLayout = await page.evaluate(() => {
     var modal = document.querySelector(".sp-settings-modal");
     var rect = modal.getBoundingClientRect();
@@ -312,6 +319,37 @@ async function assertEmptyCellSettings(page, label) {
     var overlay = document.querySelector(".sp-settings-overlay");
     return overlay && !overlay.classList.contains("sp-visible");
   });
+  assert.strictEqual(posts.length, before, `${label}: closing a new card draft before choosing a type should not post`);
+  await page.locator(`.sp-main [data-pos="${pos}"].sp-empty-cell`).waitFor({ state: "visible" });
+
+  await page.locator(`.sp-main [data-pos="${pos}"]`).click();
+  await page.waitForSelector(".sp-settings-overlay.sp-visible");
+  await page.locator("#sp-inp-type").selectOption({ label: "Switch" });
+  await page.locator("#sp-inp-entity").waitFor({ state: "visible" });
+  assert(await page.locator(".sp-settings-modal .sp-save-btn").isVisible(), `${label}: selecting a card type shows Save`);
+  assert.strictEqual(await page.locator(".sp-settings-modal .sp-delete-btn").count(), 0, `${label}: unsaved new card keeps Delete hidden after type selection`);
+  await page.locator(".sp-settings-close").click();
+  await page.waitForFunction(() => {
+    var overlay = document.querySelector(".sp-settings-overlay");
+    return overlay && !overlay.classList.contains("sp-visible");
+  });
+  await page.waitForTimeout(100);
+  assert.strictEqual(posts.length, before, `${label}: closing a typed new card draft before Save should not post`);
+  await page.locator(`.sp-main [data-pos="${pos}"].sp-empty-cell`).waitFor({ state: "visible" });
+
+  await page.locator(`.sp-main [data-pos="${pos}"]`).click();
+  await page.waitForSelector(".sp-settings-overlay.sp-visible");
+  await page.locator("#sp-inp-type").selectOption({ label: "Switch" });
+  await page.locator("#sp-inp-label").fill("New Card");
+  await page.locator("#sp-inp-entity").fill("switch.new_card");
+  await page.getByRole("button", { name: "Save" }).click();
+  await page.locator(`.sp-main [data-pos="${pos}"][data-slot]`).waitFor({ state: "visible" });
+  const slot = await page.locator(`.sp-main [data-pos="${pos}"]`).getAttribute("data-slot");
+  await waitForPost(posts, { domain: "text", name: "button_order", action: "set" }, `${label}: saving new card posts button order`, before);
+  await waitForAnyPost(posts, [
+    { domain: "text", name: `button_${slot}_config`, action: "set" },
+    { domain: "text", name: `Button ${slot} Config`, action: "set" },
+  ], `${label}: saving new card posts card config`, before);
 }
 
 function postRecord(requestUrl) {
@@ -338,6 +376,15 @@ async function waitForPost(posts, expected, label, startIndex = 0) {
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
   assert.fail(`${label}: expected POST ${JSON.stringify(expected)}, got ${JSON.stringify(posts.slice(startIndex), null, 2)}`);
+}
+
+async function waitForAnyPost(posts, expectedList, label, startIndex = 0) {
+  const deadline = Date.now() + 4000;
+  while (Date.now() < deadline) {
+    if (posts.slice(startIndex).some((post) => expectedList.some((expected) => postMatches(post, expected)))) return;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  assert.fail(`${label}: expected one of ${JSON.stringify(expectedList)}, got ${JSON.stringify(posts.slice(startIndex), null, 2)}`);
 }
 
 function backupButtons(count) {
@@ -499,9 +546,14 @@ async function assertBackupImportSmoke(page, posts, slug) {
 
 async function entitySuggestionValues(page, inputSelector) {
   await page.locator(inputSelector).fill("light");
-  await page.waitForSelector(".sp-entity-dropdown.sp-open .sp-entity-option");
-  return page.locator(".sp-entity-dropdown.sp-open .sp-entity-option").evaluateAll((options) => {
-    return options.map((option) => option.textContent || "");
+  await page.waitForFunction((selector) => {
+    const input = document.querySelector(selector);
+    return !!input && !!input.parentElement &&
+      !!input.parentElement.querySelector(".sp-entity-dropdown.sp-open .sp-entity-option");
+  }, inputSelector);
+  return page.locator(inputSelector).evaluate((input) => {
+    return Array.from(input.parentElement.querySelectorAll(".sp-entity-dropdown.sp-open .sp-entity-option"))
+      .map((option) => option.textContent || "");
   });
 }
 
@@ -651,15 +703,17 @@ async function assertClockBarEditorSmoke(page, posts, label) {
   assert(await page.locator(".sp-section-title", { hasText: "Temperature" }).isVisible(), `${label}: temperature editor opens`);
   assert.strictEqual(await page.locator("#sp-clockbar-temperature-unit").count(), 0, `${label}: temperature unit selector stays out of clock bar editor`);
   await page.getByRole("button", { name: "Delete" }).click();
-  await waitForPost(posts, { domain: "switch", name: "indoor_temp_enable", action: "turn_off" }, `${label}: delete indoor temperature`, before);
-  await waitForPost(posts, { domain: "switch", name: "outdoor_temp_enable", action: "turn_off" }, `${label}: delete outdoor temperature`, before);
-  await page.locator('[data-clockbar-item="temperature"]').waitFor({ state: "detached" });
+  await waitForPost(posts, { domain: "text", name: "Clock Bar: Temperature Entities", action: "set", value: "sensor.indoor_temperature" }, `${label}: delete first temperature`, before);
+  await waitForPost(posts, { domain: "switch", name: "indoor_temp_enable", action: "turn_off" }, `${label}: delete first temperature disables legacy second slot`, before);
+  await page.locator('[data-clockbar-item="temperature"]').waitFor({ state: "visible" });
+  assert.strictEqual(await page.locator('[data-clockbar-item="temperature_2"]').count(), 0, `${label}: deleting one temperature removes the second mini card`);
   before = posts.length;
+  await page.locator('.sp-clockbar-section[data-clockbar-section="left"]').hover();
   await page.locator('[data-clockbar-section="left"] [data-clockbar-add]').click();
   await page.getByText("Temperature", { exact: true }).click();
-  await waitForPost(posts, { domain: "switch", name: "indoor_temp_enable", action: "turn_on" }, `${label}: add indoor temperature`, before);
-  await waitForPost(posts, { domain: "switch", name: "outdoor_temp_enable", action: "turn_on" }, `${label}: add outdoor temperature`, before);
+  await waitForPost(posts, { domain: "text", name: "Clock Bar: Temperature Entities", action: "set", value: "sensor.indoor_temperature" }, `${label}: add second temperature mini card`, before);
   await page.locator('[data-clockbar-item="temperature"][data-clockbar-section="left"]').waitFor({ state: "visible" });
+  await page.locator('[data-clockbar-item="temperature_2"][data-clockbar-section="left"]').waitFor({ state: "visible" });
   await page.getByText("Show Degree Symbol", { exact: true }).waitFor({ state: "visible" });
   await page.locator(".sp-settings-close").click();
 
@@ -706,7 +760,7 @@ async function runCase(browser, testCase) {
     assertNoLayoutBreaks(await measureCoreLayout(page), testCase.name, testCase);
     await assertSettingsPage(page, testCase.name, testCase);
     assertNoLayoutBreaks(await measureCoreLayout(page), `${testCase.name} after settings`, testCase);
-    await assertEmptyCellSettings(page, testCase.name);
+    await assertEmptyCellSettings(page, posts, testCase.name);
     if (testCase.exerciseInteractions) {
       await assertClockBarEditorSmoke(page, posts, testCase.name);
       await assertBackupImportSmoke(page, posts, testCase.slug);

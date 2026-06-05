@@ -88,26 +88,58 @@ function updateClock() {
 }
 
 function clockBarTemperatureActive() {
-  return clockBarTemperatureEntities().length > 0;
+  return clockBarTemperatureEntries().length > 0;
 }
 
 var CLOCK_BAR_SECTIONS = ["left", "middle", "right"];
-var CLOCK_BAR_DEFAULT_SECTION = {
-  temperature: "left",
-  time: "middle",
-  network: "right",
-};
 var CLOCK_BAR_DEFAULT_LAYOUT = {
   left: ["temperature"],
   middle: ["time"],
   right: ["network"],
 };
-var CLOCK_BAR_ITEMS = ["temperature", "time", "network"];
 var CLOCK_BAR_LAYOUT_STORAGE_PREFIX = "espcontrol.clockBarLayout.";
 var clockBarLayoutLoaded = false;
 
+function clockBarTemperatureItemId(index) {
+  return index === 0 ? "temperature" : "temperature_" + (index + 1);
+}
+
+function clockBarTemperatureItemIndex(item) {
+  if (item === "temperature") return 0;
+  var match = String(item || "").match(/^temperature_(\d+)$/);
+  if (!match) return -1;
+  var index = parseInt(match[1], 10) - 1;
+  return index >= 1 && index < MAX_CLOCK_BAR_TEMPERATURES ? index : -1;
+}
+
+function isClockBarTemperatureItem(item) {
+  return clockBarTemperatureItemIndex(item) >= 0;
+}
+
+function clockBarTemperatureItemIds(includeNext) {
+  var count = clockBarTemperatureEntries().length;
+  if (includeNext && count < MAX_CLOCK_BAR_TEMPERATURES) count++;
+  var out = [];
+  for (var i = 0; i < count && i < MAX_CLOCK_BAR_TEMPERATURES; i++) {
+    out.push(clockBarTemperatureItemId(i));
+  }
+  return out;
+}
+
+function clockBarItems(includeNextTemperature) {
+  return clockBarTemperatureItemIds(!!includeNextTemperature).concat(["time", "network"]);
+}
+
+function clockBarDefaultSection(item) {
+  if (isClockBarTemperatureItem(item)) return "left";
+  if (item === "time") return "middle";
+  if (item === "network") return "right";
+  return "left";
+}
+
 function clockBarItemActive(item) {
-  if (item === "temperature") return clockBarTemperatureActive();
+  var tempIndex = clockBarTemperatureItemIndex(item);
+  if (tempIndex >= 0) return tempIndex < clockBarTemperatureEntries().length;
   if (item === "time") return !!state.clockBarTimeOn;
   if (item === "network") return !!state.networkStatusOn;
   return false;
@@ -118,14 +150,14 @@ function clockBarItemElement(item) {
 }
 
 function clockBarItemLabel(item) {
-  if (item === "temperature") return "Temperature";
+  if (isClockBarTemperatureItem(item)) return "Temperature";
   if (item === "time") return "Time";
   if (item === "network") return "Network Status";
   return "Clock Bar";
 }
 
 function clockBarItemIcon(item) {
-  if (item === "temperature") return "thermometer";
+  if (isClockBarTemperatureItem(item)) return "thermometer";
   if (item === "time") return "clock-outline";
   if (item === "network") return "wifi-strength-4";
   return "plus";
@@ -137,9 +169,10 @@ function clockBarLayoutStorageKey() {
 
 function cloneClockBarLayout(layout) {
   var out = { left: [], middle: [], right: [] };
+  var allowed = clockBarItems(true);
   CLOCK_BAR_SECTIONS.forEach(function (section) {
     (layout && layout[section] || []).forEach(function (item) {
-      if (CLOCK_BAR_ITEMS.indexOf(item) !== -1 && out[section].indexOf(item) === -1) out[section].push(item);
+      if (allowed.indexOf(item) !== -1 && out[section].indexOf(item) === -1) out[section].push(item);
     });
   });
   return out;
@@ -155,6 +188,7 @@ function serializeClockBarLayout(layout) {
 function parseClockBarLayout(value) {
   var out = { left: [], middle: [], right: [] };
   var seen = {};
+  var allowed = clockBarItems(true);
   String(value || "").split("|").forEach(function (segment) {
     var parts = segment.split(":");
     if (parts.length < 2) return;
@@ -162,7 +196,7 @@ function parseClockBarLayout(value) {
     if (CLOCK_BAR_SECTIONS.indexOf(section) === -1) return;
     parts.slice(1).join(":").split(",").forEach(function (item) {
       item = item.trim();
-      if (CLOCK_BAR_ITEMS.indexOf(item) === -1 || seen[item]) return;
+      if (allowed.indexOf(item) === -1 || seen[item]) return;
       seen[item] = true;
       out[section].push(item);
     });
@@ -206,23 +240,24 @@ function normalizeClockBarLayout() {
   var current = loadClockBarLayout();
   var next = { left: [], middle: [], right: [] };
   var seen = {};
+  var allowed = clockBarItems(true);
   CLOCK_BAR_SECTIONS.forEach(function (section) {
     (current[section] || []).forEach(function (item) {
-      if (CLOCK_BAR_ITEMS.indexOf(item) === -1 || seen[item]) return;
+      if (allowed.indexOf(item) === -1 || seen[item]) return;
       seen[item] = true;
       next[section].push(item);
     });
   });
-  CLOCK_BAR_ITEMS.forEach(function (item) {
+  clockBarItems(false).forEach(function (item) {
     if (seen[item] || !clockBarItemActive(item)) return;
-    next[CLOCK_BAR_DEFAULT_SECTION[item]].push(item);
+    next[clockBarDefaultSection(item)].push(item);
   });
   state.clockBarLayout = next;
   return next;
 }
 
 function moveClockBarItem(item, section) {
-  if (isConfigLocked() || CLOCK_BAR_ITEMS.indexOf(item) === -1 || CLOCK_BAR_SECTIONS.indexOf(section) === -1) return;
+  if (isConfigLocked() || clockBarItems(true).indexOf(item) === -1 || CLOCK_BAR_SECTIONS.indexOf(section) === -1) return;
   var layout = normalizeClockBarLayout();
   CLOCK_BAR_SECTIONS.forEach(function (name) {
     layout[name] = layout[name].filter(function (entry) { return entry !== item; });
@@ -242,10 +277,30 @@ function removeClockBarItemFromLayout(item) {
   saveClockBarLayout(true);
 }
 
+function removeClockBarTemperatureItemFromLayout(index) {
+  var layout = normalizeClockBarLayout();
+  CLOCK_BAR_SECTIONS.forEach(function (section) {
+    var next = [];
+    (layout[section] || []).forEach(function (entry) {
+      var tempIndex = clockBarTemperatureItemIndex(entry);
+      if (tempIndex < 0) {
+        next.push(entry);
+      } else if (tempIndex < index) {
+        next.push(entry);
+      } else if (tempIndex > index) {
+        next.push(clockBarTemperatureItemId(tempIndex - 1));
+      }
+    });
+    layout[section] = next;
+  });
+  state.clockBarLayout = layout;
+  saveClockBarLayout(true);
+}
+
 function clockBarItemsAvailableToAdd(section) {
   normalizeClockBarLayout();
   var out = [];
-  CLOCK_BAR_ITEMS.forEach(function (item) {
+  clockBarItems(true).forEach(function (item) {
     if (!clockBarItemActive(item) || !clockBarItemElement(item)) out.push(item);
   });
   return out;
@@ -254,18 +309,19 @@ function clockBarItemsAvailableToAdd(section) {
 function createClockBarItemElement(item, section) {
   var button = document.createElement("button");
   button.type = "button";
-  button.className = "sp-clockbar-item sp-clockbar-" + item;
+  button.className = "sp-clockbar-item sp-clockbar-" + (isClockBarTemperatureItem(item) ? "temperature" : item);
   button.setAttribute("data-clockbar-item", item);
   button.setAttribute("data-clockbar-section", section);
   button.setAttribute("aria-label", "Edit " + clockBarItemLabel(item).toLowerCase());
   button.draggable = true;
 
-  if (item === "temperature") {
+  if (isClockBarTemperatureItem(item)) {
     var temp = document.createElement("span");
     temp.className = "sp-temp";
     temp.textContent = "--";
     button.appendChild(temp);
-    els.temp = temp;
+    if (!els.temps) els.temps = {};
+    els.temps[item] = temp;
   } else if (item === "time") {
     var clock = document.createElement("span");
     clock.className = "sp-clock";
@@ -295,7 +351,7 @@ function renderClockBarLayout() {
   if (!els.clockBarSections) return;
   var layout = normalizeClockBarLayout();
   els.clockBarItems = {};
-  els.temp = null;
+  els.temps = {};
   els.clock = null;
   els.networkPreview = null;
   CLOCK_BAR_SECTIONS.forEach(function (section) {
@@ -334,7 +390,7 @@ function syncClockBarItemElement(item) {
 
 function updateClockBarItemUi() {
   renderClockBarLayout();
-  syncClockBarItemElement("temperature");
+  clockBarTemperatureItemIds(true).forEach(syncClockBarItemElement);
   syncClockBarItemElement("time");
   syncClockBarItemElement("network");
 }
@@ -352,11 +408,16 @@ function setClockBarItemSelected(item, open) {
 
 function addClockBarItem(item) {
   if (isConfigLocked()) return;
-  if (item === "temperature") {
+  if (isClockBarTemperatureItem(item)) {
+    var tempIndex = clockBarTemperatureItemIndex(item);
     var restore = normalizeClockBarTemperatureEntities(state.clockBarTempRestoreEntities);
-    if (!restore.length) restore = legacyClockBarTemperatureEntities();
-    if (!restore.length) restore = ["sensor.outdoor_temperature"];
-    applyClockBarTemperatureEntities(restore, true);
+    var next = clockBarTemperatureEntries();
+    if (tempIndex >= next.length) {
+      while (next.length < tempIndex) next.push("");
+      next[tempIndex] = restore[tempIndex] || "";
+      if (!next[tempIndex] && tempIndex === 0) next[tempIndex] = "sensor.outdoor_temperature";
+    }
+    applyClockBarTemperatureEntities(next, true);
     updateTempPreview();
   } else if (item === "time") {
     state.clockBarTimeOn = true;
@@ -373,18 +434,23 @@ function addClockBarItem(item) {
 
 function deleteClockBarItem(item) {
   if (isConfigLocked()) return;
-  removeClockBarItemFromLayout(item);
-  if (item === "temperature") {
+  if (isClockBarTemperatureItem(item)) {
+    var tempIndex = clockBarTemperatureItemIndex(item);
+    removeClockBarTemperatureItemFromLayout(tempIndex);
     state.clockBarTempRestoreIndoor = !!state._indoorOn;
     state.clockBarTempRestoreOutdoor = !!state._outdoorOn;
     state.clockBarTempRestoreEntities = clockBarTemperatureEntities();
-    applyClockBarTemperatureEntities([], true);
+    var next = clockBarTemperatureEntries();
+    if (tempIndex >= 0) next.splice(tempIndex, 1);
+    applyClockBarTemperatureEntities(next, true);
     updateTempPreview();
   } else if (item === "time") {
+    removeClockBarItemFromLayout(item);
     state.clockBarTimeOn = false;
     postClockBarTime(false);
     syncClockBarUi();
   } else if (item === "network") {
+    removeClockBarItemFromLayout(item);
     state.networkStatusOn = false;
     postNetworkStatusIcon(false);
     syncClockBarUi();
@@ -439,17 +505,20 @@ function updateSunInfo() {
 }
 
 function updateTempPreview() {
-  if (!els.temp) return;
-  var show = state.clockBarOn && clockBarTemperatureActive();
-  els.temp.className = "sp-temp" + (show ? " sp-visible" : "");
+  if (!els.temps) return;
+  var show = state.clockBarOn;
   var unit = clockBarTemperatureUnitSymbol();
   var sampleValues = ["17", "24", "21", "19", "22", "18"];
-  var values = clockBarTemperatureEntities().map(function (_, index) {
-    if (index === 0 && state._outdoorVal != null) return state._outdoorVal;
-    if (index === 1 && state._indoorVal != null) return state._indoorVal;
-    return sampleValues[index] || "--";
+  clockBarTemperatureEntries().forEach(function (_, index) {
+    var item = clockBarTemperatureItemId(index);
+    var el = els.temps[item];
+    if (!el) return;
+    var value = sampleValues[index] || "--";
+    if (index === 0 && state._outdoorVal != null) value = state._outdoorVal;
+    if (index === 1 && state._indoorVal != null) value = state._indoorVal;
+    el.className = "sp-temp" + (show ? " sp-visible" : "");
+    el.textContent = value + unit;
   });
-  els.temp.textContent = values.map(function (value) { return value + unit; }).join(" / ");
 }
 
 function normalizeNetworkTransport(value) {

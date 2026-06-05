@@ -306,14 +306,22 @@ function clockBarTemperatureUnitSymbol() {
   return state.temperatureDegreeSymbolOn ? "\u00B0" : "";
 }
 
-function normalizeClockBarTemperatureEntities(value) {
+var MAX_CLOCK_BAR_TEMPERATURES = 6;
+
+function normalizeClockBarTemperatureEntries(value) {
   var input = Array.isArray(value) ? value : String(value || "").split(/[|,\n]/);
+  return input.map(function (entry) {
+    return String(entry || "").trim();
+  }).slice(0, MAX_CLOCK_BAR_TEMPERATURES);
+}
+
+function normalizeClockBarTemperatureEntities(value) {
+  var input = normalizeClockBarTemperatureEntries(value);
   var out = [];
   input.forEach(function (entry) {
-    entry = String(entry || "").trim();
     if (entry && out.indexOf(entry) === -1) out.push(entry);
   });
-  return out.slice(0, 6);
+  return out.slice(0, MAX_CLOCK_BAR_TEMPERATURES);
 }
 
 function serializeClockBarTemperatureEntities(list) {
@@ -327,19 +335,24 @@ function legacyClockBarTemperatureEntities() {
   return normalizeClockBarTemperatureEntities(list);
 }
 
-function clockBarTemperatureEntities() {
-  var list = normalizeClockBarTemperatureEntities(state.clockBarTemperatureEntities);
+function clockBarTemperatureEntries() {
+  var list = normalizeClockBarTemperatureEntries(state.clockBarTemperatureEntities);
   if (!list.length && !state._clockBarTemperatureEntitiesReceived) return legacyClockBarTemperatureEntities();
   return list;
 }
 
+function clockBarTemperatureEntities() {
+  return normalizeClockBarTemperatureEntities(clockBarTemperatureEntries());
+}
+
 function applyClockBarTemperatureEntities(list, postDevice) {
-  state.clockBarTemperatureEntities = normalizeClockBarTemperatureEntities(list);
+  state.clockBarTemperatureEntities = normalizeClockBarTemperatureEntries(list);
   state._clockBarTemperatureEntitiesReceived = true;
-  state._outdoorOn = state.clockBarTemperatureEntities.length > 0;
-  state._indoorOn = state.clockBarTemperatureEntities.length > 1;
-  state.outdoorEntity = state.clockBarTemperatureEntities[0] || "";
-  state.indoorEntity = state.clockBarTemperatureEntities[1] || "";
+  var configured = clockBarTemperatureEntities();
+  state._outdoorOn = configured.length > 0;
+  state._indoorOn = configured.length > 1;
+  state.outdoorEntity = configured[0] || "";
+  state.indoorEntity = configured[1] || "";
   if (postDevice) {
     postText(entityName("clock_bar_temperature_entities"), serializeClockBarTemperatureEntities(state.clockBarTemperatureEntities));
     postSwitch(entityName("outdoor_temp_enable"), state._outdoorOn);
@@ -590,7 +603,11 @@ function syncScreenScheduleUi() {
 }
 
 function syncTemperatureUi() {
-  if (els.clockBarTemperatureList) renderClockBarTemperatureList(els.clockBarTemperatureList);
+  if (els.setClockBarTemperatureEntity && isClockBarTemperatureItem(state.clockBarSelectedItem)) {
+    var index = clockBarTemperatureItemIndex(state.clockBarSelectedItem);
+    var list = clockBarTemperatureEntries();
+    syncInput(els.setClockBarTemperatureEntity, list[index] || "");
+  }
   if (els.setIndoorToggle) els.setIndoorToggle.checked = !!state._indoorOn;
   if (els.setIndoorField) {
     els.setIndoorField.className = "sp-cond-field" + (state._indoorOn ? " sp-visible" : "");

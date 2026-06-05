@@ -138,69 +138,32 @@ function clockBarSelectField(labelText, inputId, options, value, onChange) {
   return fieldWithControl(labelText, inputId, select);
 }
 
-function renderClockBarTemperatureList(container) {
-  if (!container) return;
-  var list = state._clockBarTemperatureEntitiesReceived
-    ? (state.clockBarTemperatureEntities || []).slice(0, 6)
-    : clockBarTemperatureEntities();
-  container.innerHTML = "";
-  els.setClockBarTemperatureEntities = [];
+function renderClockBarTemperatureEntityControl(panel, item) {
+  var index = clockBarTemperatureItemIndex(item);
+  if (index < 0) return;
+  var list = clockBarTemperatureEntries();
+  while (list.length <= index) list.push("");
 
-  list.forEach(function (entity, index) {
-    var row = document.createElement("div");
-    row.className = "sp-repeat-row";
+  var field = document.createElement("div");
+  field.className = "sp-field";
+  var inputId = "sp-clockbar-temperature-entity-" + index;
+  field.appendChild(fieldLabel("Temperature Entity", inputId));
+  var input = entityInput(inputId, list[index] || "", "sensor.temperature", ["sensor"]);
+  field.appendChild(input);
+  panel.appendChild(field);
+  els.setClockBarTemperatureEntity = input;
 
-    var field = document.createElement("div");
-    field.className = "sp-field sp-repeat-field";
-    var inputId = "sp-clockbar-temperature-entity-" + index;
-    field.appendChild(fieldLabel("Temperature Entity", inputId));
-    var input = entityInput(inputId, entity, "sensor.temperature", ["sensor"]);
-    field.appendChild(input);
-    row.appendChild(field);
-
-    var remove = document.createElement("button");
-    remove.type = "button";
-    remove.className = "sp-icon-button sp-repeat-remove";
-    remove.setAttribute("aria-label", "Remove temperature");
-    remove.title = "Remove temperature";
-    remove.innerHTML = '<span class="mdi mdi-trash-can-outline"></span>';
-    row.appendChild(remove);
-
-    function saveInput() {
-      var next = clockBarTemperatureEntities();
-      next[index] = input.value.trim();
-      applyClockBarTemperatureEntities(next, true);
-    }
-    input.addEventListener("blur", saveInput);
-    input.addEventListener("change", saveInput);
-    input.addEventListener("keydown", function (e) {
-      if (e.key === "Enter") this.blur();
-    });
-    remove.addEventListener("click", function () {
-      var next = clockBarTemperatureEntities();
-      next.splice(index, 1);
-      applyClockBarTemperatureEntities(next, true);
-    });
-
-    els.setClockBarTemperatureEntities.push(input);
-    container.appendChild(row);
+  function saveInput() {
+    var next = clockBarTemperatureEntries();
+    while (next.length <= index) next.push("");
+    next[index] = input.value.trim();
+    applyClockBarTemperatureEntities(next, true);
+  }
+  input.addEventListener("blur", saveInput);
+  input.addEventListener("change", saveInput);
+  input.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") this.blur();
   });
-
-  var add = document.createElement("button");
-  add.type = "button";
-  add.className = "sp-secondary-btn sp-add-temperature";
-  add.innerHTML = '<span class="mdi mdi-plus"></span><span>Add Temperature</span>';
-  add.disabled = list.length >= 6;
-  add.addEventListener("click", function () {
-    var next = clockBarTemperatureEntities();
-    next.push("");
-    state.clockBarTemperatureEntities = next;
-    state._clockBarTemperatureEntitiesReceived = true;
-    renderClockBarTemperatureList(container);
-    var inputs = els.setClockBarTemperatureEntities || [];
-    if (inputs.length) inputs[inputs.length - 1].focus();
-  });
-  container.appendChild(add);
 }
 
 function renderClockBarSettings(forceOpen) {
@@ -218,12 +181,8 @@ function renderClockBarSettings(forceOpen) {
   var panel = document.createElement("div");
   panel.className = "sp-panel";
 
-  if (item === "temperature") {
-    var tempList = document.createElement("div");
-    tempList.className = "sp-repeat-list sp-temperature-list";
-    panel.appendChild(tempList);
-    els.clockBarTemperatureList = tempList;
-    renderClockBarTemperatureList(tempList);
+  if (isClockBarTemperatureItem(item)) {
+    renderClockBarTemperatureEntityControl(panel, item);
     var degreeSymbol = toggleRow("Show Degree Symbol", "sp-clockbar-degree-symbol", state.temperatureDegreeSymbolOn);
     panel.appendChild(degreeSymbol.row);
     degreeSymbol.input.addEventListener("change", function () {
@@ -376,9 +335,18 @@ function renderButtonSettings(forceOpen) {
 
   var slot = c.selected[0];
   var bIdx = slot - 1;
-  if (bIdx < 0 || bIdx >= c.buttons.length) return;
-  var liveButton = c.buttons[bIdx];
-  var draftKey = (c.isSub ? "sub:" + state.editingSubpage : "main") + ":" + slot;
+  var pendingNewDraft = !!(
+    state.settingsDraft &&
+    state.settingsDraft.isNew &&
+    state.settingsDraft.slot === slot &&
+    state.settingsDraft.isSub === c.isSub &&
+    (!c.isSub || state.settingsDraft.homeSlot === state.editingSubpage)
+  );
+  if (bIdx < 0 || (!pendingNewDraft && bIdx >= c.buttons.length)) return;
+  var liveButton = pendingNewDraft ? null : c.buttons[bIdx];
+  var draftKey = pendingNewDraft
+    ? state.settingsDraft.key
+    : (c.isSub ? "sub:" + state.editingSubpage : "main") + ":" + slot;
 
   function cloneButtonConfig(src) {
     return EspControlModel.cloneCardConfig(src);
@@ -389,7 +357,7 @@ function renderButtonSettings(forceOpen) {
     normalizeButtonConfig(target);
   }
 
-  if (!state.settingsDraft || state.settingsDraft.key !== draftKey) {
+  if (!pendingNewDraft && (!state.settingsDraft || state.settingsDraft.key !== draftKey)) {
     state.settingsDraft = {
       key: draftKey,
       slot: slot,
@@ -400,6 +368,7 @@ function renderButtonSettings(forceOpen) {
     };
   }
   var b = state.settingsDraft.button;
+  var isNewDraft = !!state.settingsDraft.isNew;
 
   var title = document.createElement("div");
   title.className = "sp-section-title";
@@ -502,19 +471,42 @@ function renderButtonSettings(forceOpen) {
   }
 
   function applySettingsDraft() {
-    if (!state.settingsDraft || state.settingsDraft.key !== draftKey) return;
-    copyButtonConfig(liveButton, state.settingsDraft.button);
-    state.settingsDraft = null;
-    if (c.isSub) {
-      saveSubpageConfig(state.editingSubpage);
+    if (!state.settingsDraft || state.settingsDraft.key !== draftKey) return false;
+    var draft = state.settingsDraft;
+    var savedButton = liveButton;
+    if (draft.isNew) {
+      var pos = draft.pos;
+      if (pos < 0 || pos >= c.maxSlots || c.grid[pos] !== 0) {
+        showBanner("That grid space is no longer available. Close this window and try again.", "error");
+        return false;
+      }
+      while (c.buttons.length < slot) {
+        c.buttons.push(emptyButtonConfig());
+      }
+      savedButton = c.buttons[slot - 1];
+      copyButtonConfig(savedButton, draft.button);
+      c.grid[pos] = slot;
+      if (c.isSub) {
+        saveSubpageConfig(state.editingSubpage);
+      } else {
+        postText(entityName("button_order"), serializeGrid(state.grid));
+        saveButtonConfig(slot);
+      }
     } else {
+      copyButtonConfig(liveButton, draft.button);
+    }
+    state.settingsDraft = null;
+    if (!draft.isNew && c.isSub) {
+      saveSubpageConfig(state.editingSubpage);
+    } else if (!draft.isNew) {
       saveButtonConfig(slot);
     }
-    var savedTypeDef = BUTTON_TYPES[liveButton.type || ""];
+    var savedTypeDef = BUTTON_TYPES[savedButton.type || ""];
     if (savedTypeDef && savedTypeDef.afterSave) {
-      savedTypeDef.afterSave(liveButton, slot, { isSub: c.isSub });
+      savedTypeDef.afterSave(savedButton, slot, { isSub: c.isSub });
     }
     renderPreview();
+    return true;
   }
 
   function bindField(input, field, rerender) {
@@ -651,14 +643,18 @@ function renderButtonSettings(forceOpen) {
     ], value || "0", onChange);
   }
 
-  var rawTypeDef = BUTTON_TYPES[b.type || ""] || BUTTON_TYPES[""];
+  var isNewDraftWithoutType = isNewDraft && !state.settingsDraft.typeSelected;
+  var rawTypeDef = isNewDraftWithoutType ? null : (BUTTON_TYPES[b.type || ""] || BUTTON_TYPES[""]);
   var typeDef = rawTypeDef;
   var rawExperimental = buttonTypeRegistryValue(rawTypeDef, "experimental", "");
   if (rawExperimental && !isExperimentalEnabled(rawExperimental)) {
     typeDef = hiddenExperimentalButtonTypeDef(rawTypeDef);
   }
   {
-    var selectedTypeKey = buttonTypeRegistryValue(rawTypeDef, "pickerKey", "") || (b.type || "");
+    var chooseTypeValue = "__choose-card-type__";
+    var selectedTypeKey = isNewDraftWithoutType
+      ? null
+      : buttonTypeRegistryValue(rawTypeDef, "pickerKey", "") || (b.type || "");
     var typeOpts = buttonTypePickerOptionList(c.isSub, selectedTypeKey);
     var tf = document.createElement("div");
     tf.className = "sp-field";
@@ -666,17 +662,29 @@ function renderButtonSettings(forceOpen) {
     var typeSelect = document.createElement("select");
     typeSelect.className = "sp-select";
     typeSelect.id = "sp-inp-type";
+    if (isNewDraftWithoutType) {
+      var chooseOpt = document.createElement("option");
+      chooseOpt.value = chooseTypeValue;
+      chooseOpt.textContent = "Select card type";
+      chooseOpt.disabled = true;
+      chooseOpt.selected = true;
+      typeSelect.appendChild(chooseOpt);
+    }
     typeOpts.forEach(function (o) {
       var opt = document.createElement("option");
       opt.value = o.key;
       opt.textContent = o.label;
       opt.disabled = !!o.disabled;
-      if (selectedTypeKey === o.key) opt.selected = true;
+      if (!isNewDraftWithoutType && selectedTypeKey === o.key) opt.selected = true;
       typeSelect.appendChild(opt);
     });
     typeSelect.addEventListener("change", function () {
       var newType = this.value;
+      if (newType === chooseTypeValue) return;
       b.type = newType;
+      if (state.settingsDraft && state.settingsDraft.key === draftKey) {
+        state.settingsDraft.typeSelected = true;
+      }
       var td = BUTTON_TYPES[newType];
       if (td && td.onSelect) td.onSelect(b);
       saveField("type", newType);
@@ -684,6 +692,10 @@ function renderButtonSettings(forceOpen) {
     });
     tf.appendChild(typeSelect);
     panel.appendChild(tf);
+    if (isNewDraftWithoutType) {
+      container.appendChild(panel);
+      return;
+    }
   }
 
   var typeHelpers = {
@@ -919,27 +931,33 @@ function renderButtonSettings(forceOpen) {
   var saveRow = document.createElement("div");
   saveRow.className = "sp-btn-row sp-btn-row--save";
 
-  var delBtn = document.createElement("button");
-  delBtn.className = "sp-action-btn sp-delete-btn";
-  delBtn.innerHTML = '<span class="mdi mdi-trash-can-outline"></span>';
-  delBtn.addEventListener("click", function () {
-    state.settingsDraft = null;
-    deleteSlot(slot);
-  });
-  saveRow.appendChild(delBtn);
-  saveRow.classList.add("sp-has-delete");
+  if (!isNewDraft) {
+    var delBtn = document.createElement("button");
+    delBtn.className = "sp-action-btn sp-delete-btn";
+    delBtn.innerHTML = '<span class="mdi mdi-trash-can-outline"></span>';
+    delBtn.addEventListener("click", function () {
+      state.settingsDraft = null;
+      deleteSlot(slot);
+    });
+    saveRow.appendChild(delBtn);
+    saveRow.classList.add("sp-has-delete");
+  }
 
   var rightGroup = document.createElement("div");
   rightGroup.className = "sp-btn-group-right";
   var editSubBtn = panel.querySelector(".sp-edit-subpage-btn");
-  if (editSubBtn) rightGroup.appendChild(editSubBtn);
+  if (editSubBtn && isNewDraft && editSubBtn.parentNode) {
+    editSubBtn.parentNode.removeChild(editSubBtn);
+  } else if (editSubBtn) {
+    rightGroup.appendChild(editSubBtn);
+  }
   var saveBtn = document.createElement("button");
   saveBtn.className = "sp-action-btn sp-save-btn";
   saveBtn.textContent = "Save";
   saveBtn.addEventListener("click", function () {
     if (!validateSettingsDraft()) return;
     if (!validateConfigSize()) return;
-    applySettingsDraft();
+    if (!applySettingsDraft()) return;
     closeSettings();
   });
   rightGroup.appendChild(saveBtn);

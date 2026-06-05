@@ -186,8 +186,8 @@ select:
             set_display_temperature_unit(id(temperature_unit_select).current_option(),
                                          id(timezone_select).current_option());
             refresh_temperature_unit_labels();
-            refresh_clock_bar_temperature_label_values(id(temperatures), id(main_page)->obj,
-                                      id(clock_bar_enabled).state &&
+            refresh_clock_bar_temperature_label_values(id(main_page)->obj,
+                                                      id(clock_bar_enabled).state &&
                                         !id(is_clock_showing) &&
                                         !id(cover_art_screensaver_active),
                                       id(indoor_temp_enable).state,
