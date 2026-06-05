@@ -33,7 +33,7 @@ If the install button doesn't detect your device, try a different USB-C cable. C
 
 After flashing, the display needs to connect to your WiFi network.
 
-1. **The display creates a hotspot** called **ESP_xxxxxx** (the exact name appears on screen). It can take up to **90 seconds** to appear. Connect to it from your phone or laptop.
+1. **The display creates a hotspot.** It can take up to **90 seconds** to appear. Connect to it from your phone or laptop.
 2. **A setup page opens automatically** (captive portal). If it doesn't, open a browser and go to `192.168.4.1`.
 3. **Choose your WiFi network** from the list and enter your password.
 4. **The display reconnects** and shows a loading screen while it joins your network. Once connected, the screen will show your device's address (something like `192.168.1.xxx`).
