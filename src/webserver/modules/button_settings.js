@@ -20,8 +20,9 @@ function updatePreviewHint(c) {
 function renderSelectionBar(c) {
   if (!els.selectionBar) return;
   c = c || ctx();
+  var clockBarItem = state.clockBarSelectedItem || "";
   els.selectionBar.innerHTML = "";
-  if (isConfigLocked() || !c.selected.length) {
+  if (isConfigLocked() || (!clockBarItem && !c.selected.length)) {
     els.selectionBar.className = "sp-selection-bar";
     return;
   }
@@ -30,15 +31,19 @@ function renderSelectionBar(c) {
 
   var label = document.createElement("span");
   label.className = "sp-selection-label";
-  label.textContent = c.selected.length === 1 && c.selected[0] === -2
-    ? "Back button selected"
-    : (c.selected.length === 1 ? "1 card selected" : c.selected.length + " cards selected");
+  if (clockBarItem) {
+    label.textContent = "1 clock bar item selected";
+  } else if (c.selected.length === 1 && c.selected[0] === -2) {
+    label.textContent = "Back button selected";
+  } else {
+    label.textContent = c.selected.length === 1 ? "1 card selected" : c.selected.length + " cards selected";
+  }
   els.selectionBar.appendChild(label);
 
   var actions = document.createElement("div");
   actions.className = "sp-selection-actions";
 
-  if (c.selected.length === 1) {
+  if (clockBarItem || c.selected.length === 1) {
     var editBtn = document.createElement("button");
     editBtn.type = "button";
     editBtn.className = "sp-selection-btn sp-selection-btn-primary";
@@ -54,7 +59,7 @@ function renderSelectionBar(c) {
   var menuBtn = document.createElement("button");
   menuBtn.type = "button";
   menuBtn.className = "sp-selection-btn";
-  menuBtn.setAttribute("aria-label", "Card actions");
+  menuBtn.setAttribute("aria-label", clockBarItem ? "Clock bar item actions" : "Card actions");
   menuBtn.innerHTML = '<span class="mdi mdi-dots-horizontal"></span>';
   menuBtn.addEventListener("click", function (e) {
     e.preventDefault();

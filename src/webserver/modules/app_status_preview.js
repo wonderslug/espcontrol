@@ -458,6 +458,7 @@ function deleteClockBarItem(item) {
   state.clockBarSelectedItem = "";
   hideSettingsOverlay();
   updateClockBarItemUi();
+  renderPreview();
 }
 
 function syncInput(el, val) {

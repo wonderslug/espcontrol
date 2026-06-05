@@ -206,7 +206,7 @@ function setupPreviewEvents() {
       e.preventDefault();
       e.stopPropagation();
       var item = target.getAttribute("data-clockbar-item");
-      setClockBarItemSelected(item, true);
+      setClockBarItemSelected(item, false);
       clearTextSelection();
     });
 
@@ -879,15 +879,29 @@ function addSingleCardMenuItems(slot) {
   addCtxItem("delete", "Delete", function () { deleteSlot(slot); }, true);
 }
 
+function addClockBarSelectionMenuItems(item) {
+  addCtxItem("pencil", "Edit " + clockBarItemLabel(item), function () {
+    setClockBarItemSelected(item, true);
+  });
+  addCtxDivider();
+  addCtxItem("delete", "Delete", function () {
+    deleteClockBarItem(item);
+    renderButtonSettings();
+  }, true);
+}
+
 function showSelectionMenu(e) {
   if (isConfigLocked()) return;
   hideContextMenu();
   var c = ctx();
-  if (!c.selected.length) return;
+  var clockBarItem = state.clockBarSelectedItem || "";
+  if (!clockBarItem && !c.selected.length) return;
 
   ctxMenu = document.createElement("div");
   ctxMenu.className = "sp-ctx-menu";
-  if (c.selected.length > 1) {
+  if (clockBarItem) {
+    addClockBarSelectionMenuItems(clockBarItem);
+  } else if (c.selected.length > 1) {
     addBulkCardMenuItems(c.selected.slice());
   } else {
     addSingleCardMenuItems(c.selected[0]);
@@ -993,7 +1007,7 @@ function showClockBarAddMenu(e, section) {
       addCtxItem(clockBarItemIcon(item), clockBarItemLabel(item), function () {
         addClockBarItem(item);
         moveClockBarItem(item, section);
-        setClockBarItemSelected(item, true);
+        setClockBarItemSelected(item, false);
       });
     });
   }
