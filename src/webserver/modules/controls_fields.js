@@ -142,6 +142,7 @@ function cardLargeNumbersActiveForCardSize(b, helpers, metadata) {
       !cardLargeNumbersSupportsCardSize(b, helpers, metadata || cardLargeNumbersMetadata(b))) {
     return false;
   }
+  if (largeNumbersExplicitlyDisabled(b && b.options)) return false;
   return (helpers.cardSize || 1) === 4 || cardLargeNumbersEnabled(b);
 }
 
@@ -181,14 +182,30 @@ function renderCardModeSelector(panel, b, helpers, metadata) {
 }
 
 function renderCardLargeNumbersToggle(panel, b, helpers, metadata) {
-  return null;
+  metadata = metadata || {};
+  var large = metadata.largeNumbers || {};
+  if (!large.showSettingForAnyCardSize && !cardLargeNumbersSupportsCardSize(b, helpers, metadata)) return null;
+  if (large.isVisible && !large.isVisible(b, helpers)) return null;
+  var toggle = helpers.toggleRow(
+    cardMetadataValue(large.label, b, helpers) || "Large Numbers",
+    helpers.idPrefix + (large.idSuffix || "large-numbers"),
+    cardLargeNumbersActiveForCardSize(b, helpers, metadata)
+  );
+  panel.appendChild(toggle.row);
+  toggle.input.addEventListener("change", function () {
+    setSensorLargeNumbersEnabled(b, this.checked);
+    helpers.saveField("options", b.options);
+    if (large.onChange) large.onChange.call(this, b, helpers);
+  });
+  return toggle;
 }
 
 function syncCardLargeNumbersToggle(toggle, b, helpers, visible) {
   if (!toggle) return;
   toggle.row.style.display = visible ? "" : "none";
-  if (!visible && cardLargeNumbersEnabled(b)) {
-    setSensorLargeNumbersEnabled(b, false);
+  if (!visible && (cardLargeNumbersEnabled(b) || largeNumbersExplicitlyDisabled(b && b.options))) {
+    b.options = setConfigOption(b.options, SENSOR_LARGE_NUMBERS_OPTION, false);
+    b.options = setConfigOptionValue(b.options, SENSOR_LARGE_NUMBERS_OPTION, "");
     toggle.input.checked = false;
     helpers.saveField("options", b.options);
   }

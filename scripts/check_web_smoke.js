@@ -434,6 +434,16 @@ assert(sensorNumericPreview.iconHtml.includes("sp-sensor-preview-large"), "senso
 assert(sensorNumericPreview.labelHtml.includes("mdi-gauge"), "sensor numeric preview uses the gauge badge");
 assert(sensorNumericPreview.iconHtml.includes("\u00b0C"), "sensor numeric preview includes the unit");
 
+const sensorLargeDisabledPreview = hooks.buttonTypePreviewFor("sensor", {
+  sensor: "sensor.office_temperature",
+  label: "Office",
+  unit: "\u00b0C",
+  type: "sensor",
+  precision: "1",
+  options: "large_numbers=off",
+}, { cardSize: 4 });
+assert(!sensorLargeDisabledPreview.iconHtml.includes("sp-sensor-preview-large"), "sensor numeric 2x2 preview respects disabled large numbers");
+
 const wideSensorNumericPreview = hooks.buttonTypePreviewFor("sensor", {
   sensor: "sensor.office_temperature",
   label: "Office",

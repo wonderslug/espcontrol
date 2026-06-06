@@ -141,7 +141,7 @@ inline bool card_large_date_time_layout(const ParsedCfg &p, int row_span, int co
 }
 
 inline bool card_large_numbers_active_for_layout(const ParsedCfg &p, int row_span, int col_span) {
-  return card_large_numbers_supported(p) && (
+  return card_large_numbers_supported(p) && !card_large_numbers_disabled(p) && (
     large_number_square_card_layout(row_span, col_span) ||
     card_large_numbers_enabled(p));
 }

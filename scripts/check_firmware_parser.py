@@ -98,6 +98,10 @@ int main() {
   assert(compact.type == "sensor");
   assert(compact.precision == "1");
   assert(card_large_numbers_enabled(compact));
+  auto large_off = parse_cfg(";;;;sensor.energy;kWh;sensor;1;large_numbers=off");
+  assert(large_off.options == "large_numbers=off");
+  assert(!card_large_numbers_enabled(large_off));
+  assert(card_large_numbers_disabled(large_off));
   auto state_labels = parse_cfg(";;;;sensor.bin_level;;sensor;text;state_labels,state_input=high,state_output=Please%20empty,state_input_2=low,state_output_2=Full");
   assert(sensor_state_labels_enabled(state_labels));
   assert(state_labels.options == "state_labels,state_input=high,state_output=Please empty,state_input_2=low,state_output_2=Full");

@@ -169,6 +169,7 @@ function fanCardDefaultIcon(type) {
 }
 
 var SENSOR_LARGE_NUMBERS_OPTION = "large_numbers";
+var SENSOR_LARGE_NUMBERS_OFF_VALUE = "off";
 var SENSOR_ACTIVE_COLOR_OPTION = "active_color";
 var SWITCH_CONFIRM_OFF_OPTION = "confirm_off";
 var SWITCH_CONFIRM_ON_OPTION = "confirm_on";
@@ -273,6 +274,20 @@ function setConfigOptionValue(options, name, value) {
   return out.join(",");
 }
 
+function largeNumbersExplicitlyDisabled(options) {
+  return configOptionValue(options, SENSOR_LARGE_NUMBERS_OPTION) === SENSOR_LARGE_NUMBERS_OFF_VALUE;
+}
+
+function copyLargeNumbersOption(out, options) {
+  if (largeNumbersExplicitlyDisabled(options)) {
+    return setConfigOptionValue(out, SENSOR_LARGE_NUMBERS_OPTION, SENSOR_LARGE_NUMBERS_OFF_VALUE);
+  }
+  if (configOptionEnabled(options, SENSOR_LARGE_NUMBERS_OPTION)) {
+    return setConfigOption(out, SENSOR_LARGE_NUMBERS_OPTION, true);
+  }
+  return out;
+}
+
 function normalizeMediaVolumeMax(value) {
   value = String(value || "").trim();
   if (!value) return "100";
@@ -291,9 +306,7 @@ function normalizeMediaOptions(options, mode) {
   if (mode === "volume" && maxVolume !== "100") {
     out = setConfigOptionValue(out, MEDIA_VOLUME_MAX_OPTION, maxVolume);
   }
-  if (configOptionEnabled(options, SENSOR_LARGE_NUMBERS_OPTION)) {
-    out = setConfigOption(out, SENSOR_LARGE_NUMBERS_OPTION, true);
-  }
+  out = copyLargeNumbersOption(out, options);
   return out;
 }
 
@@ -341,8 +354,8 @@ function normalizeSubpageOptions(options, sensor, precision) {
   var kind = normalizeSubpageKind(configOptionValue(options, SUBPAGE_KIND_OPTION));
   if (kind) out = setConfigOptionValue(out, SUBPAGE_KIND_OPTION, kind);
   if (sensor && sensor !== "indicator" && precision !== "text" &&
-      configOptionEnabled(options, SENSOR_LARGE_NUMBERS_OPTION)) {
-    out = setConfigOption(out, SENSOR_LARGE_NUMBERS_OPTION, true);
+      (configOptionEnabled(options, SENSOR_LARGE_NUMBERS_OPTION) || largeNumbersExplicitlyDisabled(options))) {
+    out = copyLargeNumbersOption(out, options);
   }
   return out;
 }
@@ -438,7 +451,13 @@ function sensorLargeNumbersEnabled(b) {
 
 function setSensorLargeNumbersEnabled(b, enabled) {
   if (!b) return "";
-  b.options = setConfigOption(b.options, SENSOR_LARGE_NUMBERS_OPTION, enabled);
+  b.options = setConfigOption(b.options, SENSOR_LARGE_NUMBERS_OPTION, false);
+  b.options = setConfigOptionValue(
+    b.options,
+    SENSOR_LARGE_NUMBERS_OPTION,
+    enabled ? "" : SENSOR_LARGE_NUMBERS_OFF_VALUE
+  );
+  if (enabled) b.options = setConfigOption(b.options, SENSOR_LARGE_NUMBERS_OPTION, true);
   return b.options;
 }
 
@@ -520,7 +539,10 @@ function normalizeSensorOptions(options, precision) {
   var out = "";
   if (configOptionEnabled(options, SENSOR_LARGE_NUMBERS_OPTION) &&
       cardContractOptionSupportedFor("sensor", SENSOR_LARGE_NUMBERS_OPTION, { precision: precision })) {
-    out = setConfigOption(out, SENSOR_LARGE_NUMBERS_OPTION, true);
+    out = copyLargeNumbersOption(out, options);
+  } else if (largeNumbersExplicitlyDisabled(options) &&
+      cardContractOptionSupportedFor("sensor", SENSOR_LARGE_NUMBERS_OPTION, { precision: precision })) {
+    out = copyLargeNumbersOption(out, options);
   }
   if (configOptionEnabled(options, SENSOR_ACTIVE_COLOR_OPTION) &&
       cardContractOptionSupportedFor("sensor", SENSOR_ACTIVE_COLOR_OPTION, { precision: precision })) {
@@ -631,9 +653,7 @@ function switchConfirmationNoText(b) {
 function normalizeSwitchConfirmationOptions(options) {
   var mode = switchConfirmationMode({ options: options });
   var out = "";
-  if (configOptionEnabled(options, SENSOR_LARGE_NUMBERS_OPTION)) {
-    out = setConfigOption(out, SENSOR_LARGE_NUMBERS_OPTION, true);
-  }
+  out = copyLargeNumbersOption(out, options);
   var onPattern = normalizeCardOnPattern(configOptionValue(options, CARD_ON_PATTERN_OPTION));
   if (onPattern) out = setConfigOptionValue(out, CARD_ON_PATTERN_OPTION, onPattern);
   if (!mode) return out;
@@ -660,9 +680,7 @@ function setSwitchConfirmationOptions(b, mode, message, yesText, noText) {
   mode = mode === true ? "off" : mode;
   mode = mode === "on" || mode === "both" || mode === "off" ? mode : "";
   var out = "";
-  if (configOptionEnabled(b.options, SENSOR_LARGE_NUMBERS_OPTION)) {
-    out = setConfigOption(out, SENSOR_LARGE_NUMBERS_OPTION, true);
-  }
+  out = copyLargeNumbersOption(out, b.options);
   var storage = switchConfirmationModeStorage();
   out = setConfigOption(out, storage[0], mode === "off" || mode === "both");
   out = setConfigOption(out, storage[1], mode === "on" || mode === "both");
@@ -740,8 +758,8 @@ function normalizeClimateOptions(options) {
   if (numberMode !== climateDefaultNumberDisplayMode()) {
     out = setConfigOptionValue(out, CLIMATE_NUMBER_DISPLAY_OPTION, numberMode);
   }
-  if (numberMode !== "icon" && configOptionEnabled(options, SENSOR_LARGE_NUMBERS_OPTION)) {
-    out = setConfigOption(out, SENSOR_LARGE_NUMBERS_OPTION, true);
+  if (numberMode !== "icon") {
+    out = copyLargeNumbersOption(out, options);
   }
   return out;
 }

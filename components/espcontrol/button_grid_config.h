@@ -229,6 +229,22 @@ inline std::string cfg_option_value(const std::string &options, const char *name
   return "";
 }
 
+inline bool large_numbers_explicitly_disabled(const std::string &options) {
+  return cfg_option_value(options, "large_numbers") == "off";
+}
+
+inline void append_large_numbers_option(std::string &out, const std::string &options) {
+  std::string value;
+  if (large_numbers_explicitly_disabled(options)) {
+    value = "large_numbers=off";
+  } else if (cfg_option_token_present(options, "large_numbers")) {
+    value = "large_numbers";
+  }
+  if (value.empty()) return;
+  if (!out.empty()) out += ",";
+  out += value;
+}
+
 inline int normalize_media_volume_max_percent(const std::string &value) {
   if (value.empty()) return 100;
   char *end = nullptr;
@@ -248,18 +264,17 @@ inline std::string media_card_options_normalized(const std::string &options,
   if (mode == "volume" && max_pct < 100) {
     out = "volume_max=" + std::to_string(max_pct);
   }
-  if (cfg_option_token_present(options, "large_numbers")) {
-    if (!out.empty()) out += ",";
-    out += "large_numbers";
-  }
+  append_large_numbers_option(out, options);
   return out;
 }
 
 inline std::string sensor_card_options_normalized(const std::string &options,
                                                   const std::string &precision) {
   std::string out;
-  if (precision != "icon" && precision != "text" && cfg_option_token_present(options, "large_numbers")) {
-    out = "large_numbers";
+  if (precision != "icon" && precision != "text" &&
+      (cfg_option_token_present(options, "large_numbers") ||
+       large_numbers_explicitly_disabled(options))) {
+    append_large_numbers_option(out, options);
   }
   if (cfg_option_token_present(options, "active_color")) {
     if (!out.empty()) out += ",";
@@ -311,9 +326,9 @@ inline std::string subpage_card_options_normalized(const std::string &options,
   std::string kind = normalize_subpage_kind(cfg_option_value(options, "subpage_kind"));
   if (!kind.empty()) out = "subpage_kind=" + kind;
   if (!sensor.empty() && sensor != "indicator" && precision != "text" &&
-      cfg_option_token_present(options, "large_numbers")) {
-    if (!out.empty()) out += ",";
-    out += "large_numbers";
+      (cfg_option_token_present(options, "large_numbers") ||
+       large_numbers_explicitly_disabled(options))) {
+    append_large_numbers_option(out, options);
   }
   return out;
 }
@@ -355,8 +370,9 @@ inline std::string normalize_todo_completed_display(const std::string &value) {
 inline std::string todo_card_options_normalized(const std::string &options) {
   bool show_count = normalize_todo_count_display(cfg_option_value(options, "count_display")) == "count";
   std::string out = show_count ? "" : "count_display=icon";
-  if (show_count && cfg_option_token_present(options, "large_numbers")) {
-    out = "large_numbers";
+  if (show_count && (cfg_option_token_present(options, "large_numbers") ||
+      large_numbers_explicitly_disabled(options))) {
+    append_large_numbers_option(out, options);
   }
   return out;
 }
@@ -397,9 +413,10 @@ inline std::string climate_card_options_normalized(const std::string &options) {
     if (!out.empty()) out += ",";
     out += "number_display=" + number_display;
   }
-  if (number_display != "icon" && cfg_option_token_present(options, "large_numbers")) {
-    if (!out.empty()) out += ",";
-    out += "large_numbers";
+  if (number_display != "icon" &&
+      (cfg_option_token_present(options, "large_numbers") ||
+       large_numbers_explicitly_disabled(options))) {
+    append_large_numbers_option(out, options);
   }
   return out;
 }
@@ -524,10 +541,7 @@ inline std::string switch_card_options_normalized(const std::string &options) {
   std::string out;
   std::string pattern = normalize_card_on_pattern(cfg_option_value(options, "on_pattern"));
   if (!pattern.empty()) out = "on_pattern=" + pattern;
-  if (cfg_option_token_present(options, "large_numbers")) {
-    if (!out.empty()) out += ",";
-    out += "large_numbers";
-  }
+  append_large_numbers_option(out, options);
   if (cfg_option_token_present(options, "confirm_off")) {
     if (!out.empty()) out += ",";
     out += "confirm_off";
@@ -797,6 +811,10 @@ inline bool action_card_state_numeric_mode(const ParsedCfg &p) {
 
 inline bool card_large_numbers_enabled(const ParsedCfg &p) {
   return card_large_numbers_supported(p) && cfg_option_enabled(p.options, "large_numbers");
+}
+
+inline bool card_large_numbers_disabled(const ParsedCfg &p) {
+  return card_large_numbers_supported(p) && large_numbers_explicitly_disabled(p.options);
 }
 
 inline bool sensor_large_numbers_enabled(const ParsedCfg &p) {
