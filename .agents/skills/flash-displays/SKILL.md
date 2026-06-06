@@ -15,7 +15,7 @@ Use the local development ESPHome configs to flash the known EspControl displays
 |---|---|---|---|
 | `7inch`, `7-inch`, `7inch P4`, `7-inch P4`, `JC1060P470` | `devices/guition-esp32-p4-jc1060p470` | `192.168.6.102` | `test.yaml` |
 | `10inch`, `10-inch`, `10inch P4`, `10-inch P4`, `JC8012P4A1` | `devices/guition-esp32-p4-jc8012p4a1` | `192.168.6.103` | `test.yaml` |
-| `4inch P4`, `4-inch P4`, `P4-86`, `86 Panel`, `Waveshare P4-86`, `esp32-p4-86` | `devices/esp32-p4-86` | `192.168.10.52` | None yet |
+| `4inch P4`, `4-inch P4`, `P4-86`, `86 Panel`, `Waveshare P4-86`, `esp32-p4-86` | `devices/esp32-p4-86` | `192.168.10.52` | `test.yaml` |
 | `4.3inch P4`, `4.3-inch P4`, `P4 4.3inch`, `P4 4.3-inch`, `JC4880P443` | `devices/guition-esp32-p4-jc4880p443` | `192.168.6.101` | `test.yaml` |
 | `4inch S3`, `4-inch S3`, `4848S040` | `devices/guition-esp32-s3-4848s040` | `192.168.10.226` | `test.yaml` |
 
@@ -102,6 +102,10 @@ esphome -s espcontrol_component_url file:///Users/jtenniswood/Git/espcontrol run
 # 4-inch P4 / P4-86 over OTA
 cd /Users/jtenniswood/Git/espcontrol/devices/esp32-p4-86
 esphome -s espcontrol_component_url file:///Users/jtenniswood/Git/espcontrol run dev.yaml --device 192.168.10.52 --no-logs
+
+# 4-inch P4 / P4-86 over OTA using the committed test YAML
+cd /Users/jtenniswood/Git/espcontrol/devices/esp32-p4-86
+esphome -s espcontrol_component_url file:///Users/jtenniswood/Git/espcontrol run test.yaml --device 192.168.10.52 --no-logs
 
 # 4-inch P4 / P4-86 over USB, only when explicitly requested
 cd /Users/jtenniswood/Git/espcontrol/devices/esp32-p4-86
