@@ -20,7 +20,7 @@ ethernet:
     - script.stop: setup_screen_dim
     - lambda: |-
         ESP_LOGI("connectivity", "Ethernet connected (%lu ms)", millis());
-        lv_label_set_text(id(loading_status_label), "Connected");
+        lv_label_set_text(id(loading_status_label), espcontrol_i18n("Connected"));
     - delay: 200ms
     - if:
         condition:

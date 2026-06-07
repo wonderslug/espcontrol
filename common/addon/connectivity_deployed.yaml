@@ -15,7 +15,7 @@ wifi:
     - script.stop: setup_screen_dim
     - lambda: |-
         ESP_LOGI("connectivity", "WiFi connected (%lu ms)", millis());
-        lv_label_set_text(id(loading_status_label), "Connected");
+        lv_label_set_text(id(loading_status_label), espcontrol_i18n("Connected"));
     - delay: 200ms
     - if:
         condition:
@@ -63,8 +63,10 @@ script:
     then:
       - script.execute: clock_bar_hide
       - lambda: |-
-          lv_label_set_text(id(wifi_setup_title), "WiFi Disconnected");
-          lv_label_set_text(id(wifi_setup_instructions), "Trying to reconnect\nto your saved network");
+          lv_label_set_text(id(wifi_setup_title), espcontrol_i18n("WiFi Disconnected"));
+          lv_label_set_text(
+              id(wifi_setup_instructions),
+              espcontrol_i18n("Trying to reconnect\nto your saved network"));
       - lvgl.page.show: wifi_setup_page
       - script.execute: setup_screen_dim
 
@@ -73,8 +75,10 @@ script:
     then:
       - script.execute: clock_bar_hide
       - lambda: |-
-          lv_label_set_text(id(wifi_setup_title), "WiFi Disconnected");
-          lv_label_set_text(id(wifi_setup_instructions), "No saved WiFi connection\nReinstall by USB to reconfigure");
+          lv_label_set_text(id(wifi_setup_title), espcontrol_i18n("WiFi Disconnected"));
+          lv_label_set_text(
+              id(wifi_setup_instructions),
+              espcontrol_i18n("No saved WiFi connection\nReinstall by USB to reconfigure"));
       - lvgl.page.show: wifi_setup_page
       - script.execute: setup_screen_dim
 

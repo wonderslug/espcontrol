@@ -60,8 +60,8 @@ script:
           alarm_pin_hide_modal();
           network_status_hide_modal();
           lv_label_set_text(id(loading_status_icon), "${icon_progress_clock}");
-          lv_label_set_text(id(loading_status_title), "Installing update");
-          lv_label_set_text(id(loading_status_label), "Preparing the screen\nDo not power off");
+          lv_label_set_text(id(loading_status_title), espcontrol_i18n("Installing update"));
+          lv_label_set_text(id(loading_status_label), espcontrol_i18n("Preparing the screen\nDo not power off"));
       - lvgl.resume:
       - script.execute: clock_bar_hide
       - lvgl.page.show: loading_page
@@ -79,8 +79,8 @@ script:
           value: 'false'
       - lambda: |-
           lv_label_set_text(id(loading_status_icon), "${icon_progress_clock}");
-          lv_label_set_text(id(loading_status_title), "Installing update");
-          lv_label_set_text(id(loading_status_label), "The screen may turn off\nDo not power off");
+          lv_label_set_text(id(loading_status_title), espcontrol_i18n("Installing update"));
+          lv_label_set_text(id(loading_status_label), espcontrol_i18n("The screen may turn off\nDo not power off"));
       - lvgl.resume:
       - script.execute: clock_bar_hide
       - lvgl.page.show: loading_page
@@ -93,8 +93,8 @@ script:
       - script.stop: setup_screen_dim
       - lambda: |-
           lv_label_set_text(id(loading_status_icon), "${icon_check}");
-          lv_label_set_text(id(loading_status_title), "Update complete");
-          lv_label_set_text(id(loading_status_label), "Restarting display");
+          lv_label_set_text(id(loading_status_title), espcontrol_i18n("Update complete"));
+          lv_label_set_text(id(loading_status_label), espcontrol_i18n("Restarting display"));
       - lvgl.resume:
       - script.execute: clock_bar_hide
       - lvgl.page.show: loading_page
@@ -119,8 +119,8 @@ script:
       - lambda: |-
           global_preferences->sync();
           lv_label_set_text(id(loading_status_icon), "${icon_progress_clock}");
-          lv_label_set_text(id(loading_status_title), "Update failed");
-          lv_label_set_text(id(loading_status_label), "Try installing the update again");
+          lv_label_set_text(id(loading_status_title), espcontrol_i18n("Update failed"));
+          lv_label_set_text(id(loading_status_label), espcontrol_i18n("Try installing the update again"));
       - lvgl.resume:
       - script.execute: clock_bar_hide
       - lvgl.page.show: loading_page

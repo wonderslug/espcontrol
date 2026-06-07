@@ -51,20 +51,34 @@ lvgl:
                         text_color: 0xFFFFFF
                         text_align: center
                     - label:
-                        text: "Home Assistant"
+                        id: ha_setup_title
+                        text: ""
                         text_font: $setup_title_font_id
                         text_color: 0xFFFFFF
                         width: $content_width
                         text_align: center
                     - label:
-                        text: "Add this device in Home Assistant\nto enable control"
+                        id: ha_setup_instructions
+                        text: ""
                         text_font: $setup_body_font_id
                         text_color: 0xB0B0B0
                         width: $content_width
                         text_align: center
                     - label:
-                        text: "Settings > Devices & Services"
+                        id: ha_setup_path
+                        text: ""
                         text_font: $setup_body_font_id
                         text_color: 0xFFFFFF
                         width: $content_width
                         text_align: center
+
+script:
+  - id: ha_setup_text_refresh
+    mode: restart
+    then:
+      - lambda: |-
+          lv_label_set_text(id(ha_setup_title), espcontrol_i18n("Home Assistant"));
+          lv_label_set_text(
+              id(ha_setup_instructions),
+              espcontrol_i18n("Add this device in Home Assistant\nto enable control"));
+          lv_label_set_text(id(ha_setup_path), espcontrol_i18n("Settings > Devices & Services"));

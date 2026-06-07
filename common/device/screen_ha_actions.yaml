@@ -50,19 +50,22 @@ lvgl:
                         text_color: 0xFFFFFF
                         text_align: center
                     - label:
-                        text: "Home Assistant"
+                        id: ha_actions_title
+                        text: ""
                         text_font: $setup_title_font_id
                         text_color: 0xFFFFFF
                         width: $content_width
                         text_align: center
                     - label:
-                        text: "Allow this device to perform\nHome Assistant actions"
+                        id: ha_actions_instructions
+                        text: ""
                         text_font: $setup_body_font_id
                         text_color: 0xB0B0B0
                         width: $content_width
                         text_align: center
                     - label:
-                        text: "See the install guide for help"
+                        id: ha_actions_help
+                        text: ""
                         text_font: $setup_body_font_id
                         text_color: 0xB0B0B0
                         width: $content_width
@@ -78,7 +81,20 @@ lvgl:
                             - script.execute: navigate_after_api
                         widgets:
                           - label:
+                              id: ha_actions_done_label
                               align: center
-                              text: "Done"
+                              text: ""
                               text_font: $setup_body_font_id
                               text_color: 0xFFFFFF
+
+script:
+  - id: ha_actions_text_refresh
+    mode: restart
+    then:
+      - lambda: |-
+          lv_label_set_text(id(ha_actions_title), espcontrol_i18n("Home Assistant"));
+          lv_label_set_text(
+              id(ha_actions_instructions),
+              espcontrol_i18n("Allow this device to perform\nHome Assistant actions"));
+          lv_label_set_text(id(ha_actions_help), espcontrol_i18n("See the install guide for help"));
+          lv_label_set_text(id(ha_actions_done_label), espcontrol_i18n("Done"));

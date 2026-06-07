@@ -40,14 +40,14 @@ lvgl:
                   text_align: center
               - label:
                   id: loading_status_title
-                  text: "Starting up"
+                  text: ""
                   text_font: $setup_title_font_id
                   text_color: 0xFFFFFF
                   width: $content_width
                   text_align: center
               - label:
                   id: loading_status_label
-                  text: "Booting"
+                  text: ""
                   text_font: $setup_body_font_id
                   text_color: 0xB0B0B0
                   width: $content_width
@@ -72,6 +72,9 @@ esphome:
       then:
         - lvgl.resume:
         - script.execute: clock_bar_hide
+        - lambda: |-
+            lv_label_set_text(id(loading_status_title), espcontrol_i18n("Starting up"));
+            lv_label_set_text(id(loading_status_label), espcontrol_i18n("Booting"));
         - lvgl.page.show: loading_page
         - delay: 100ms
         - if:
@@ -89,7 +92,7 @@ esphome:
     - priority: -100
       then:
         - lambda: |-
-            lv_label_set_text(id(loading_status_label), "Connecting to Ethernet");
+            lv_label_set_text(id(loading_status_label), espcontrol_i18n("Connecting to Ethernet"));
         - delay: 15s
         - lambda: 'id(boot_grace_period) = false;'
         - if:

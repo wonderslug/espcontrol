@@ -50,15 +50,25 @@ lvgl:
                         text_align: center
                     - label:
                         id: wifi_setup_title
-                        text: "WiFi Setup"
+                        text: ""
                         text_font: $setup_title_font_id
                         text_color: 0xFFFFFF
                         width: $content_width
                         text_align: center
                     - label:
                         id: wifi_setup_instructions
-                        text: "Connect to the setup hotspot\nthen open 192.168.4.1"
+                        text: ""
                         text_font: $setup_body_font_id
                         text_color: 0xB0B0B0
                         width: $content_width
                         text_align: center
+
+script:
+  - id: network_setup_text_refresh
+    mode: restart
+    then:
+      - lambda: |-
+          lv_label_set_text(id(wifi_setup_title), espcontrol_i18n("WiFi Setup"));
+          lv_label_set_text(
+              id(wifi_setup_instructions),
+              espcontrol_i18n("Connect to the setup hotspot\nthen open 192.168.4.1"));
