@@ -88,11 +88,9 @@ script:
                                  ${screen_width} >= 700 ? 20 : 16,
                                  clock_bar_label_y,
                                  clock_bar_gap);
-          lv_obj_set_style_pad_top(
+          clock_bar_set_button_grid_pages_pad_top(
             id(main_page)->obj,
-            visible ? ${main_page_pad_top} : ${main_page_compact_pad_top},
-            LV_PART_MAIN);
-          lv_obj_update_layout(id(main_page)->obj);
+            visible ? ${main_page_pad_top} : ${main_page_compact_pad_top});
 
           if (!visible) {
             id(clock_bar_hide).execute();

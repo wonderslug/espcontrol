@@ -42,6 +42,20 @@ inline void clock_bar_register_button_grid_page(lv_obj_t *page) {
   }
 }
 
+inline void clock_bar_set_button_grid_pages_pad_top(lv_obj_t *main_page_obj,
+                                                    lv_coord_t pad_top) {
+  if (main_page_obj) {
+    lv_obj_set_style_pad_top(main_page_obj, pad_top, LV_PART_MAIN);
+    lv_obj_update_layout(main_page_obj);
+  }
+  std::vector<lv_obj_t *> &pages = clock_bar_button_grid_pages();
+  for (lv_obj_t *page : pages) {
+    if (!page || page == main_page_obj) continue;
+    lv_obj_set_style_pad_top(page, pad_top, LV_PART_MAIN);
+    lv_obj_update_layout(page);
+  }
+}
+
 inline bool clock_bar_active_on_button_grid_page(lv_obj_t *main_page_obj = nullptr) {
   lv_obj_t *active = lv_scr_act();
   if (!active) return false;
