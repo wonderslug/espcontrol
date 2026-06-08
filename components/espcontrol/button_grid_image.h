@@ -19,6 +19,7 @@ struct ImageCardCtx {
   esphome::artwork_image::ArtworkImage *image = nullptr;
   std::string entity_id;
   std::string base_url;
+  std::function<std::string()> base_url_provider;
   std::string source_url;
   std::string url;
   uint32_t refresh_interval_ms = 0;
@@ -204,6 +205,7 @@ inline void reset_image_card_pool(const GridConfig &cfg) {
     contexts[i].icon_font = nullptr;
     contexts[i].entity_id.clear();
     contexts[i].base_url.clear();
+    contexts[i].base_url_provider = nullptr;
     contexts[i].source_url.clear();
     contexts[i].url.clear();
     contexts[i].refresh_interval_ms = 0;
@@ -416,6 +418,11 @@ inline std::string image_card_join_url(const std::string &base, const std::strin
   return base + path;
 }
 
+inline std::string image_card_base_url(ImageCardCtx *ctx) {
+  if (!ctx) return "";
+  return ctx->base_url_provider ? ctx->base_url_provider() : ctx->base_url;
+}
+
 inline std::string image_card_cache_bust_url(const std::string &url) {
   if (url.empty()) return "";
   std::string next = url;
@@ -511,7 +518,7 @@ inline void image_card_open_modal(ImageCardCtx *ctx) {
 inline void image_card_handle_picture(ImageCardCtx *ctx, esphome::StringRef picture) {
   if (!ctx || !ctx->active || !ctx->image) return;
   std::string raw = string_ref_limited(picture, 4096);
-  std::string url = image_card_join_url(ctx->base_url, raw);
+  std::string url = image_card_join_url(image_card_base_url(ctx), raw);
   if (url.empty()) {
     ESP_LOGW("image_card", "No usable entity_picture URL for %s", ctx->entity_id.c_str());
     if (ctx->image_ready) return;
@@ -598,6 +605,7 @@ inline bool bind_image_card(BtnSlot &s, const ParsedCfg &p, const GridConfig &cf
   ctx->icon_font = s.icon_lbl ? lv_obj_get_style_text_font(s.icon_lbl, LV_PART_MAIN) : nullptr;
   ctx->entity_id = p.entity;
   ctx->base_url = cfg.home_assistant_base_url ? cfg.home_assistant_base_url() : "";
+  ctx->base_url_provider = cfg.home_assistant_base_url;
   ctx->refresh_interval_ms = image_card_refresh_interval_ms(p);
   ctx->timer_only = image_card_timer_only_refresh(p);
   ctx->modal_fit = image_card_modal_fit_enabled(p);

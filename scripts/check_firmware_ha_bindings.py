@@ -632,6 +632,23 @@ def firmware_image_card_entity_errors(firmware_dir: Path, root: Path) -> list[st
     return errors
 
 
+def firmware_image_card_base_url_errors(firmware_dir: Path, root: Path) -> list[str]:
+    path = firmware_dir / "button_grid_image.h"
+    if not path.exists():
+        return []
+    rel = path.relative_to(root)
+    text = path.read_text(encoding="utf-8")
+    errors: list[str] = []
+    if "base_url_provider" not in text:
+        errors.append(f"{rel}: keep image card Home Assistant base URL lookup live")
+    if "image_card_join_url(image_card_base_url(ctx), raw)" not in text:
+        errors.append(f"{rel}: resolve image card base URL when entity_picture is handled")
+    if 'ctx->base_url = cfg.home_assistant_base_url ? cfg.home_assistant_base_url() : "";' in text:
+        if "ctx->base_url_provider = cfg.home_assistant_base_url" not in text:
+            errors.append(f"{rel}: do not rely only on the startup-time image card base URL")
+    return errors
+
+
 def firmware_screensaver_wake_guard_errors(backlight_path: Path, cover_art_path: Path, root: Path) -> list[str]:
     errors: list[str] = []
     if backlight_path.exists():
@@ -816,6 +833,7 @@ def run_scan() -> int:
     errors.extend(firmware_cover_art_external_input_errors(COVER_ART_PATH, ROOT))
     errors.extend(firmware_cover_art_stale_image_errors(COVER_ART_PATH, ROOT))
     errors.extend(firmware_image_card_entity_errors(FIRMWARE_DIR, ROOT))
+    errors.extend(firmware_image_card_base_url_errors(FIRMWARE_DIR, ROOT))
     errors.extend(firmware_screensaver_wake_guard_errors(BACKLIGHT_PATH, COVER_ART_PATH, ROOT))
     errors.extend(firmware_climate_step_errors(FIRMWARE_DIR, ROOT))
     errors.extend(
@@ -1107,6 +1125,20 @@ def expect_image_card_entity_errors(name: str, text: str, expected: tuple[str, .
         (firmware_dir / "button_grid_image.h").write_text(text, encoding="utf-8")
 
         errors = firmware_image_card_entity_errors(firmware_dir, root)
+        for item in expected:
+            assert any(item in error for error in errors), f"{name}: missing {item!r} in {errors!r}"
+        if not expected:
+            assert not errors, f"{name}: expected no errors, got {errors!r}"
+
+
+def expect_image_card_base_url_errors(name: str, text: str, expected: tuple[str, ...]) -> None:
+    with TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        firmware_dir = root / "components" / "espcontrol"
+        firmware_dir.mkdir(parents=True)
+        (firmware_dir / "button_grid_image.h").write_text(text, encoding="utf-8")
+
+        errors = firmware_image_card_base_url_errors(firmware_dir, root)
         for item in expected:
             assert any(item in error for error in errors), f"{name}: missing {item!r} in {errors!r}"
         if not expected:
@@ -2004,6 +2036,35 @@ def run_self_test() -> int:
         "if (!image_card_entity_supported(p.entity)) {\n"
         "  ESP_LOGW(\"image_card\", \"Image card only supports camera and image entities: %s\", p.entity.c_str());\n"
         "}\n",
+        (),
+    )
+    expect_image_card_base_url_errors(
+        "image card uses stale startup base URL",
+        "std::string base_url;\n"
+        "inline void image_card_handle_picture(ImageCardCtx *ctx, esphome::StringRef picture) {\n"
+        "  std::string raw = string_ref_limited(picture, 4096);\n"
+        "  std::string url = image_card_join_url(ctx->base_url, raw);\n"
+        "}\n"
+        "ctx->base_url = cfg.home_assistant_base_url ? cfg.home_assistant_base_url() : \"\";\n",
+        (
+            "keep image card Home Assistant base URL lookup live",
+            "resolve image card base URL when entity_picture is handled",
+            "do not rely only on the startup-time image card base URL",
+        ),
+    )
+    expect_image_card_base_url_errors(
+        "image card resolves live base URL",
+        "std::function<std::string()> base_url_provider;\n"
+        "std::string base_url;\n"
+        "inline std::string image_card_base_url(ImageCardCtx *ctx) {\n"
+        "  return ctx->base_url_provider ? ctx->base_url_provider() : ctx->base_url;\n"
+        "}\n"
+        "inline void image_card_handle_picture(ImageCardCtx *ctx, esphome::StringRef picture) {\n"
+        "  std::string raw = string_ref_limited(picture, 4096);\n"
+        "  std::string url = image_card_join_url(image_card_base_url(ctx), raw);\n"
+        "}\n"
+        "ctx->base_url = cfg.home_assistant_base_url ? cfg.home_assistant_base_url() : \"\";\n"
+        "ctx->base_url_provider = cfg.home_assistant_base_url;\n",
         (),
     )
     valid_cover_art_wake_guard = (
