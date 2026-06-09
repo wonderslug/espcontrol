@@ -203,7 +203,7 @@ output:
   - platform: ledc
     pin: GPIO38
     id: gpio_backlight_pwm
-    frequency: 150Hz
+    frequency: 20kHz
     min_power: 0.01
     zero_means_zero: true
 
@@ -354,7 +354,7 @@ display:
     # Start WiFi before the RGB panel allocates its frame buffers; otherwise the
     # WiFi driver can fail to claim enough internal RX buffers on fresh boots.
     setup_priority: 240
-    pclk_frequency: 8MHz
+    pclk_frequency: 16MHz
     update_interval: never
     auto_clear_enabled: False
     # Keep the ST7701S panel init sequence on the non-mirrored path. The
