@@ -714,10 +714,11 @@ script:
             lv_label_set_text(id(clock_label), buf);
             position_clock_screensaver_label(id(clock_screensaver), id(clock_label), time.minute);
           }
+      - script.execute: clock_bar_hide
+      - script.wait: clock_bar_hide
       - script.execute: backlight_fade_current_ui_to_black
       - script.wait: backlight_fade_current_ui_to_black
       - lvgl.widget.show: clock_screensaver
-      - script.execute: clock_bar_hide
       - output.set_level:
           id: gpio_backlight_pwm
           level: 0%
