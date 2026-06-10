@@ -28,6 +28,15 @@ python3 scripts/build.py www
 That command writes `docs/public/webserver/<slug>/www.js` for each supported
 device. Commit those generated bundles when web behavior changes.
 
+The configurator page itself is served by the device, but in production the
+JavaScript bundle is fetched from GitHub Pages:
+
+```text
+https://jtenniswood.github.io/espcontrol/webserver/<slug>/www.js
+```
+
+The default bundle URL is set as `js_url` in `common/device/core_infra.yaml`.
+
 ## Device API Shape
 
 The setup page reads and writes ESPHome web server entities exposed by the
@@ -42,6 +51,17 @@ Button 2 Config
 The setup page serializes card settings to a compact string. Firmware parses the
 same string on-device. Keep `src/webserver/modules/config_codec.js` and
 `components/espcontrol/button_grid_config.h` in sync.
+
+To inspect what the device actually stored, read the matching ESPHome web server
+entity:
+
+```bash
+curl -s "http://<device-ip>/text/Button%201%20Config?detail=all"
+curl -s "http://<device-ip>/text/Button%20On%20Color?detail=all"
+```
+
+The setup page writes to these same text/select/number/switch entities, so the
+REST response shows the exact compact string firmware will parse.
 
 ## Adding a Card Settings UI
 
@@ -93,3 +113,29 @@ npm run check:product
 
 To test on a physical display, rebuild `www.js`, serve it locally, and override
 the device `web_server.js_url` in a local `dev.yaml`.
+
+Typical physical-device loop:
+
+1. Rebuild the bundle:
+
+```bash
+python3 scripts/build.py www
+```
+
+2. Serve the generated device bundle from the development machine:
+
+```bash
+python3 -m http.server 8080 --directory docs/public/webserver/<slug>
+```
+
+3. Override `js_url` in the device's local `dev.yaml`:
+
+```yaml
+web_server:
+  js_url: "http://<your-computer-ip>:8080/www.js"
+```
+
+4. Open `http://<device-ip>/` in a browser and hard reload after each rebuild.
+
+Browsers cache `www.js` aggressively. Use Cmd/Ctrl+Shift+R after rebuilding or
+the page may keep running the previous bundle.

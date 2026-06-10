@@ -1,12 +1,35 @@
 # EspControl Developer Reference
 
-These notes are for maintainers working inside this repository. They are kept
-outside `docs/` so they are not built into the public VitePress documentation
-site.
+These notes are for contributors and maintainers working on EspControl firmware,
+the web configurator, generated files, or release outputs. End-user install and
+usage instructions live in `README.md` and the public documentation under
+`docs/`.
 
-For end-user install and usage instructions, use `README.md` and the public
-documentation under `docs/`. For the longer contributor walkthrough, use
-`DEVELOPERS.md`.
+This folder is intentionally outside the public VitePress documentation site. It
+is the source of truth for repo-internal developer guidance.
+
+## Quick Start
+
+Install local dependencies before running generators or checks:
+
+```bash
+npm ci
+```
+
+Developer tooling expects:
+
+- Node.js for the web bundle and JavaScript checks.
+- Python 3 for `scripts/build.py` and Python validators.
+- ESPHome CLI for compiling, flashing, and logging firmware.
+
+Common starting commands:
+
+```bash
+python3 scripts/build.py            # run generators
+python3 scripts/build.py --check    # confirm generated output is current
+npm run check:product               # product-level safety net
+npm run check:fast                  # broader pre-commit check
+```
 
 ## Fast Orientation
 
@@ -20,6 +43,22 @@ documentation under `docs/`. For the longer contributor walkthrough, use
 - Device entry points live under `devices/<device-slug>/`.
 - Generated public web bundles are written to `docs/public/webserver/<slug>/www.js`.
 - Generated public docs are written under `docs/generated/`.
+
+## Repository Layout
+
+| Path | What lives here |
+|---|---|
+| `common/` | Shared ESPHome YAML, theme, screens, addons, config, assets, icon lists, and glyph sets. |
+| `common/config/card_contract.json` | Source of truth for card metadata, options, defaults, generated web constants, and generated firmware constants. |
+| `components/espcontrol/*.h` | Header-only C++ for the on-device LVGL UI, grid, card faces, modals, parser, and Home Assistant bindings. |
+| `src/webserver/` | Web configurator source. `types/<card>.js` holds card-specific panels; `modules/` holds shared setup-page logic. |
+| `devices/<slug>/` | Per-device ESPHome entry points, package manifests, fonts, display drivers, pins, and local development config. |
+| `docs/public/webserver/<slug>/www.js` | Generated configurator bundles served to devices at runtime. |
+| `scripts/` | Build scripts, generators, validators, smoke checks, and release helpers. |
+
+The firmware and web configurator share card facts through generated files, so a
+card's labels, domains, options, defaults, and subpage behavior should normally
+start in the contract and flow outward from there.
 
 ## Reference Map
 

@@ -47,6 +47,22 @@ Use an existing card with similar behavior as the template:
 - Rich modal card: media, climate, or light cards.
 - Image loading card: camera or media cover-art behavior.
 
+## Modal Pattern
+
+Cards that open a full-screen detail view should use the shared modal shell:
+
+1. Add a value to `ControlModalKind` in `button_grid_modal.h`.
+2. Store the card's runtime state in a small context struct.
+3. Save the context on the button with `lv_obj_set_user_data`.
+4. Attach a click handler in the runtime pass.
+5. Open the modal with `control_modal_open_shell(...)`.
+
+For a simple static card, the context usually needs the button pointer, display
+font pointers, width compensation, and any text or state the modal should render.
+For cards that subscribe to Home Assistant state, keep the context updated from
+the subscription callback and guard async work as described in the LVGL gotchas
+below.
+
 ## Fonts and Glyphs
 
 Firmware fonts only contain the glyphs declared in YAML. Missing glyphs render
@@ -102,3 +118,35 @@ Each device has:
 - `devices/<slug>/packages.yaml` - package and substitution manifest.
 
 For local firmware work, build from `dev.yaml`.
+
+## Logs and Debugging
+
+Stream logs over the ESPHome native API:
+
+```bash
+cd devices/<slug>
+esphome logs dev.yaml --device <device-ip>
+```
+
+Boot-time logs print once at startup. Connecting after boot does not replay them,
+so connect before rebooting or trigger the relevant behavior again.
+
+Use ESPHome logging macros in firmware headers:
+
+```cpp
+ESP_LOGI("mytag", "value=%s", v.c_str());
+ESP_LOGD("mytag", "debug value=%s", v.c_str());
+```
+
+Remove or downgrade noisy logs before finalizing a change.
+
+## LVGL Gotchas
+
+- A container does not lay out children unless a layout is set, such as
+  `lv_obj_set_layout(..., LV_LAYOUT_FLEX)` plus a flex flow.
+- Labels that should clamp need a fixed width or height and
+  `lv_label_set_long_mode(lbl, LV_LABEL_LONG_DOT)`.
+- Grid widgets such as `button_N` are persistent. Reconfiguring a card rebuilds
+  its context and points `user_data` at the new context. If a card creates a
+  timer or async callback, check that the button still points at the same context
+  before writing to shared labels.

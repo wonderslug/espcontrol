@@ -43,8 +43,15 @@ preserved in all relevant places:
 - `components/espcontrol/button_grid_config.h`
   - firmware parsing after the compact string is read
 
-If an option appears to save in the setup page but disappears after reload, one
-of these preservation points is usually missing.
+This means there are three wipe points:
+
+1. `normalizeButtonConfig` in `src/webserver/modules/config_codec.js`.
+2. `buttonConfigFields` in `src/webserver/modules/config_codec.js`.
+3. `parse_cfg` in `components/espcontrol/button_grid_config.h`.
+
+If an option appears to save in the setup page but disappears after reload, or
+applies in the editor but shows defaults on the device, one of these exclusions
+is usually missing.
 
 ## Contract Change Checklist
 
@@ -86,3 +93,168 @@ Treat saved card config as durable user data.
 | Firmware rendering/runtime | `components/espcontrol/button_grid_<type>.h` |
 | Grid setup/runtime wiring | `components/espcontrol/button_grid_grid.h` |
 | Shared generated constants | `button_grid_contract_generated.h` and `card_contract_generated.js` |
+
+## Adding or Fixing a Card Type
+
+A card type usually spans the contract, setup page, and firmware. Work in this
+order:
+
+1. Register the card in `common/config/card_contract.json`.
+2. Add web settings and preview behavior in `src/webserver/types/<type>.js`.
+3. If it stores options, update web parsing and option preservation in
+   `src/webserver/modules/config_codec.js`.
+4. Add firmware rendering/runtime behavior in
+   `components/espcontrol/button_grid_<type>.h`.
+5. Include the new header from `components/espcontrol/button_grid.h`.
+6. Wire visual setup and runtime/subscription behavior in
+   `components/espcontrol/button_grid_grid.h`. There are usually main-grid and
+   subpage call sites.
+7. If firmware parsing must understand new fields or options, update
+   `components/espcontrol/button_grid_config.h`.
+8. If the card opens a full-screen modal, add a `ControlModalKind` value and use
+   the shared `control_modal_open_shell(...)` helper.
+9. Rebuild, run checks, flash a `dev.yaml` build, and verify the setting survives
+   a setup-page reload.
+
+## Worked Example: Hello Card
+
+This minimal card type stores one option, `name`, and shows `Hello <name>`.
+
+Add the contract entry:
+
+```json
+"hello": {
+  "label": "Hello",
+  "allowInSubpage": true,
+  "domains": [],
+  "options": [
+    { "name": "name", "label": "Name", "kind": "text", "defaultValue": "" }
+  ],
+  "default": {
+    "entity": "", "label": "", "icon": "Auto", "icon_on": "Auto",
+    "sensor": "", "unit": "", "type": "hello", "precision": "", "options": ""
+  }
+}
+```
+
+Regenerate the shared outputs:
+
+```bash
+python3 scripts/build.py
+```
+
+Add option helpers in `src/webserver/modules/config_codec.js`:
+
+```js
+function helloName(b) {
+  return configOptionValue(b && b.options, "name");
+}
+
+function setHelloName(b, name) {
+  if (!b) return "";
+  b.options = setConfigOptionValue(b.options || "", "name", String(name || "").trim());
+  return b.options;
+}
+```
+
+Also add `"hello"` to all option-preservation exclusions listed above.
+
+Create `src/webserver/types/hello.js`:
+
+```js
+var HELLO_CARD_METADATA = {
+  nameField: {
+    label: "Name",
+    idSuffix: "name",
+    placeholder: "world",
+    bindName: null,
+    value: function (b) { return helloName(b); },
+  },
+  preview: { badge: "hand-wave" },
+};
+
+registerButtonType("hello", {
+  label: function () { return cardContractCardLabel("hello"); },
+  allowInSubpage: function () { return cardContractAllowInSubpage("hello"); },
+  pickerKey: function () { return cardContractPickerKey("hello"); },
+  hidden: function () { return cardContractHidden("hello"); },
+  hideLabel: true,
+  defaultConfig: function () { return cardContractDefaultConfig("hello"); },
+  cardMetadata: HELLO_CARD_METADATA,
+
+  renderPreview: function (b, helpers) {
+    var greeting = "Hello " + (helloName(b) || "world");
+    return {
+      labelHtml: cardBadgeLabelHtml(helpers, greeting, HELLO_CARD_METADATA.preview.badge),
+    };
+  },
+
+  onSelect: function (b) {
+    b.entity = "";
+    b.label = "";
+    b.sensor = "";
+    b.unit = "";
+    b.precision = "";
+    b.icon = "Auto";
+    b.icon_on = "Auto";
+    b.options = "";
+  },
+
+  renderSettings: function (panel, b, helpers) {
+    var field = helpers.renderCardTextField(panel, b, helpers, HELLO_CARD_METADATA.nameField);
+    field.input.maxLength = 32;
+
+    function save() {
+      setHelloName(b, field.input.value);
+      helpers.saveField("options", b.options);
+      scheduleRender();
+    }
+
+    field.input.addEventListener("input", save);
+    field.input.addEventListener("change", save);
+    field.input.addEventListener("blur", save);
+  },
+});
+```
+
+Add the firmware tile in `components/espcontrol/button_grid_hello.h`:
+
+```cpp
+#pragma once
+#include <string>
+#include "esphome/components/lvgl/lvgl_esphome.h"
+#include "button_grid_config.h"
+
+inline std::string hello_greeting(const ParsedCfg &p) {
+  std::string name = cfg_option_value(p.options, "name");
+  if (name.empty()) name = "world";
+  return "Hello " + name;
+}
+
+inline void setup_hello_card(BtnSlot &s, const ParsedCfg &p) {
+  if (s.icon_lbl) lv_obj_add_flag(s.icon_lbl, LV_OBJ_FLAG_HIDDEN);
+  if (s.sensor_container) lv_obj_add_flag(s.sensor_container, LV_OBJ_FLAG_HIDDEN);
+  if (s.text_lbl) lv_label_set_text(s.text_lbl, hello_greeting(p).c_str());
+}
+```
+
+Include that header from `components/espcontrol/button_grid.h`, then wire the
+visual setup pass in `components/espcontrol/button_grid_grid.h`:
+
+```cpp
+if (p.type == "hello") {
+  setup_hello_card(s, p);
+  return;
+}
+```
+
+That is enough for a static card. For live Home Assistant data, model the
+runtime pass and subscriptions on an existing data-driven card such as sensor or
+media.
+
+After rebuilding and flashing, add a Hello card in the configurator, save it,
+reload the setup page, and read the stored config back from the device:
+
+```bash
+curl -s "http://<device-ip>/text/Button%20N%20Config?detail=all"
+```

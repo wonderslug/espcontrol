@@ -98,3 +98,7 @@ npm run docs:build
 
 For firmware changes, also compile the affected device with ESPHome before
 publishing.
+
+If generated inputs changed, make sure the regenerated outputs are committed too.
+`python3 scripts/build.py --check` is the command that catches stale or missing
+generated files before CI does.

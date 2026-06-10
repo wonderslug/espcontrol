@@ -46,6 +46,37 @@ install.
 Use `dev.yaml` for local work. It points ESPHome at local component sources under
 `components/`, so firmware changes can be compiled before they are published.
 
+`dev.yaml` does that with a local `external_components` override:
+
+```yaml
+external_components:
+  - source:
+      type: local
+      path: ../../components
+    components: [espcontrol, web_server_idf]
+    refresh: 1s
+```
+
+Build and upload local firmware from the device folder:
+
+```bash
+cd devices/<slug>
+esphome run dev.yaml
+```
+
+If both USB and over-the-air upload targets are available, ESPHome prompts for a
+choice. In scripts or background runs, that prompt can stop the upload, so pass
+the target explicitly:
+
+```bash
+esphome run dev.yaml --device 192.168.x.x
+esphome run dev.yaml --device /dev/cu.usbserial-...
+esphome run dev.yaml --device <ip> --no-logs
+```
+
+OTA upload only works after the display is already running EspControl firmware
+and is connected to the network. First flash is over USB.
+
 ## Generated Device Outputs
 
 Device-profile changes can regenerate:

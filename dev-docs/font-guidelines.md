@@ -69,6 +69,17 @@ Examples:
 The same ID can have a different physical size on each device. Card and feature
 code should depend on the role, not a hardcoded size.
 
+Font weight is chosen by the font source, not by a runtime LVGL bold toggle. For
+Google Fonts, use suffixes such as:
+
+- `gfonts://Roboto`
+- `gfonts://Roboto@Light`
+- `gfonts://Roboto@Medium`
+- `gfonts://Roboto@Bold`
+
+A heavier weight is a separate compiled font entry, so treat it with the same
+care as a new size.
+
 ## Firmware Font Role Map
 
 The cross-device role map lives in `devices/manifest.json` under each device's
@@ -98,10 +109,35 @@ Fonts only include the glyphs explicitly listed for that font.
 - Text fonts usually include `common/assets/text_glyphs.yaml`.
 - Icon fonts use Material Design Icon glyph sets such as
   `common/assets/icon_glyphs.yaml`.
-- Number fonts intentionally include only digits and a few symbols.
+- Number fonts intentionally include only digits and a few symbols such as
+  `0-9 . - ° / % :`.
 
 Do not use a number font for normal text. Do not use an icon font for plain text.
 Missing glyphs appear as boxes or incorrect symbols on the device.
+
+In firmware, resolve an icon name to its glyph string with `find_icon("Some Name")`
+from `components/espcontrol/icons.h`, or embed a known codepoint directly as a
+UTF-8 escape. Only glyphs present in the compiled icon set will render.
+
+To make a new icon available, add it to `common/assets/icons.json` when it should
+appear in the setup page, add the needed glyph to the relevant glyph set, and
+run:
+
+```bash
+python3 scripts/build.py icons
+```
+
+The web configurator references icons by Material Design Icon name and renders
+them with the MDI webfont/CSS.
+
+## Images
+
+The firmware UI convention is to use icon fonts, not bitmap images. This keeps
+the display UI smaller, themeable, and easier to scale across devices.
+
+If a raster image is genuinely required, add an ESPHome `image:` or
+`online_image:` entry and render it with an LVGL image widget. Prefer an icon
+glyph first unless the card specifically needs bitmap content.
 
 ## When a New Font Role Is Acceptable
 
