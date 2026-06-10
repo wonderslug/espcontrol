@@ -5,6 +5,9 @@ running things locally, flashing devices, reading logs, and adding or fixing a
 widget (card type). For end-user install/usage, see `README.md` and the
 [documentation site](https://jtenniswood.github.io/espcontrol/).
 
+For topic-specific maintenance references that are not part of the public docs
+site, see `dev-docs/README.md`.
+
 ---
 
 ## 1. Repository layout
