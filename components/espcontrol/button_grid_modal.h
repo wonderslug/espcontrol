@@ -33,6 +33,7 @@ struct ControlModalActive {
   ControlModalKind kind = ControlModalKind::NONE;
   lv_obj_t *overlay = nullptr;
   ControlModalCloseCallback close_callback = nullptr;
+  uint32_t close_guard_until_ms = 0;
   bool closing = false;
 };
 
@@ -63,12 +64,25 @@ inline void control_modal_set_active(ControlModalKind kind, lv_obj_t *overlay,
   active.kind = kind;
   active.overlay = overlay;
   active.close_callback = close_callback;
+  active.close_guard_until_ms = 0;
   active.closing = false;
+}
+
+inline bool control_modal_close_guard_active(const ControlModalActive &active) {
+  return active.close_guard_until_ms != 0 &&
+         (int32_t)(lv_tick_get() - active.close_guard_until_ms) < 0;
+}
+
+inline void control_modal_block_close_for(uint32_t delay_ms) {
+  ControlModalActive &active = control_modal_active();
+  if (active.kind == ControlModalKind::NONE || delay_ms == 0) return;
+  active.close_guard_until_ms = lv_tick_get() + delay_ms;
 }
 
 inline void control_modal_close_active() {
   ControlModalActive &active = control_modal_active();
   if (active.kind == ControlModalKind::NONE || active.closing) return;
+  if (control_modal_close_guard_active(active)) return;
 
   ControlModalKind closing_kind = active.kind;
   void (*close_callback)() = active.close_callback;
