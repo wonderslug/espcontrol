@@ -1025,6 +1025,12 @@ def firmware_screen_schedule_screensaver_override_errors(backlight_path: Path, r
         )
         if wake_index == -1 or any(token not in pre_wake_body for token in required_tokens):
             errors.append(f"{rel}: let the night screen schedule override sensor screensaver wake")
+        disabled_wake_index = pre_wake_body.rfind("if (!id(schedule_enabled).state) return true;")
+        schedule_check_index = pre_wake_body.find("id(screen_schedule_check).execute();")
+        if disabled_wake_index == -1 or (
+            schedule_check_index != -1 and disabled_wake_index < schedule_check_index
+        ):
+            errors.append(f"{rel}: let sensor screensaver wake when the screen schedule is disabled")
 
     return errors
 
@@ -2913,6 +2919,19 @@ def run_self_test() -> int:
         "              }\n"
         "              return id(screensaver_mode).state == \"sensor\";\n"
         "          then:\n"
+        "            - if:\n"
+        "                condition:\n"
+        "                  lambda: |-\n"
+        "                    if (!id(schedule_enabled).state) return true;\n"
+        "                    return screen_schedule_normal_active(\n"
+        "                      id(screen_schedule_trigger).state,\n"
+        "                      id(schedule_enabled).state,\n"
+        "                      id(presence_detected),\n"
+        "                      now.is_valid(),\n"
+        "                      now.is_valid() ? now.hour : 0,\n"
+        "                      (int) id(schedule_on_hour).state,\n"
+        "                      (int) id(schedule_off_hour).state);\n"
+        "                then:\n"
         "            - script.execute: screensaver_wake\n"
     )
     expect_screen_schedule_screensaver_override_errors(
@@ -2957,6 +2976,15 @@ def run_self_test() -> int:
             1,
         ),
         ("override sensor screensaver wake",),
+    )
+    expect_screen_schedule_screensaver_override_errors(
+        "sensor screensaver wake ignores disabled schedule",
+        valid_schedule_screensaver_override.replace(
+            "                    if (!id(schedule_enabled).state) return true;\n",
+            "",
+            1,
+        ),
+        ("wake when the screen schedule is disabled",),
     )
     expect_artwork_image_auth_errors(
         "local artwork image request uses Basic auth",
