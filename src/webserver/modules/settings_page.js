@@ -625,7 +625,21 @@ function buildSettingsPage(parent) {
     });
     els.setCoverArtToggle = coverArtToggle.input;
 
+    var sleepPreventionToggle = toggleRow(
+      "Keep Screen Awake During Playback",
+      "sp-set-ss-media-sleep-prevention",
+      state.mediaPlayerSleepPreventionOn);
+    coverArtBody.appendChild(sleepPreventionToggle.row);
+    sleepPreventionToggle.input.addEventListener("change", function () {
+      state.mediaPlayerSleepPreventionOn = this.checked;
+      syncMediaPlayerSleepPreventionUi();
+      syncCoverArtScreensaverUi();
+      postSwitch(entityName("screen_saver_media_player_sleep_prevention"), state.mediaPlayerSleepPreventionOn);
+    });
+    els.setMediaPlayerSleepPreventionToggle = sleepPreventionToggle.input;
+
     var coverArtOptions = condField();
+    var coverArtOnlyOptions = condField();
 
     var coverArtEntityField = document.createElement("div");
     coverArtEntityField.className = "sp-field";
@@ -666,7 +680,7 @@ function buildSettingsPage(parent) {
       postNumber(entityName("screen_saver_cover_art_delay"), state.coverArtDelay);
     });
     coverArtDelayField.appendChild(coverArtDelaySelect);
-    coverArtOptions.appendChild(coverArtDelayField);
+    coverArtOnlyOptions.appendChild(coverArtDelayField);
     els.setCoverArtDelay = coverArtDelaySelect;
 
     if (coverArtTrackOverlayDurationSupported()) {
@@ -697,7 +711,7 @@ function buildSettingsPage(parent) {
         postNumber(entityName("screen_saver_track_overlay_duration"), state.coverArtTrackOverlayDuration);
       });
       trackOverlayField.appendChild(trackOverlaySelect);
-      coverArtOptions.appendChild(trackOverlayField);
+      coverArtOnlyOptions.appendChild(trackOverlayField);
       els.setCoverArtTrackOverlayDuration = trackOverlaySelect;
     }
 
@@ -712,6 +726,8 @@ function buildSettingsPage(parent) {
     });
     els.setCoverArtHideExternalInputToggle = coverArtHideExternalInputToggle.input;
 
+    els.setCoverArtOnlyOptions = coverArtOnlyOptions;
+    coverArtOptions.appendChild(coverArtOnlyOptions);
 
     els.setCoverArtOptions = coverArtOptions;
     coverArtBody.appendChild(coverArtOptions);
@@ -1086,7 +1102,12 @@ function syncCoverArtScreensaverUi() {
     els.setCoverArtToggle.checked = !!state.coverArtScreensaverOn;
   }
   if (els.setCoverArtOptions) {
-    els.setCoverArtOptions.classList.toggle("sp-visible", !!state.coverArtScreensaverOn);
+    els.setCoverArtOptions.classList.toggle(
+      "sp-visible",
+      !!state.coverArtScreensaverOn || !!state.mediaPlayerSleepPreventionOn);
+  }
+  if (els.setCoverArtOnlyOptions) {
+    els.setCoverArtOnlyOptions.classList.toggle("sp-visible", !!state.coverArtScreensaverOn);
   }
   if (els.setCoverArtBadge) {
     els.setCoverArtBadge.className = "sp-card-badge" + (state.coverArtScreensaverOn ? "" : " sp-hidden");
