@@ -26,6 +26,8 @@ var SSE_ALIAS_GROUPS = {
   ntpServer1: ["text-screen__ntp_server_1", "text-ntp_server_1"],
   ntpServer2: ["text-screen__ntp_server_2", "text-ntp_server_2"],
   ntpServer3: ["text-screen__ntp_server_3", "text-ntp_server_3"],
+  homeAssistantArtworkProtocol: ["select-home_assistant_artwork_protocol", "select-cover_art_home_assistant_artwork_protocol"],
+  homeAssistantArtworkPort: ["number-home_assistant_artwork_port", "number-cover_art_home_assistant_artwork_port"],
   developerExperimentalFeatures: ["switch-developer__experimental_features", "switch-developer_experimental_features"],
 };
 
@@ -399,6 +401,14 @@ function connectEvents() {
       state.customNtpServers = state.customNtpServers || hasCustomNtpServers();
       syncNtpServerUi();
     },
+    "select-home_assistant_artwork_protocol": function (val, d) {
+      state.homeAssistantArtworkProtocol = normalizeHomeAssistantArtworkProtocol(d.value || val);
+      syncConnectivityUi();
+    },
+    "number-home_assistant_artwork_port": function (val, d) {
+      state.homeAssistantArtworkPort = normalizeHomeAssistantArtworkPort(d.value != null ? d.value : val);
+      syncConnectivityUi();
+    },
     "select-screen__rotation": function (val, d) {
       state.screenRotation = normalizeScreenRotation(d.value || val || state.screenRotation);
       if (d.option && Array.isArray(d.option)) {
@@ -488,6 +498,8 @@ function connectEvents() {
   addSseAliases(sseHandlers, SSE_ALIAS_GROUPS.ntpServer1, sseHandlers["text-screen__ntp_server_1"]);
   addSseAliases(sseHandlers, SSE_ALIAS_GROUPS.ntpServer2, sseHandlers["text-screen__ntp_server_2"]);
   addSseAliases(sseHandlers, SSE_ALIAS_GROUPS.ntpServer3, sseHandlers["text-screen__ntp_server_3"]);
+  addSseAliases(sseHandlers, SSE_ALIAS_GROUPS.homeAssistantArtworkProtocol, sseHandlers["select-home_assistant_artwork_protocol"]);
+  addSseAliases(sseHandlers, SSE_ALIAS_GROUPS.homeAssistantArtworkPort, sseHandlers["number-home_assistant_artwork_port"]);
   addSseAliases(sseHandlers, SSE_ALIAS_GROUPS.developerExperimentalFeatures, sseHandlers["switch-developer__experimental_features"]);
 
   var ssePatterns = [

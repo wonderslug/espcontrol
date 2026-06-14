@@ -165,7 +165,7 @@ switch:
 
 select:
   - platform: template
-    name: "Home Assistant Artwork Protocol"
+    name: "${entity_home_assistant_artwork_protocol}"
     internal: true
     id: cover_art_home_assistant_artwork_protocol
     entity_category: config
@@ -184,7 +184,7 @@ select:
 
 number:
   - platform: template
-    name: "Home Assistant Artwork Port"
+    name: "${entity_home_assistant_artwork_port}"
     internal: true
     id: cover_art_home_assistant_artwork_port
     entity_category: config

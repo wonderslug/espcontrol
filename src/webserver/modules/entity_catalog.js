@@ -299,6 +299,22 @@ var ENTITY_CATALOG = {
       "domain": "text",
       "name": "Screen: NTP Server 3"
     },
+    "home_assistant_artwork_protocol": {
+      "domain": "select",
+      "name": "Home Assistant Artwork Protocol",
+      "objectIds": [
+        "home_assistant_artwork_protocol",
+        "cover_art_home_assistant_artwork_protocol"
+      ]
+    },
+    "home_assistant_artwork_port": {
+      "domain": "number",
+      "name": "Home Assistant Artwork Port",
+      "objectIds": [
+        "home_assistant_artwork_port",
+        "cover_art_home_assistant_artwork_port"
+      ]
+    },
     "screen_sunrise": {
       "domain": "text_sensor",
       "name": "Screen: Sunrise"
@@ -542,6 +558,8 @@ var ENTITY_CATALOG = {
       "screen_ntp_server_1",
       "screen_ntp_server_2",
       "screen_ntp_server_3",
+      "home_assistant_artwork_protocol",
+      "home_assistant_artwork_port",
       "screen_sunrise",
       "screen_sunset",
       "network_transport",

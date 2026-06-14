@@ -478,6 +478,61 @@ function buildSettingsPage(parent) {
 
   var timeSettingsCard = makeCollapsibleCard("Time Settings", clockBody, true);
 
+  var connectivityBody = document.createElement("div");
+
+  var artworkProtocolField = document.createElement("div");
+  artworkProtocolField.className = "sp-field";
+  artworkProtocolField.appendChild(fieldLabel("Home Assistant Artwork Protocol", "sp-set-ha-artwork-protocol"));
+  var artworkProtocolSelect = document.createElement("select");
+  artworkProtocolSelect.className = "sp-select";
+  artworkProtocolSelect.id = "sp-set-ha-artwork-protocol";
+  ["http", "https"].forEach(function (opt) {
+    var o = document.createElement("option");
+    o.value = opt;
+    o.textContent = opt;
+    artworkProtocolSelect.appendChild(o);
+  });
+  artworkProtocolSelect.value = normalizeHomeAssistantArtworkProtocol(state.homeAssistantArtworkProtocol);
+  artworkProtocolSelect.addEventListener("change", function () {
+    state.homeAssistantArtworkProtocol = normalizeHomeAssistantArtworkProtocol(this.value);
+    this.value = state.homeAssistantArtworkProtocol;
+    postSelectWithObjectIds(
+      entityName("home_assistant_artwork_protocol"),
+      entityObjectIds("home_assistant_artwork_protocol"),
+      state.homeAssistantArtworkProtocol
+    );
+  });
+  artworkProtocolField.appendChild(artworkProtocolSelect);
+  connectivityBody.appendChild(artworkProtocolField);
+  els.setHomeAssistantArtworkProtocol = artworkProtocolSelect;
+
+  var artworkPortField = document.createElement("div");
+  artworkPortField.className = "sp-field";
+  artworkPortField.appendChild(fieldLabel("Home Assistant Artwork Port", "sp-set-ha-artwork-port"));
+  var artworkPortInput = document.createElement("input");
+  artworkPortInput.type = "number";
+  artworkPortInput.className = "sp-input";
+  artworkPortInput.id = "sp-set-ha-artwork-port";
+  artworkPortInput.min = "1";
+  artworkPortInput.max = "65535";
+  artworkPortInput.step = "1";
+  artworkPortInput.value = normalizeHomeAssistantArtworkPort(state.homeAssistantArtworkPort);
+  artworkPortInput.addEventListener("change", function () {
+    state.homeAssistantArtworkPort = normalizeHomeAssistantArtworkPort(this.value);
+    this.value = state.homeAssistantArtworkPort;
+    postNumberWithObjectIds(
+      entityName("home_assistant_artwork_port"),
+      entityObjectIds("home_assistant_artwork_port"),
+      state.homeAssistantArtworkPort
+    );
+  });
+  artworkPortField.appendChild(artworkPortInput);
+  connectivityBody.appendChild(artworkPortField);
+  els.setHomeAssistantArtworkPort = artworkPortInput;
+
+  syncConnectivityUi();
+  var connectivityCard = makeCollapsibleCard("Home Assistant", connectivityBody, true);
+
   var clockBarBody = document.createElement("div");
 
   var clockBar = toggleRow("Show Clock Bar", "sp-set-clock-bar", state.clockBarOn);
@@ -1048,6 +1103,9 @@ function buildSettingsPage(parent) {
     screensaverCard,
     coverArtCard,
     scheduleCard,
+  ]);
+  appendSettingsSection(config, "Connectivity", [
+    connectivityCard,
   ]);
   appendSettingsSection(config, "System", [
     languageCard,

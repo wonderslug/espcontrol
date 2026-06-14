@@ -51,6 +51,8 @@
     { "key": "screen_ntp_server_1", "domain": "text", "name": "Screen: NTP Server 1", "groups": ["settings"] },
     { "key": "screen_ntp_server_2", "domain": "text", "name": "Screen: NTP Server 2", "groups": ["settings"] },
     { "key": "screen_ntp_server_3", "domain": "text", "name": "Screen: NTP Server 3", "groups": ["settings"] },
+    { "key": "home_assistant_artwork_protocol", "domain": "select", "name": "Home Assistant Artwork Protocol", "objectIds": ["home_assistant_artwork_protocol", "cover_art_home_assistant_artwork_protocol"], "groups": ["settings"] },
+    { "key": "home_assistant_artwork_port", "domain": "number", "name": "Home Assistant Artwork Port", "objectIds": ["home_assistant_artwork_port", "cover_art_home_assistant_artwork_port"], "groups": ["settings"] },
     { "key": "screen_sunrise", "domain": "text_sensor", "name": "Screen: Sunrise", "groups": ["settings"] },
     { "key": "screen_sunset", "domain": "text_sensor", "name": "Screen: Sunset", "groups": ["settings"] },
     { "key": "network_transport", "domain": "text_sensor", "name": "Network Transport", "groups": ["settings"] },
