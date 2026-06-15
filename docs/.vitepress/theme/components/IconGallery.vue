@@ -73,6 +73,7 @@ const ICON_GROUPS = {
   'Lightbulb Variant': 'Lighting',
   'Lightbulb Variant Outline': 'Lighting',
   'Outdoor Lamp': 'Lighting',
+  'Palette': 'Lighting',
   'Spotlight': 'Lighting',
   'String Lights': 'Lighting',
   'String Lights Off': 'Lighting',
