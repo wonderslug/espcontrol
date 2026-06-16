@@ -114,9 +114,6 @@ globals:
   - id: cover_art_accent_b
     type: int
     initial_value: '0'
-  - id: cover_art_manual_wake_ms
-    type: uint32_t
-    initial_value: '0'
 
 esphome:
   on_boot:
@@ -1172,16 +1169,8 @@ script:
       - delay: !lambda |-
           float seconds = id(cover_art_delay).state;
           if (std::isnan(seconds) || seconds < 0.0f) seconds = 10.0f;
-          uint32_t delay_ms = (uint32_t)(seconds * 1000.0f);
-          const uint32_t manual_wake_holdoff_ms = 60000;
-          if (id(cover_art_manual_wake_ms) != 0) {
-            uint32_t elapsed = (uint32_t)(millis() - id(cover_art_manual_wake_ms));
-            if (elapsed < manual_wake_holdoff_ms) {
-              uint32_t remaining = manual_wake_holdoff_ms - elapsed;
-              if (remaining > delay_ms) delay_ms = remaining;
-            }
-          }
-          return delay_ms;
+          ESP_LOGI("cover_art", "Waiting %.0fs before showing cover art", seconds);
+          return (uint32_t)(seconds * 1000.0f);
       - if:
           condition:
             lambda: |-
@@ -1866,9 +1855,6 @@ script:
       - globals.set:
           id: cover_art_media_playing
           value: 'false'
-      - globals.set:
-          id: cover_art_manual_wake_ms
-          value: '0'
       - lambda: |-
           id(cover_art_media_position) = 0.0f;
           id(cover_art_position_anchor) = 0.0f;
