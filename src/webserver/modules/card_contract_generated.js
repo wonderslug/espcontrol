@@ -1461,11 +1461,6 @@ function cardContractPickerKey(type) {
   return card && card.pickerKey ? card.pickerKey : "";
 }
 
-function cardContractExperimental(type) {
-  var card = cardContractCard(type);
-  return card && card.experimental ? card.experimental : "";
-}
-
 function cardContractHidden(type) {
   var card = cardContractCard(type);
   return !!(card && card.hidden);
