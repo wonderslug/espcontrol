@@ -539,6 +539,7 @@ inline void light_control_layout_modal(LightControlCtx *ctx) {
       lv_obj_t *btn = lv_obj_get_child(ui.color_grid, i);
       if (!btn) continue;
       lv_obj_set_size(btn, swatch, swatch);
+      apply_width_compensation(btn, ctx->width_compensation_percent);
       lv_obj_align(btn, LV_ALIGN_TOP_LEFT,
         static_cast<lv_coord_t>((i % 4) * (swatch + gap)),
         static_cast<lv_coord_t>((i / 4) * (swatch + gap)));
