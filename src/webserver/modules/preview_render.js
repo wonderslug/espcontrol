@@ -58,6 +58,16 @@ var CARD_TYPE_PICKER_DETAILS = {
   weather: { icon: "weather-partly-cloudy", description: "Show weather or forecast data." },
 };
 
+var CARD_TYPE_PICKER_DEFAULTS = {
+  light_brightness: "light_control",
+};
+
+function defaultButtonTypeForPicker(key) {
+  return Object.prototype.hasOwnProperty.call(CARD_TYPE_PICKER_DEFAULTS, key)
+    ? CARD_TYPE_PICKER_DEFAULTS[key]
+    : key;
+}
+
 function buttonTypePickerDetails(key, label) {
   var details = CARD_TYPE_PICKER_DETAILS[key || ""] || {};
   return {

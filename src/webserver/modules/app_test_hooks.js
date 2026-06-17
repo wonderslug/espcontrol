@@ -177,6 +177,7 @@ if (typeof globalThis !== "undefined" && globalThis.__ESPCONTROL_TEST_HOOKS__) {
     buttonTypePickerOptionsFor: function (isSub, selectedTypeKey) {
       return buttonTypePickerOptionList(!!isSub, selectedTypeKey == null ? null : selectedTypeKey);
     },
+    defaultButtonTypeForPicker: defaultButtonTypeForPicker,
     buttonTypesMissingCardMetadata: function () {
       var missing = [];
       for (var key in BUTTON_TYPES) {

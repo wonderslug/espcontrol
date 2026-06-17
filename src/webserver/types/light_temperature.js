@@ -73,10 +73,10 @@ function lightTempClampMax(v, mn) {
 }
 
 var LIGHT_CONTROL_TYPE_OPTIONS = [
+  ["light_control", "All Controls"],
   ["light_switch", "Switch"],
   ["light_brightness", "Brightness"],
   ["light_temperature", "Colour Temperature"],
-  ["light_control", "All Controls"],
 ];
 
 var LIGHT_CONTROL_TYPE_METADATA = {
