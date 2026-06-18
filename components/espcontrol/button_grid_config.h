@@ -92,6 +92,8 @@ constexpr const char *IMAGE_ICON_OPTION = "image_icon";
 constexpr const char *IMAGE_MODAL_MODE_OPTION = "image_modal_mode";
 constexpr const char *IMAGE_REFRESH_OPTION = "image_refresh";
 constexpr const char *IMAGE_REFRESH_MODE_OPTION = "image_refresh_mode";
+constexpr const char *LIGHT_CONTROL_TABS_OPTION = "light_tabs";
+constexpr const char *LIGHT_CONTROL_DEFAULT_TABS_VALUE = "power|brightness|temperature|color";
 
 #include "button_grid_contract_generated.h"
 #include "button_grid_card_runtime.h"
@@ -441,6 +443,37 @@ inline std::string image_card_options_normalized(const std::string &options) {
     out += std::string(IMAGE_MODAL_MODE_OPTION) + "=" + modal_mode;
   }
   return out;
+}
+
+inline bool light_control_tab_token_valid(const std::string &value) {
+  return value == "power" || value == "brightness" ||
+         value == "temperature" || value == "color";
+}
+
+inline std::string normalize_light_control_tabs_value(const std::string &value) {
+  std::vector<std::string> parts = split_config_fields(
+    value.empty() ? std::string(LIGHT_CONTROL_DEFAULT_TABS_VALUE) : value, '|');
+  std::vector<std::string> tabs;
+  for (const auto &part : parts) {
+    if (!light_control_tab_token_valid(part)) continue;
+    if (std::find(tabs.begin(), tabs.end(), part) == tabs.end()) {
+      tabs.push_back(part);
+    }
+  }
+  if (tabs.empty()) tabs.push_back("power");
+  std::string out;
+  for (const auto &tab : tabs) {
+    if (!out.empty()) out += "|";
+    out += tab;
+  }
+  return out;
+}
+
+inline std::string light_control_card_options_normalized(const std::string &options) {
+  std::string tabs = normalize_light_control_tabs_value(
+    cfg_option_value(options, LIGHT_CONTROL_TABS_OPTION));
+  if (tabs == LIGHT_CONTROL_DEFAULT_TABS_VALUE) return "";
+  return std::string(LIGHT_CONTROL_TABS_OPTION) + "=" + encode_compact_field(tabs);
 }
 
 inline uint32_t image_card_refresh_interval_ms(const ParsedCfg &p) {
@@ -972,6 +1005,12 @@ inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
     p.precision.clear();
     p.options.clear();
   }
+  if (p.type == "light_control") {
+    p.sensor.clear();
+    p.unit.clear();
+    p.precision.clear();
+    p.options = light_control_card_options_normalized(p.options);
+  }
   if (p.type == "subpage") {
     p.options = subpage_card_options_normalized(p.options, p.sensor, p.precision);
   }
@@ -1056,7 +1095,7 @@ inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
     if (p.icon_on.empty() || p.icon_on == "Auto") p.icon_on = "Motion Sensor";
     p.options = presence_card_options_normalized(p.options);
   }
-  if (!p.type.empty() && p.type != "action" && p.type != "alarm" && p.type != "alarm_action" && p.type != "climate" && p.type != "garage" && p.type != "webhook" && p.type != "screen_lock" && p.type != "todo" && p.type != "sensor" && p.type != "door_window" && p.type != "presence" && p.type != "media" && p.type != "subpage" && p.type != "image" && p.type != "vacuum" && p.type != "lawn_mower" && !fan_card_type(p.type) && !card_large_numbers_supported(p)) {
+  if (!p.type.empty() && p.type != "action" && p.type != "alarm" && p.type != "alarm_action" && p.type != "climate" && p.type != "garage" && p.type != "webhook" && p.type != "screen_lock" && p.type != "todo" && p.type != "sensor" && p.type != "door_window" && p.type != "presence" && p.type != "media" && p.type != "subpage" && p.type != "image" && p.type != "light_control" && p.type != "vacuum" && p.type != "lawn_mower" && !fan_card_type(p.type) && !card_large_numbers_supported(p)) {
     p.options.clear();
   }
   if (sensor_card_local_sensor(p)) {

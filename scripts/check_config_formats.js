@@ -1649,6 +1649,29 @@ assertButtonRoundTrip(hooks, "full light control card", {
   precision: "",
   options: "",
 }, false);
+assertButtonRoundTrip(hooks, "full light control custom tabs", {
+  entity: "light.living_room",
+  label: "Living Room",
+  icon: "Auto",
+  icon_on: "Auto",
+  sensor: "",
+  unit: "",
+  type: "light_control",
+  precision: "",
+  options: "light_tabs=brightness%7Cpower",
+}, false);
+assert.deepStrictEqual(
+  Array.from(hooks.lightControlTabs({ options: "light_tabs=brightness%7Cpower" })),
+  ["brightness", "power"],
+  "light control tabs preserve custom order");
+assert.strictEqual(
+  hooks.normalizeLightControlOptions("light_tabs=power%7Cbrightness%7Ctemperature%7Ccolor"),
+  "",
+  "default light control tab order is omitted");
+assert.strictEqual(
+  hooks.normalizeLightControlOptions("light_tabs=bad%7Cpower%7Cpower"),
+  "light_tabs=power",
+  "invalid and duplicate light control tabs are removed");
 assert.strictEqual(hooks.buttonTypeVisibleInPickerFor("light_brightness", false), true, "lights picker visible on parent page");
 assert.strictEqual(hooks.buttonTypeVisibleInPickerFor("light_brightness", true), true, "lights picker visible in subpages");
 assert.strictEqual(hooks.buttonTypeVisibleInPickerFor("light_switch", false), false, "light switch subtype hidden from top-level picker");

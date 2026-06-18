@@ -390,6 +390,15 @@ int main() {
   assert(image_refresh_invalid.options == "");
   assert(image_card_refresh_interval_ms(image_refresh_invalid) == 0);
 
+  auto light_control_default_tabs = parse_cfg("light.kitchen;Kitchen;Lightbulb Outline;Lightbulb;;;light_control;;light_tabs=power%7Cbrightness%7Ctemperature%7Ccolor");
+  assert(light_control_default_tabs.type == "light_control");
+  assert(light_control_default_tabs.options == "");
+  auto light_control_custom_tabs = parse_cfg("light.kitchen;Kitchen;Lightbulb Outline;Lightbulb;;;light_control;;light_tabs=brightness%7Cpower");
+  assert(light_control_custom_tabs.options == "light_tabs=brightness%7Cpower");
+  assert(cfg_option_value(light_control_custom_tabs.options, "light_tabs") == "brightness|power");
+  auto light_control_bad_tabs = parse_cfg("light.kitchen;Kitchen;Lightbulb Outline;Lightbulb;;;light_control;;light_tabs=bad%7Cpower%7Cpower");
+  assert(light_control_bad_tabs.options == "light_tabs=power");
+
   set_display_temperature_unit("\u00B0F", "UTC (GMT+0)");
   assert(convert_temperature_value_for_display(10, "\u00B0C") == 50);
   assert(convert_temperature_value_for_display(10, "\u00B0F") == 10);

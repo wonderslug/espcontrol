@@ -827,6 +827,14 @@ var CARD_CONTRACT_CARDS = {
     "domains": [
       "light"
     ],
+    "options": [
+      {
+        "name": "light_tabs",
+        "label": "Visible Tabs",
+        "kind": "text",
+        "defaultValue": "power|brightness|temperature|color"
+      }
+    ],
     "default": {
       "entity": "",
       "label": "",

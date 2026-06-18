@@ -155,6 +155,7 @@ function setLightControlType(b, type, helpers) {
   helpers.saveField("sensor", b.sensor || "");
   helpers.saveField("unit", b.unit || "");
   helpers.saveField("precision", b.precision || "");
+  helpers.saveField("options", b.options || "");
   helpers.saveField("icon", b.icon || "Auto");
   helpers.saveField("icon_on", b.icon_on || "Auto");
   renderButtonSettings();
@@ -162,6 +163,67 @@ function setLightControlType(b, type, helpers) {
 
 function renderLightControlTypeField(panel, b, helpers) {
   return helpers.renderCardModeSelector(panel, b, helpers, LIGHT_CONTROL_TYPE_METADATA);
+}
+
+function renderLightControlTabSettings(panel, b, helpers) {
+  b.options = normalizeLightControlOptions(b.options);
+  var tabs = lightControlTabs(b);
+  var definitions = lightControlTabDefinitions();
+
+  var heading = document.createElement("div");
+  heading.className = "sp-field";
+  heading.appendChild(helpers.fieldLabel("Modal Tabs"));
+  panel.appendChild(heading);
+
+  function saveTabs(nextTabs) {
+    setLightControlTabs(b, nextTabs);
+    helpers.saveField("options", b.options);
+    renderButtonSettings();
+  }
+
+  definitions.forEach(function (definition) {
+    var tabIndex = tabs.indexOf(definition.value);
+    var visible = tabIndex >= 0;
+    var toggle = helpers.toggleRow(
+      "Show " + definition.label,
+      helpers.idPrefix + "light-tab-" + definition.value,
+      visible
+    );
+    panel.appendChild(toggle.row);
+    toggle.input.addEventListener("change", function () {
+      var nextTabs = tabs.slice();
+      var currentIndex = nextTabs.indexOf(definition.value);
+      if (this.checked && currentIndex < 0) {
+        nextTabs.push(definition.value);
+      } else if (!this.checked && currentIndex >= 0 && nextTabs.length > 1) {
+        nextTabs.splice(currentIndex, 1);
+      }
+      saveTabs(nextTabs);
+    });
+
+    if (!visible) return;
+    var orderOptions = tabs.map(function (_tab, index) {
+      return [String(index + 1), String(index + 1)];
+    });
+    var orderField = helpers.selectField(
+      definition.label + " Position",
+      helpers.idPrefix + "light-tab-order-" + definition.value,
+      orderOptions,
+      String(tabIndex + 1)
+    );
+    panel.appendChild(orderField.field);
+    orderField.select.addEventListener("change", function () {
+      var nextTabs = tabs.slice();
+      var from = nextTabs.indexOf(definition.value);
+      var to = parseInt(this.value, 10) - 1;
+      if (from < 0 || !isFinite(to)) return;
+      if (to < 0) to = 0;
+      if (to >= nextTabs.length) to = nextTabs.length - 1;
+      nextTabs.splice(from, 1);
+      nextTabs.splice(to, 0, definition.value);
+      saveTabs(nextTabs);
+    });
+  });
 }
 
 registerButtonType("light_temperature", {
@@ -284,8 +346,10 @@ registerButtonType("light_control", {
   },
   renderSettings: function (panel, b, slot, helpers) {
     renderLightControlTypeField(panel, b, helpers);
+    b.options = normalizeLightControlOptions(b.options);
 
     helpers.renderBasicCardFields(panel, b, helpers, LIGHT_FULL_CONTROL_CARD_METADATA);
+    renderLightControlTabSettings(panel, b, helpers);
   },
   renderPreview: function (b, helpers) {
     var label = b.label || b.entity || "Light";

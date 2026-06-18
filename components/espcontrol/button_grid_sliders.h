@@ -126,6 +126,7 @@ struct LightControlCtx {
   std::string entity_id;
   std::string label;
   std::string friendly_name;
+  std::string options;
   int current_pct = 0;
   uint32_t accent_color = DEFAULT_SLIDER_COLOR;
   lv_obj_t *btn = nullptr;
@@ -189,6 +190,52 @@ struct LightControlModalUi {
 inline LightControlModalUi &light_control_modal_ui() {
   static LightControlModalUi ui;
   return ui;
+}
+
+inline LightControlTab light_control_tab_from_token(const std::string &value) {
+  if (value == "brightness") return LightControlTab::BRIGHTNESS;
+  if (value == "temperature") return LightControlTab::TEMPERATURE;
+  if (value == "color") return LightControlTab::COLOR;
+  return LightControlTab::POWER;
+}
+
+inline std::vector<LightControlTab> light_control_visible_tabs(LightControlCtx *ctx) {
+  std::vector<LightControlTab> tabs;
+  std::string value = normalize_light_control_tabs_value(
+    cfg_option_value(ctx ? ctx->options : "", LIGHT_CONTROL_TABS_OPTION));
+  std::vector<std::string> parts = split_config_fields(value, '|');
+  for (const auto &part : parts) {
+    LightControlTab tab = light_control_tab_from_token(part);
+    if (std::find(tabs.begin(), tabs.end(), tab) == tabs.end()) tabs.push_back(tab);
+  }
+  if (tabs.empty()) tabs.push_back(LightControlTab::POWER);
+  return tabs;
+}
+
+inline bool light_control_tab_visible(LightControlCtx *ctx, LightControlTab tab) {
+  std::vector<LightControlTab> tabs = light_control_visible_tabs(ctx);
+  return std::find(tabs.begin(), tabs.end(), tab) != tabs.end();
+}
+
+inline LightControlTab light_control_first_visible_tab(LightControlCtx *ctx) {
+  std::vector<LightControlTab> tabs = light_control_visible_tabs(ctx);
+  return tabs.empty() ? LightControlTab::POWER : tabs.front();
+}
+
+inline void light_control_ensure_visible_tab(LightControlCtx *ctx) {
+  LightControlModalUi &ui = light_control_modal_ui();
+  if (light_control_tab_visible(ctx, ui.tab)) return;
+  ui.tab = light_control_first_visible_tab(ctx);
+}
+
+inline lv_obj_t *light_control_tab_button(LightControlModalUi &ui, LightControlTab tab) {
+  switch (tab) {
+    case LightControlTab::POWER: return ui.power_tab;
+    case LightControlTab::BRIGHTNESS: return ui.brightness_tab;
+    case LightControlTab::TEMPERATURE: return ui.temperature_tab;
+    case LightControlTab::COLOR: return ui.color_tab;
+  }
+  return nullptr;
 }
 
 inline void light_control_update_slider_handle(lv_obj_t *slider, lv_obj_t *handle, int pct);
@@ -329,10 +376,27 @@ inline void light_control_apply_tab_visibility() {
   LightControlModalUi &ui = light_control_modal_ui();
   LightControlCtx *ctx = ui.active;
   if (!ctx) return;
+  light_control_ensure_visible_tab(ctx);
   bool show_power = ui.tab == LightControlTab::POWER;
   bool show_brightness = ui.tab == LightControlTab::BRIGHTNESS;
   bool show_temperature = ui.tab == LightControlTab::TEMPERATURE;
   bool show_color = ui.tab == LightControlTab::COLOR;
+  if (ui.power_tab) {
+    if (light_control_tab_visible(ctx, LightControlTab::POWER)) lv_obj_clear_flag(ui.power_tab, LV_OBJ_FLAG_HIDDEN);
+    else lv_obj_add_flag(ui.power_tab, LV_OBJ_FLAG_HIDDEN);
+  }
+  if (ui.brightness_tab) {
+    if (light_control_tab_visible(ctx, LightControlTab::BRIGHTNESS)) lv_obj_clear_flag(ui.brightness_tab, LV_OBJ_FLAG_HIDDEN);
+    else lv_obj_add_flag(ui.brightness_tab, LV_OBJ_FLAG_HIDDEN);
+  }
+  if (ui.temperature_tab) {
+    if (light_control_tab_visible(ctx, LightControlTab::TEMPERATURE)) lv_obj_clear_flag(ui.temperature_tab, LV_OBJ_FLAG_HIDDEN);
+    else lv_obj_add_flag(ui.temperature_tab, LV_OBJ_FLAG_HIDDEN);
+  }
+  if (ui.color_tab) {
+    if (light_control_tab_visible(ctx, LightControlTab::COLOR)) lv_obj_clear_flag(ui.color_tab, LV_OBJ_FLAG_HIDDEN);
+    else lv_obj_add_flag(ui.color_tab, LV_OBJ_FLAG_HIDDEN);
+  }
   if (ui.power_group) {
     if (show_power) lv_obj_clear_flag(ui.power_group, LV_OBJ_FLAG_HIDDEN);
     else lv_obj_add_flag(ui.power_group, LV_OBJ_FLAG_HIDDEN);
@@ -589,18 +653,21 @@ inline void light_control_layout_power(lv_obj_t *group, lv_obj_t *on_btn,
 inline void light_control_layout_modal(LightControlCtx *ctx) {
   LightControlModalUi &ui = light_control_modal_ui();
   if (!ctx || !ui.panel) return;
+  light_control_ensure_visible_tab(ctx);
+  std::vector<LightControlTab> visible_tabs = light_control_visible_tabs(ctx);
   ControlModalLayout layout = control_modal_calc_layout(ctx->width_compensation_percent);
 
   lv_coord_t tab_size = layout.back_size * 7 / 10;
   if (tab_size < 48) tab_size = 48;
   if (tab_size > 68) tab_size = 68;
   lv_coord_t max_tab_frame_w = layout.panel_w - layout.inset * 3;
-  constexpr int TAB_COUNT = 4;
+  int tab_count = static_cast<int>(visible_tabs.size());
+  if (tab_count < 1) tab_count = 1;
   lv_coord_t selected_tab_size = tab_size + tab_size / 8;
   lv_coord_t tab_frame_pad = tab_size / 5;
   lv_coord_t tab_frame_h = tab_size + tab_frame_pad * 2;
   lv_coord_t tab_gap = tab_size / 4;
-  lv_coord_t tabs_total_w = tab_size * TAB_COUNT + tab_gap * (TAB_COUNT - 1);
+  lv_coord_t tabs_total_w = tab_size * tab_count + tab_gap * (tab_count - 1);
   lv_coord_t tab_frame_w = tabs_total_w + tab_frame_pad * 2;
   while (tab_frame_w > max_tab_frame_w && tab_size > 40) {
     tab_size--;
@@ -608,7 +675,7 @@ inline void light_control_layout_modal(LightControlCtx *ctx) {
     tab_frame_pad = tab_size / 5;
     tab_frame_h = tab_size + tab_frame_pad * 2;
     tab_gap = tab_size / 4;
-    tabs_total_w = tab_size * TAB_COUNT + tab_gap * (TAB_COUNT - 1);
+    tabs_total_w = tab_size * tab_count + tab_gap * (tab_count - 1);
     tab_frame_w = tabs_total_w + tab_frame_pad * 2;
   }
   if (tab_frame_w > max_tab_frame_w) tab_frame_w = max_tab_frame_w;
@@ -618,17 +685,17 @@ inline void light_control_layout_modal(LightControlCtx *ctx) {
     lv_obj_set_style_radius(ui.tab_row, tab_frame_h / 2, LV_PART_MAIN);
     lv_obj_align(ui.tab_row, LV_ALIGN_TOP_MID, 0, layout.inset + 2);
   }
-  lv_obj_t *tabs[TAB_COUNT] = {ui.power_tab, ui.brightness_tab, ui.temperature_tab, ui.color_tab};
   lv_coord_t first_tab_x = (tab_frame_w - tabs_total_w) / 2;
-  for (int i = 0; i < TAB_COUNT; i++) {
-    if (!tabs[i]) continue;
-    bool active = (i == static_cast<int>(ui.tab));
+  for (int i = 0; i < tab_count; i++) {
+    lv_obj_t *tab_btn = light_control_tab_button(ui, visible_tabs[i]);
+    if (!tab_btn) continue;
+    bool active = (visible_tabs[i] == ui.tab);
     lv_coord_t tab_btn_size = active ? selected_tab_size : tab_size;
-    lv_obj_set_size(tabs[i], tab_btn_size, tab_btn_size);
-    lv_obj_set_style_radius(tabs[i], tab_btn_size / 2, LV_PART_MAIN);
+    lv_obj_set_size(tab_btn, tab_btn_size, tab_btn_size);
+    lv_obj_set_style_radius(tab_btn, tab_btn_size / 2, LV_PART_MAIN);
     lv_coord_t tab_x = first_tab_x + i * (tab_size + tab_gap);
-    lv_obj_align(tabs[i], LV_ALIGN_LEFT_MID, tab_x - (tab_btn_size - tab_size) / 2, 0);
-    lv_obj_t *label = lv_obj_get_child(tabs[i], 0);
+    lv_obj_align(tab_btn, LV_ALIGN_LEFT_MID, tab_x - (tab_btn_size - tab_size) / 2, 0);
+    lv_obj_t *label = lv_obj_get_child(tab_btn, 0);
     if (label) lv_obj_align(label, LV_ALIGN_CENTER, tab_btn_size / 12, tab_btn_size / 12);
   }
 
@@ -691,7 +758,7 @@ inline void light_control_open_modal(LightControlCtx *ctx) {
   ui.overlay = shell.overlay;
   ui.panel = shell.panel;
   ui.back_btn = shell.close_btn;
-  ui.tab = LightControlTab::POWER;
+  ui.tab = light_control_first_visible_tab(ctx);
   if (!ui.panel) return;
 
   ui.tab_row = lv_obj_create(ui.panel);
@@ -869,6 +936,7 @@ inline LightControlCtx *create_light_control_context(
   LightControlCtx *ctx = new LightControlCtx();
   ctx->entity_id = p.entity;
   ctx->label = p.label;
+  ctx->options = p.options;
   ctx->accent_color = accent_color;
   ctx->btn = s.btn;
   ctx->icon_lbl = s.icon_lbl;

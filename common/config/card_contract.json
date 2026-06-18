@@ -684,6 +684,14 @@
       "pickerKey": "light_brightness",
       "hidden": true,
       "domains": ["light"],
+      "options": [
+        {
+          "name": "light_tabs",
+          "label": "Visible Tabs",
+          "kind": "text",
+          "defaultValue": "power|brightness|temperature|color"
+        }
+      ],
       "default": {
         "entity": "",
         "label": "",
