@@ -482,6 +482,22 @@ async function assertSettingsPage(page, label, options = {}) {
     0,
     `${label}: sensor cover art override should not render`
   );
+  const advancedCard = page.locator("#sp-settings .card").filter({
+    has: page.locator(".card-header h3", { hasText: /^Advanced$/ }),
+  }).first();
+  assert(await advancedCard.isVisible(), `${label}: advanced settings card should render`);
+  if (!(await advancedCard.locator("#sp-set-ha-artwork-port").isVisible())) {
+    await advancedCard.locator(".card-header").click();
+  }
+  assert(
+    await advancedCard.locator("#sp-set-ha-artwork-port").isVisible(),
+    `${label}: Home Assistant port field should render in advanced settings`
+  );
+  assert.strictEqual(
+    await advancedCard.locator("#sp-set-ha-artwork-port").inputValue(),
+    "8123",
+    `${label}: Home Assistant port field should default to 8123`
+  );
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
   assert(!overflow, `${label}: settings page has horizontal overflow`);
   await page.getByRole("tab", { name: "Screen" }).click();
