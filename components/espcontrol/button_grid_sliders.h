@@ -682,16 +682,19 @@ inline void light_control_layout_power(lv_obj_t *group, lv_obj_t *on_btn,
   lv_coord_t button_h = (height - inset * 2 - gap) / 2;
   if (button_w < width / 2) button_w = width / 2;
   if (button_h < 48) button_h = 48;
+  lv_coord_t button_radius = width > 0 ? radius * button_w / width : radius;
+  if (button_radius < 16) button_radius = 16;
+  if (button_radius > button_h / 2) button_radius = button_h / 2;
   if (on_btn) {
     lv_obj_set_size(on_btn, button_w, button_h);
-    lv_obj_set_style_radius(on_btn, radius, LV_PART_MAIN);
+    lv_obj_set_style_radius(on_btn, button_radius, LV_PART_MAIN);
     lv_obj_align(on_btn, LV_ALIGN_TOP_MID, 0, inset);
     lv_obj_t *label = lv_obj_get_child(on_btn, 0);
     if (label) lv_obj_center(label);
   }
   if (off_btn) {
     lv_obj_set_size(off_btn, button_w, button_h);
-    lv_obj_set_style_radius(off_btn, radius, LV_PART_MAIN);
+    lv_obj_set_style_radius(off_btn, button_radius, LV_PART_MAIN);
     lv_obj_align(off_btn, LV_ALIGN_BOTTOM_MID, 0, -inset);
     lv_obj_t *label = lv_obj_get_child(off_btn, 0);
     if (label) lv_obj_center(label);
