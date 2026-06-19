@@ -645,6 +645,18 @@ inline bool clock_bar_item_is_temperature(int item) {
          item < CLOCK_BAR_ITEM_TEMPERATURE + (int) CLOCK_BAR_TEMPERATURE_SLOT_COUNT;
 }
 
+// When the clock is in 12-hour mode the time label carries an " am"/" pm"
+// suffix, so the fixed time box has to be wider than the 24-hour "HH:MM" form
+// to avoid clipping the ends. The display layer sets this before laying out.
+inline bool &clock_bar_time_use_12h() {
+  static bool value = false;
+  return value;
+}
+
+inline void set_clock_bar_time_use_12h(bool use_12h) {
+  clock_bar_time_use_12h() = use_12h;
+}
+
 inline int clock_bar_item_text_box_width(int item, int item_gap) {
   if (clock_bar_item_is_temperature(item)) {
     int width = item_gap - 8;
@@ -695,9 +707,26 @@ inline int clock_bar_icon_fallback_width(int item_gap) {
   return width;
 }
 
+// Width of the time box. In 24-hour mode this is the gap-derived fixed width;
+// in 12-hour mode it is measured from the label's own font using a worst-case
+// "HH:MM pm" string so the box fits the suffix regardless of the per-device
+// font size, while staying constant as the displayed time changes.
+inline int clock_bar_time_box_width(lv_obj_t *obj, int item_gap) {
+  int base = clock_bar_item_text_box_width(CLOCK_BAR_ITEM_TIME, item_gap);
+  if (!obj || !clock_bar_time_use_12h()) return base;
+  const lv_font_t *font = lv_obj_get_style_text_font(obj, LV_PART_MAIN);
+  if (!font) return base;
+  lv_point_t size;
+  lv_text_get_size(&size, "00:00 pm", font, 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+  int measured = size.x + 8;  // padding so glyph edges are not clipped
+  return measured > base ? measured : base;
+}
+
 inline int clock_bar_measure_item_width(lv_obj_t *obj, int item, int item_gap) {
   if (!obj) return 0;
-  int text_width = clock_bar_item_text_box_width(item, item_gap);
+  int text_width = (item == CLOCK_BAR_ITEM_TIME)
+                       ? clock_bar_time_box_width(obj, item_gap)
+                       : clock_bar_item_text_box_width(item, item_gap);
   if (text_width > 0) {
     lv_obj_set_width(obj, text_width);
     lv_label_set_long_mode(obj, LV_LABEL_LONG_CLIP);
