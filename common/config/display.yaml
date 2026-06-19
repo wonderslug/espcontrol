@@ -95,6 +95,7 @@ script:
             id(temperature_6),
           };
           set_clock_bar_temperature_labels(temperature_labels, 6);
+          set_clock_bar_time_use_12h(id(clock_format_12h));
           clock_bar_set_button_grid_pages_pad_top(
             id(main_page)->obj,
             reserve_clock_bar_space ? ${main_page_pad_top} : ${main_page_compact_pad_top});

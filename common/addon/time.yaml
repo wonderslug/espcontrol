@@ -234,6 +234,7 @@ select:
       then:
         - lambda: 'id(clock_format_12h) = id(clock_format_select).current_option() == "12h";'
         - script.execute: time_update
+        - script.execute: clock_bar_apply
         - script.execute: backlight_recalc_sunrise_sunset
 
   - platform: template
