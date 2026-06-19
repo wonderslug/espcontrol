@@ -41,14 +41,6 @@ Home Assistant can push a message to the screen using two new ESPHome API action
 
 Both accept `message`, `title`, and `message_id`. Arriving notifications wake the screensaver. On dismiss the device fires `esphome.notification_acknowledged` or `esphome.notification_expired` for HA automation correlation.
 
-### Local action cards
-
-A new card type that calls a callback registered directly on the device when tapped. The action runs on the ESP32 itself — no network round-trip, works when Home Assistant is offline. Useful for GPIO pulses, IR blasting, UART commands, or any custom ESPHome component.
-
-### Local sensor cards
-
-A new card type that displays the live value of any sensor component running on the device. Two modes: **Numeric** (large number + optional unit) and **Text** (icon + state string). Updates directly from the sensor callback — no Home Assistant involved, works offline.
-
 ### Fully-local web UI (no CDN dependencies)
 
 All web UI assets — the device JavaScript bundle, MDI icon font, Inter and Roboto fonts — are embedded in flash at compile time. The setup page loads instantly from the device with no external network requests. This also means the panel's configuration UI remains accessible when your internet is down.
