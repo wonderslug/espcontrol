@@ -46,7 +46,7 @@ substitutions:
                       microphone_muted ? "\U000F036D" :
                       output_muted ? "\U000F0581" : "\U000F04C3");
     lv_obj_set_style_text_color(id(voice_clock_bar_mute_icon_label),
-                                lv_color_hex((microphone_muted || output_muted) ? 0xFF3333 : 0xFFFFFF),
+                                lv_color_hex((microphone_muted || output_muted) ? DARK_TEXT_MUTED : 0xFFFFFF),
                                 LV_PART_MAIN);
   voice_interaction_active_condition: "id(voice_interaction_active)"
   clock_font_size: "224"
