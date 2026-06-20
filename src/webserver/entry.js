@@ -290,6 +290,24 @@
     if (b.sensor === "indicator") return "icon";
     return b.precision === "text" ? "text" : "numeric";
   }
+
+  var WEBSERVER_MOCK_NOW_ISO = "2026-01-01T09:00:00Z";
+  var webserverUseMockNowForTest = false;
+  function webserverMockNow() {
+    return new Date(WEBSERVER_MOCK_NOW_ISO);
+  }
+  function webserverNow() {
+    return webserverUseMockNowForTest ? webserverMockNow() : new Date();
+  }
+  function withWebserverMockNow(callback) {
+    var previous = webserverUseMockNowForTest;
+    webserverUseMockNowForTest = true;
+    try {
+      return callback();
+    } finally {
+      webserverUseMockNowForTest = previous;
+    }
+  }
   // __BUTTON_TYPES_START__
   // __BUTTON_TYPES_END__
 
