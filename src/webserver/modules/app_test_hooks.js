@@ -275,6 +275,7 @@ if (typeof globalThis !== "undefined" && globalThis.__ESPCONTROL_TEST_HOOKS__) {
     },
     normalizeScreensaverDimmedBrightness: normalizeScreensaverDimmedBrightness,
     webserverMockNow: webserverMockNow,
+    webserverNow: webserverNow,
     previewHtmlValue: previewHtmlValue,
     buttonTypePreviewFor: function (type, button, options) {
       var oldTimezone = state.timezone;
@@ -297,6 +298,11 @@ if (typeof globalThis !== "undefined" && globalThis.__ESPCONTROL_TEST_HOOKS__) {
       state.clockFormat = oldClockFormat;
       state.language = oldLanguage;
       return preview;
+    },
+    buttonTypePreviewForMockNow: function (type, button, options) {
+      return withWebserverMockNow(function () {
+        return globalThis.__ESPCONTROL_TEST_HOOKS__.config.buttonTypePreviewFor(type, button, options);
+      });
     },
     networkPreviewIconSlug: networkPreviewIconSlug,
     displayFirmwareVersion: displayFirmwareVersion,

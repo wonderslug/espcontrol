@@ -124,7 +124,7 @@ function setDateTimeCardMode(b, mode, helpers) {
 }
 
 function dateTimeCardTimeParts() {
-  var now = webserverMockNow();
+  var now = webserverNow();
   var use12h = typeof state !== "undefined" && state.clockFormat === "12h";
   var hour = now.getUTCHours();
   var minute = String(now.getUTCMinutes()).padStart(2, "0");
@@ -170,7 +170,7 @@ registerButtonType("calendar", {
     helpers.renderCardLargeNumbersToggle(panel, b, helpers, DATE_TIME_CARD_METADATA);
   },
   renderPreview: function (b, helpers) {
-    var now = webserverMockNow();
+    var now = webserverNow();
     var isDateTime = b.precision === "datetime";
     var hideLabel = cardLargeNumbersHidePreviewLabel(b, helpers, DATE_TIME_CARD_METADATA);
     var buttonClass = hideLabel

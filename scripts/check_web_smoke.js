@@ -182,6 +182,16 @@ for (const [slug, device] of Object.entries(manifest.devices || {})) {
     generatedTimezones.includes("UTC (GMT+0)") && generatedTimezones.includes("Europe/London (GMT+0)"),
     `${slug}: generated web UI must include fallback timezone choices`
   );
+  assert.strictEqual(
+    generatedTimezones[0],
+    "Pacific/Midway (GMT-11)",
+    `${slug}: Auto timezone must not shift restored timezone indices on OTA`
+  );
+  assert.strictEqual(
+    generatedTimezones[generatedTimezones.length - 1],
+    "Auto (Home Assistant)",
+    `${slug}: Auto timezone remains available as the new-install default option`
+  );
   assert(
     Array.from(generatedHooks.timezoneOptionsWithFallback([], "Custom/Zone (GMT+0)")).includes("Custom/Zone (GMT+0)"),
     `${slug}: timezone fallback must preserve the selected value`
@@ -432,7 +442,7 @@ const datePreview = hooks.buttonTypePreviewFor("calendar", {
 assert(datePreview.labelHtml.includes("mdi-calendar-month"), "date preview uses the calendar badge");
 assert(datePreview.iconHtml.includes("sp-sensor-preview"), "date preview uses the shared sensor preview");
 const frenchMonth = new Intl.DateTimeFormat("fr", { month: "long" }).format(hooks.webserverMockNow());
-const frenchDatePreview = hooks.buttonTypePreviewFor("calendar", {
+const frenchDatePreview = hooks.buttonTypePreviewForMockNow("calendar", {
   type: "calendar",
   precision: "",
   options: "",
@@ -1151,12 +1161,17 @@ assert.strictEqual(hooks.normalizeScreensaverAction("Screen Dimmed"), "dim");
 assert.strictEqual(hooks.previewHtmlValue({ labelHtml: "" }, "labelHtml", "fallback"), "");
 assert.strictEqual(hooks.previewHtmlValue({}, "labelHtml", "fallback"), "fallback");
 assert.strictEqual(hooks.webserverMockNow().toISOString(), "2026-01-01T09:00:00.000Z");
+assert.notStrictEqual(
+  hooks.webserverNow().toISOString(),
+  "2026-01-01T09:00:00.000Z",
+  "production web UI clock uses the real current time"
+);
 assert(
-  hooks.buttonTypePreviewFor("clock", { type: "clock" }, { clockFormat: "24h" }).iconHtml.includes("09:00"),
+  hooks.buttonTypePreviewForMockNow("clock", { type: "clock" }, { clockFormat: "24h" }).iconHtml.includes("09:00"),
   "mock webserver clock preview uses fixed 09:00 time"
 );
 assert(
-  hooks.buttonTypePreviewFor("clock", { type: "clock" }, { clockFormat: "12h" }).iconHtml.includes("9:00"),
+  hooks.buttonTypePreviewForMockNow("clock", { type: "clock" }, { clockFormat: "12h" }).iconHtml.includes("9:00"),
   "mock webserver clock preview uses fixed 9:00 time in 12h mode"
 );
 const backOnlySubpage = hooks.parseSubpageConfig(",,,,B");

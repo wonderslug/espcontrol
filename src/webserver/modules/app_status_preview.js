@@ -47,7 +47,7 @@ function timezoneOffsetMinutes(tzId, date) {
 function formatTimezoneOption(opt) {
   if (typeof isHomeAssistantAutoTimezone === "function" && isHomeAssistantAutoTimezone(opt)) return opt;
   var tzId = getTzId(opt);
-  var offset = timezoneOffsetMinutes(tzId, webserverMockNow());
+  var offset = timezoneOffsetMinutes(tzId, webserverNow());
   if (offset == null || !isFinite(offset)) return opt;
   return tzId + " (" + formatGmtOffset(offset) + ")";
 }
@@ -61,7 +61,7 @@ function appendTimezoneOption(select, opt) {
 
 function updateClockText() {
   if (!els.clock) return;
-  var now = webserverMockNow();
+  var now = webserverNow();
   var tzId = getTzId(effectiveTimezoneOptionForWeb(state.timezone));
   try {
     var parts = new Intl.DateTimeFormat("en-US", {
@@ -84,7 +84,7 @@ function updateClockText() {
 
 function updateClock() {
   updateClockText();
-  var now = webserverMockNow();
+  var now = webserverNow();
   var msToNext = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
   setTimeout(updateClock, msToNext + 50);
 }

@@ -14,7 +14,7 @@ function timezoneCardTimeParts(tzOption) {
     var opts = { timeZone: tzId, hour: "numeric", minute: "2-digit" };
     if (use12h) opts.hour12 = true;
     else opts.hourCycle = "h23";
-    var parts = new Intl.DateTimeFormat("en-US", opts).formatToParts(webserverMockNow());
+    var parts = new Intl.DateTimeFormat("en-US", opts).formatToParts(webserverNow());
     var hour = "";
     var minute = "";
     for (var i = 0; i < parts.length; i++) {
