@@ -22,4 +22,4 @@ You will find these controls in **Settings > Sleep & Schedule > Media Cover Art*
 
 Cover art is separate from the normal [Screensaver](/features/screensaver) mode. Use Screensaver when you want the panel to dim, show a clock, or turn off after inactivity.
 
-If your Home Assistant instance uses a custom port, open **Settings > System > Advanced** and set **Home Assistant Port** to match it. Media cover art downloads use this port when loading artwork from Home Assistant.
+If your Home Assistant instance uses a custom port, open **Settings > System > Home Assistant Settings** and set **Home Assistant Port** to match it. Media cover art downloads use this port when loading artwork from Home Assistant.

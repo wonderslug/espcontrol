@@ -96,7 +96,7 @@ The **Settings** tab also includes display, brightness, screensaver, backup, and
 
 ![Settings tab showing appearance, backlight, schedule, clock, and firmware controls](/images/settings-tab-display.png)
 
-Open **Settings > System > Advanced** to change **Home Assistant Port** if your Home Assistant instance does not use the default `8123` port. Camera/image cards and media artwork downloads use this port when loading images from Home Assistant.
+Open **Settings > System > Home Assistant Settings** to change **Home Assistant Port** if your Home Assistant instance does not use the default `8123` port. Camera/image cards and media artwork downloads use this port when loading images from Home Assistant.
 
 ## Apply Configuration
 
