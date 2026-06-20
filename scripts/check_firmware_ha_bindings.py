@@ -650,6 +650,11 @@ def firmware_cover_art_refresh_errors(path: Path, root: Path) -> list[str]:
             errors.append(f"{rel}: remember the clean source artwork URL after a download")
         if "id(cover_art_refresh_needed) = false" not in apply_body:
             errors.append(f"{rel}: clear stale artwork state only after a replacement image applies")
+        if (
+            "script.execute: cover_art_clear_image_source" not in apply_body
+            or "script.wait: cover_art_clear_image_source" not in apply_body
+        ):
+            errors.append(f"{rel}: detach the previous LVGL artwork source before showing a replacement image")
 
     if text.count("mark_artwork_refresh_needed();") < 4:
         errors.append(f"{rel}: mark title, artist, album, and source changes as artwork refresh triggers")
@@ -2579,6 +2584,8 @@ def run_self_test() -> int:
         "          }\n"
         "  - id: cover_art_apply_downloaded_image\n"
         "    then:\n"
+        "      - script.execute: cover_art_clear_image_source\n"
+        "      - script.wait: cover_art_clear_image_source\n"
         "      - lambda: |-\n"
         "          std::string expected_url = id(cover_art_download_url);\n"
         "          id(cover_art_loaded_url) = id(cover_art_url);\n"

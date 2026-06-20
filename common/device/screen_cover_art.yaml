@@ -551,6 +551,8 @@ script:
             - script.execute: cover_art_apply_responsive_layout
             - script.execute: cover_art_extract_accent_color
             - script.wait: cover_art_extract_accent_color
+            - script.execute: cover_art_clear_image_source
+            - script.wait: cover_art_clear_image_source
             - lvgl.widget.update:
                 id: cover_art_image_widget
                 opa: 100%
