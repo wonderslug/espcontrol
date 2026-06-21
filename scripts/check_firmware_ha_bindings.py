@@ -23,6 +23,7 @@ SUN_CALC_PATH = ROOT / "components" / "espcontrol" / "sun_calc.h"
 S3_DEVICE_PATH = ROOT / "devices" / "guition-esp32-s3-4848s040" / "device" / "device.yaml"
 S3_PACKAGES_PATH = ROOT / "devices" / "guition-esp32-s3-4848s040" / "packages.yaml"
 DEVICE_DEVICE_PATHS = tuple(sorted((ROOT / "devices").glob("*/device/device.yaml")))
+DEVICE_SENSOR_PATHS = tuple(sorted((ROOT / "devices").glob("*/device/sensors.yaml")))
 DEVICE_PACKAGE_PATHS = tuple(sorted((ROOT / "devices").glob("*/packages.yaml")))
 CONNECTIVITY_PATHS = (
     ROOT / "common" / "addon" / "connectivity.yaml",
@@ -753,12 +754,14 @@ def firmware_media_sleep_prevention_errors(
         else:
             if (
                 "id(media_player_sleep_prevention_enabled).state &&" not in idle_body
-                or "id(cover_art_media_playing)" not in idle_body
+                or "id(media_player_playing)" not in idle_body
             ):
                 errors.append(f"{rel}: keep media playback awake only through the media sleep prevention setting")
+            if "id(cover_art_media_playing)" in idle_body:
+                errors.append(f"{rel}: use the dedicated media sleep prevention playback state")
             if re.search(
                 r"id\(cover_art_screensaver_enabled\)\.state[\s\S]{0,160}"
-                r"id\(cover_art_media_playing\)",
+                r"id\(media_player_playing\)",
                 idle_body,
             ):
                 errors.append(f"{rel}: do not let cover art alone keep the idle timer awake")
@@ -784,6 +787,23 @@ def firmware_media_sleep_prevention_errors(
         ):
             errors.append(f"{rel}: do not start cover art immediately unless media sleep prevention or screensaver is active")
 
+    return errors
+
+
+def firmware_media_sleep_prevention_subscription_errors(paths: tuple[Path, ...], root: Path) -> list[str]:
+    errors: list[str] = []
+    for path in paths:
+        if not path.exists():
+            continue
+        rel = path.relative_to(root)
+        text = path.read_text(encoding="utf-8")
+        if "id(media_player_sleep_prevention_entity).state" not in text:
+            errors.append(f"{rel}: subscribe media sleep prevention to its configured media player entity")
+        if re.search(
+            r"id\(cover_art_media_player_entity\)\.state,\s*\n\s*&id\(media_player_playing\)",
+            text,
+        ):
+            errors.append(f"{rel}: do not drive media sleep prevention from the cover art media player")
     return errors
 
 
@@ -1122,8 +1142,23 @@ def firmware_screen_schedule_screensaver_overlay_errors(cover_art_path: Path, ro
 
     if show_body is None:
         errors.append(f"{rel}: missing show_cover_art_view script")
-    elif "lv_obj_move_foreground(id(cover_art_screensaver))" not in show_body:
-        errors.append(f"{rel}: raise the cover art screensaver above any existing top-layer elements")
+    else:
+        if "screen_schedule_blocks_cover_art(" not in show_body:
+            errors.append(f"{rel}: prevent cover art from overriding active screen schedule night mode")
+        if "lv_obj_move_foreground(id(cover_art_screensaver))" not in show_body:
+            errors.append(f"{rel}: raise the cover art screensaver above any existing top-layer elements")
+
+    delay_body = yaml_script_body(text, "cover_art_delay_timer")
+    if delay_body is None:
+        errors.append(f"{rel}: missing cover_art_delay_timer script")
+    elif "screen_schedule_blocks_cover_art(" not in delay_body:
+        errors.append(f"{rel}: keep delayed cover art from starting during screen schedule night mode")
+
+    playback_started_body = yaml_script_body(text, "cover_art_playback_started")
+    if playback_started_body is None:
+        errors.append(f"{rel}: missing cover_art_playback_started script")
+    elif "screen_schedule_blocks_cover_art(" not in playback_started_body:
+        errors.append(f"{rel}: keep playback-start cover art from overriding screen schedule night mode")
 
     return errors
 
@@ -1147,6 +1182,15 @@ def firmware_screen_schedule_screensaver_override_errors(backlight_path: Path, r
             mode_index != -1 and schedule_index > mode_index
         ):
             errors.append(f"{rel}: let the night screen schedule override timer screensaver actions")
+
+    schedule_off_body = yaml_script_body(text, "backlight_schedule_display_off")
+    if schedule_off_body is None:
+        errors.append(f"{rel}: missing backlight_schedule_display_off script")
+    elif (
+        "script.stop: cover_art_delay_timer" not in schedule_off_body
+        or "script.execute: hide_cover_art_view" not in schedule_off_body
+    ):
+        errors.append(f"{rel}: screen schedule display-off should clear cover art before forcing the screen off")
 
     wake_body = yaml_script_body(text, "screensaver_presence_wake")
     if wake_body is None:
@@ -1310,6 +1354,7 @@ def run_scan() -> int:
     errors.extend(firmware_cover_art_refresh_errors(COVER_ART_PATH, ROOT))
     errors.extend(firmware_cover_art_disable_errors(COVER_ART_PATH, ROOT))
     errors.extend(firmware_media_sleep_prevention_errors(BACKLIGHT_PATH, DISPLAY_CONFIG_PATH, COVER_ART_PATH, ROOT))
+    errors.extend(firmware_media_sleep_prevention_subscription_errors(DEVICE_SENSOR_PATHS, ROOT))
     errors.extend(firmware_image_card_entity_errors(FIRMWARE_DIR, ROOT))
     errors.extend(firmware_image_card_base_url_errors(FIRMWARE_DIR, ROOT))
     errors.extend(firmware_image_card_quality_errors(FIRMWARE_DIR, ROOT))
@@ -2887,7 +2932,7 @@ def run_self_test() -> int:
         "              return id(cover_art_screensaver_active) ||\n"
         "                     ((id(media_player_sleep_prevention_enabled).state ||\n"
         "                       id(cover_art_screensaver_enabled).state) &&\n"
-        "                      id(cover_art_media_playing));\n",
+        "                      id(media_player_playing));\n",
         "switch:\n"
         "  - platform: template\n"
         "    id: cover_art_screensaver_enabled\n"
@@ -2913,7 +2958,7 @@ def run_self_test() -> int:
         "            lambda: |-\n"
         "              return id(cover_art_screensaver_active) ||\n"
         "                     (id(media_player_sleep_prevention_enabled).state &&\n"
-        "                      id(cover_art_media_playing));\n",
+        "                      id(media_player_playing));\n",
         "switch:\n"
         "  - platform: template\n"
         "    id: cover_art_screensaver_enabled\n"
@@ -3381,6 +3426,10 @@ def run_self_test() -> int:
         "                      (int) id(schedule_off_hour).state);\n"
         "                then:\n"
         "            - script.execute: screensaver_wake\n"
+        "  - id: backlight_schedule_display_off\n"
+        "    then:\n"
+        "      - script.stop: cover_art_delay_timer\n"
+        "      - script.execute: hide_cover_art_view\n"
     )
     expect_screen_schedule_screensaver_override_errors(
         "night schedule overrides timer and sensor screensaver",

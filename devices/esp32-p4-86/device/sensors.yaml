@@ -465,7 +465,7 @@ esphome:
               id(main_page)->obj,
               id(presence_sensor_entity).state,
               &id(presence_detected),
-              id(cover_art_media_player_entity).state,
+              id(media_player_sleep_prevention_entity).state,
               &id(media_player_playing),
               []() {
                 return clock_bar_should_show(
