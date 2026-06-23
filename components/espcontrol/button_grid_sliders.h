@@ -422,24 +422,29 @@ inline void light_control_apply_tab_visibility() {
   if (!ctx) return;
   LightControlVisibleTabs visible_tabs = light_control_visible_tabs(ctx);
   if (!visible_tabs.contains(ui.tab)) ui.tab = visible_tabs.tabs[0];
+  bool show_tab_row = visible_tabs.count > 1;
   bool show_power = ui.tab == LightControlTab::POWER;
   bool show_brightness = ui.tab == LightControlTab::BRIGHTNESS;
   bool show_temperature = ui.tab == LightControlTab::TEMPERATURE;
   bool show_color = ui.tab == LightControlTab::COLOR;
+  if (ui.tab_row) {
+    if (show_tab_row) lv_obj_clear_flag(ui.tab_row, LV_OBJ_FLAG_HIDDEN);
+    else lv_obj_add_flag(ui.tab_row, LV_OBJ_FLAG_HIDDEN);
+  }
   if (ui.power_tab) {
-    if (visible_tabs.contains(LightControlTab::POWER)) lv_obj_clear_flag(ui.power_tab, LV_OBJ_FLAG_HIDDEN);
+    if (show_tab_row && visible_tabs.contains(LightControlTab::POWER)) lv_obj_clear_flag(ui.power_tab, LV_OBJ_FLAG_HIDDEN);
     else lv_obj_add_flag(ui.power_tab, LV_OBJ_FLAG_HIDDEN);
   }
   if (ui.brightness_tab) {
-    if (visible_tabs.contains(LightControlTab::BRIGHTNESS)) lv_obj_clear_flag(ui.brightness_tab, LV_OBJ_FLAG_HIDDEN);
+    if (show_tab_row && visible_tabs.contains(LightControlTab::BRIGHTNESS)) lv_obj_clear_flag(ui.brightness_tab, LV_OBJ_FLAG_HIDDEN);
     else lv_obj_add_flag(ui.brightness_tab, LV_OBJ_FLAG_HIDDEN);
   }
   if (ui.temperature_tab) {
-    if (visible_tabs.contains(LightControlTab::TEMPERATURE)) lv_obj_clear_flag(ui.temperature_tab, LV_OBJ_FLAG_HIDDEN);
+    if (show_tab_row && visible_tabs.contains(LightControlTab::TEMPERATURE)) lv_obj_clear_flag(ui.temperature_tab, LV_OBJ_FLAG_HIDDEN);
     else lv_obj_add_flag(ui.temperature_tab, LV_OBJ_FLAG_HIDDEN);
   }
   if (ui.color_tab) {
-    if (visible_tabs.contains(LightControlTab::COLOR)) lv_obj_clear_flag(ui.color_tab, LV_OBJ_FLAG_HIDDEN);
+    if (show_tab_row && visible_tabs.contains(LightControlTab::COLOR)) lv_obj_clear_flag(ui.color_tab, LV_OBJ_FLAG_HIDDEN);
     else lv_obj_add_flag(ui.color_tab, LV_OBJ_FLAG_HIDDEN);
   }
   if (ui.power_group) {
@@ -734,7 +739,8 @@ inline void light_control_layout_modal(LightControlCtx *ctx) {
   lv_coord_t tab_frame_h = tab_size + tab_frame_pad * 2;
   lv_coord_t tab_safe_left = layout.back_inset_x + layout.back_size + layout.inset / 2;
   lv_coord_t centered_left = (layout.panel_w - tab_frame_w) / 2;
-  while (centered_left < tab_safe_left && tab_size > 48) {
+  bool show_tab_row = tab_count > 1;
+  while (show_tab_row && centered_left < tab_safe_left && tab_size > 48) {
     tab_size--;
     selected_tab_size = tab_size + tab_size / 8;
     tab_frame_pad = tab_size / 5;
@@ -744,25 +750,33 @@ inline void light_control_layout_modal(LightControlCtx *ctx) {
     tab_frame_h = tab_size + tab_frame_pad * 2;
     centered_left = (layout.panel_w - tab_frame_w) / 2;
   }
+  if (!show_tab_row) tab_frame_h = 0;
   lv_coord_t slider_w = control_modal_home_card_width(ctx->btn, layout);
   if (ui.tab_row) {
-    lv_obj_set_size(ui.tab_row, tab_frame_w, tab_frame_h);
-    lv_obj_set_style_radius(ui.tab_row, tab_frame_h / 2, LV_PART_MAIN);
-    if (centered_left < tab_safe_left) centered_left = tab_safe_left;
-    lv_obj_align(ui.tab_row, LV_ALIGN_TOP_LEFT, centered_left, layout.inset + 2);
+    if (show_tab_row) {
+      lv_obj_clear_flag(ui.tab_row, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_set_size(ui.tab_row, tab_frame_w, tab_frame_h);
+      lv_obj_set_style_radius(ui.tab_row, tab_frame_h / 2, LV_PART_MAIN);
+      if (centered_left < tab_safe_left) centered_left = tab_safe_left;
+      lv_obj_align(ui.tab_row, LV_ALIGN_TOP_LEFT, centered_left, layout.inset + 2);
+    } else {
+      lv_obj_add_flag(ui.tab_row, LV_OBJ_FLAG_HIDDEN);
+    }
   }
   lv_coord_t first_tab_x = (tab_frame_w - tabs_total_w) / 2;
-  for (int i = 0; i < tab_count; i++) {
-    lv_obj_t *tab_btn = light_control_tab_button(ui, visible_tabs.tabs[i]);
-    if (!tab_btn) continue;
-    bool active = (visible_tabs.tabs[i] == ui.tab);
-    lv_coord_t tab_btn_size = active ? selected_tab_size : tab_size;
-    lv_obj_set_size(tab_btn, tab_btn_size, tab_btn_size);
-    lv_obj_set_style_radius(tab_btn, tab_btn_size / 2, LV_PART_MAIN);
-    lv_coord_t tab_x = first_tab_x + i * (tab_size + tab_gap);
-    lv_obj_align(tab_btn, LV_ALIGN_LEFT_MID, tab_x - (tab_btn_size - tab_size) / 2, 0);
-    lv_obj_t *label = lv_obj_get_child(tab_btn, 0);
-    light_control_center_icon_label(label);
+  if (show_tab_row) {
+    for (int i = 0; i < tab_count; i++) {
+      lv_obj_t *tab_btn = light_control_tab_button(ui, visible_tabs.tabs[i]);
+      if (!tab_btn) continue;
+      bool active = (visible_tabs.tabs[i] == ui.tab);
+      lv_coord_t tab_btn_size = active ? selected_tab_size : tab_size;
+      lv_obj_set_size(tab_btn, tab_btn_size, tab_btn_size);
+      lv_obj_set_style_radius(tab_btn, tab_btn_size / 2, LV_PART_MAIN);
+      lv_coord_t tab_x = first_tab_x + i * (tab_size + tab_gap);
+      lv_obj_align(tab_btn, LV_ALIGN_LEFT_MID, tab_x - (tab_btn_size - tab_size) / 2, 0);
+      lv_obj_t *label = lv_obj_get_child(tab_btn, 0);
+      light_control_center_icon_label(label);
+    }
   }
 
   lv_coord_t content_center_y = tab_frame_h / 2 + 12;
