@@ -413,10 +413,13 @@ assert.strictEqual(hooks.normalizeAlarmLabelDisplayMode("name"), "name", "alarm 
 assert.strictEqual(hooks.normalizeAlarmLabelDisplayMode("bad"), "status", "alarm invalid label mode falls back to status");
 assert.strictEqual(hooks.climateDefaultLabelDisplayMode(), "label", "climate default label display is spec-backed");
 assert.strictEqual(hooks.climateDefaultNumberDisplayMode(), "target", "climate default number display is spec-backed");
+assert.strictEqual(hooks.climateDefaultTemperatureStep(), "1", "climate default temperature step is spec-backed");
 assert.strictEqual(hooks.normalizeClimateLabelDisplayMode("actual"), "actual", "climate actual label display is spec-backed");
 assert.strictEqual(hooks.normalizeClimateLabelDisplayMode("bad"), "label", "climate invalid label display falls back to spec default");
 assert.strictEqual(hooks.normalizeClimateNumberDisplayMode("icon"), "icon", "climate icon number display is spec-backed");
 assert.strictEqual(hooks.normalizeClimateNumberDisplayMode("bad"), "target", "climate invalid number display falls back to spec default");
+assert.strictEqual(hooks.normalizeClimateTemperatureStep("0.5"), "0.5", "climate half-degree step is spec-backed");
+assert.strictEqual(hooks.normalizeClimateTemperatureStep("bad"), "1", "climate invalid temperature step falls back to spec default");
 assert.deepStrictEqual(Array.from(hooks.climatePrecisionValues()), ["", "1", "2", "3"], "climate precision values are spec-backed");
 assert.strictEqual(hooks.normalizeClimatePrecisionConfig("3:-1.24:5.05"), "3:-1.2:5.1", "climate precision range cleanup is spec-backed");
 assert.strictEqual(hooks.normalizeClimatePrecisionConfig("bad:-25:5"), "0:-25:5", "climate invalid precision preserves custom range with fallback precision");
@@ -1607,6 +1610,18 @@ assertButtonRoundTrip(hooks, "climate card display options", {
   type: "climate",
   precision: "1",
   options: "label_display=status,number_display=actual",
+}, false);
+
+assertButtonRoundTrip(hooks, "climate card half-degree step", {
+  entity: "climate.hallway",
+  label: "Hallway",
+  icon: "Thermostat",
+  icon_on: "Auto",
+  sensor: "",
+  unit: "",
+  type: "climate",
+  precision: "1",
+  options: "temperature_step=0.5",
 }, false);
 
 assertButtonRoundTrip(hooks, "climate card icon display", {

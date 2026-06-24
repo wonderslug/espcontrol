@@ -82,6 +82,7 @@ struct ClimateControlCtx {
   bool received_min = false;
   bool received_max = false;
   int step_tenths = CLIMATE_DEFAULT_STEP_TENTHS;
+  int configured_step_tenths = CLIMATE_WHOLE_NUMBER_STEP_TENTHS;
   int precision = 0;
   std::string label_display = "label";
   std::string number_display = "target";
@@ -257,10 +258,10 @@ inline int climate_clamp_tenths(ClimateControlCtx *ctx, int value) {
 
 inline int climate_effective_step_tenths(ClimateControlCtx *ctx) {
   if (!ctx) return CLIMATE_DEFAULT_STEP_TENTHS;
-  int minimum = ctx->precision <= 0 ? CLIMATE_WHOLE_NUMBER_STEP_TENTHS : CLIMATE_DEFAULT_STEP_TENTHS;
-  if (ctx->step_tenths > minimum && ctx->step_tenths <= 100)
-    return ctx->step_tenths;
-  return minimum;
+  if (ctx->configured_step_tenths == CLIMATE_DEFAULT_STEP_TENTHS ||
+      ctx->configured_step_tenths == CLIMATE_WHOLE_NUMBER_STEP_TENTHS)
+    return ctx->configured_step_tenths;
+  return CLIMATE_WHOLE_NUMBER_STEP_TENTHS;
 }
 
 inline int climate_round_to_step(ClimateControlCtx *ctx, int value) {
@@ -307,8 +308,8 @@ inline int climate_constrain_selected_target(ClimateControlCtx *ctx, int value) 
 inline std::string climate_format_tenths(int value, int precision) {
   char buf[20];
   if (precision <= 0) {
-    int whole = value >= 0 ? (value + 5) / 10 : (value - 5) / 10;
-    snprintf(buf, sizeof(buf), "%d", whole);
+    int rounded = (value >= 0 ? value + 5 : value - 5) / 10;
+    snprintf(buf, sizeof(buf), "%d", rounded);
   } else {
     int sign = value < 0 ? -1 : 1;
     int abs_v = value < 0 ? -value : value;
@@ -319,6 +320,13 @@ inline std::string climate_format_tenths(int value, int precision) {
     else snprintf(buf, sizeof(buf), "%s%d.%d00", sign < 0 ? "-" : "", whole, tenth);
   }
   return buf;
+}
+
+inline int climate_target_display_precision(ClimateControlCtx *ctx) {
+  if (!ctx) return 0;
+  return ctx->configured_step_tenths == CLIMATE_DEFAULT_STEP_TENTHS && ctx->precision <= 0
+    ? 1
+    : ctx->precision;
 }
 
 inline std::string climate_option_label(const std::string &raw) {
@@ -669,12 +677,13 @@ inline void climate_apply_step_button_icon_size(lv_obj_t *btn) {
 
 inline std::string climate_card_target_value(ClimateControlCtx *ctx) {
   if (!ctx || !ctx->available) return "--";
+  int precision = climate_target_display_precision(ctx);
   if (ctx->has_low && ctx->has_high)
-    return climate_format_tenths(ctx->low_tenths, ctx->precision) + "-" +
-           climate_format_tenths(ctx->high_tenths, ctx->precision);
-  if (ctx->has_target) return climate_format_tenths(ctx->target_tenths, ctx->precision);
-  if (ctx->has_low) return climate_format_tenths(ctx->low_tenths, ctx->precision);
-  if (ctx->has_high) return climate_format_tenths(ctx->high_tenths, ctx->precision);
+    return climate_format_tenths(ctx->low_tenths, precision) + "-" +
+           climate_format_tenths(ctx->high_tenths, precision);
+  if (ctx->has_target) return climate_format_tenths(ctx->target_tenths, precision);
+  if (ctx->has_low) return climate_format_tenths(ctx->low_tenths, precision);
+  if (ctx->has_high) return climate_format_tenths(ctx->high_tenths, precision);
   return "--";
 }
 
@@ -770,7 +779,8 @@ inline void climate_send_action(const std::string &entity_id,
 
 inline std::string climate_service_temp_value(int tenths) {
   char buf[16];
-  snprintf(buf, sizeof(buf), "%d.%d", tenths / 10, std::abs(tenths % 10));
+  int abs_tenths = std::abs(tenths);
+  snprintf(buf, sizeof(buf), "%s%d.%d", tenths < 0 ? "-" : "", abs_tenths / 10, abs_tenths % 10);
   return buf;
 }
 
@@ -817,7 +827,8 @@ inline void climate_update_drag_preview(ClimateControlCtx *ctx) {
   if (!ctx || ui.active != ctx) return;
   int target = climate_display_target(ctx);
   if (ui.target_lbl)
-    lv_label_set_text(ui.target_lbl, climate_format_tenths(target, ctx->precision).c_str());
+    lv_label_set_text(ui.target_lbl, climate_format_tenths(
+      target, climate_target_display_precision(ctx)).c_str());
   if (ui.handle_dot && ui.panel) {
     ControlModalLayout layout = climate_control_calc_layout(ctx);
     climate_layout_handle_dot(ctx, layout);
@@ -1337,7 +1348,8 @@ inline void climate_control_set_modal_value(ClimateControlCtx *ctx) {
   if (ui.target_row) climate_set_obj_visible(ui.target_row, true);
   if (ui.target_lbl) {
     if (!ctx->available) lv_label_set_text(ui.target_lbl, "--");
-    else lv_label_set_text(ui.target_lbl, climate_format_tenths(target, ctx->precision).c_str());
+    else lv_label_set_text(ui.target_lbl, climate_format_tenths(
+      target, climate_target_display_precision(ctx)).c_str());
     lv_obj_clear_flag(ui.target_lbl, LV_OBJ_FLAG_CLICKABLE);
   }
   if (ui.unit_lbl) {
@@ -1849,6 +1861,10 @@ inline ClimateControlCtx *create_climate_control_context(
   climate_apply_saved_range(ctx, p.precision);
   ctx->label_display = normalize_climate_label_display(cfg_option_value(p.options, "label_display"));
   ctx->number_display = normalize_climate_number_display(cfg_option_value(p.options, "number_display"));
+  ctx->configured_step_tenths = normalize_climate_temperature_step(
+    cfg_option_value(p.options, "temperature_step")) == "0.5"
+      ? CLIMATE_DEFAULT_STEP_TENTHS
+      : CLIMATE_WHOLE_NUMBER_STEP_TENTHS;
   ctx->accent_color = accent_color;
   ctx->secondary_color = secondary_color;
   ctx->tertiary_color = tertiary_color;

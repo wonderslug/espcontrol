@@ -374,6 +374,13 @@
           "defaultValue": "target"
         },
         {
+          "name": "temperature_step",
+          "label": "Temperature Step",
+          "kind": "choice",
+          "values": ["1", "0.5"],
+          "defaultValue": "1"
+        },
+        {
           "name": "large_numbers",
           "label": "Large Temperature Numbers",
           "kind": "flag"
@@ -383,6 +390,7 @@
         "climate": {
           "defaultLabelDisplay": "label",
           "defaultNumberDisplay": "target",
+          "defaultTemperatureStep": "1",
           "precisionValues": ["", "1", "2", "3"]
         }
       },

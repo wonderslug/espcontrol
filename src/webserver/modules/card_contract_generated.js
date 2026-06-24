@@ -456,6 +456,16 @@ var CARD_CONTRACT_CARDS = {
         "defaultValue": "target"
       },
       {
+        "name": "temperature_step",
+        "label": "Temperature Step",
+        "kind": "choice",
+        "values": [
+          "1",
+          "0.5"
+        ],
+        "defaultValue": "1"
+      },
+      {
         "name": "large_numbers",
         "label": "Large Temperature Numbers",
         "kind": "flag"
@@ -465,6 +475,7 @@ var CARD_CONTRACT_CARDS = {
       "climate": {
         "defaultLabelDisplay": "label",
         "defaultNumberDisplay": "target",
+        "defaultTemperatureStep": "1",
         "precisionValues": [
           "",
           "1",
@@ -1552,6 +1563,7 @@ var CARD_CONTRACT_OPTION_NAMES = {
   "state_output": "state_output",
   "state_output_2": "state_output_2",
   "subpage_kind": "subpage_kind",
+  "temperature_step": "temperature_step",
   "vacuum_mode": "vacuum_mode",
   "volume_max": "volume_max",
   "weather_mode": "weather_mode",

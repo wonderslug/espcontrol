@@ -710,14 +710,23 @@ inline std::string normalize_climate_number_display(const std::string &value) {
   return card_runtime_climate_number_display(value);
 }
 
+inline std::string normalize_climate_temperature_step(const std::string &value) {
+  return card_runtime_climate_temperature_step(value);
+}
+
 inline std::string climate_card_options_normalized(const std::string &options) {
   std::string label_display = normalize_climate_label_display(cfg_option_value(options, "label_display"));
   std::string number_display = normalize_climate_number_display(cfg_option_value(options, "number_display"));
+  std::string temperature_step = normalize_climate_temperature_step(cfg_option_value(options, "temperature_step"));
   std::string out;
   if (label_display != "label") out += "label_display=" + label_display;
   if (number_display != "target") {
     if (!out.empty()) out += ",";
     out += "number_display=" + number_display;
+  }
+  if (temperature_step != "1") {
+    if (!out.empty()) out += ",";
+    out += "temperature_step=" + temperature_step;
   }
   if (number_display != "icon" &&
       (cfg_option_token_present(options, "large_numbers") ||

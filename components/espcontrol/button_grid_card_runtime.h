@@ -245,6 +245,12 @@ inline std::string card_runtime_climate_number_display(const std::string &value)
     : CARD_CONTRACT_CLIMATE_NUMBER_DISPLAY_DEFAULT;
 }
 
+inline std::string card_runtime_climate_temperature_step(const std::string &value) {
+  return card_contract_climate_temperature_step_valid(value)
+    ? value
+    : CARD_CONTRACT_CLIMATE_TEMPERATURE_STEP_DEFAULT;
+}
+
 inline bool card_runtime_weather_forecast_precision(const std::string &precision) {
   return card_contract_weather_forecast_precision(precision);
 }
