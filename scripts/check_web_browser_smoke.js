@@ -403,6 +403,11 @@ async function assertSettingsPage(page, label, options = {}) {
   assert(appearanceVisible, `${label}: settings content should render`);
   assert.strictEqual(themeVisible, !!options.isEpaper, `${label}: theme selector visibility should match display type`);
   assert.strictEqual(onColorVisible, !options.isEpaper, `${label}: color controls visibility should match display type`);
+  assert.deepStrictEqual(
+    await page.locator("#sp-settings .sp-settings-status-title").evaluateAll((nodes) => nodes.map((node) => node.textContent)),
+    ["Display", "Sleep & Schedule", "Preferences", "System"],
+    `${label}: settings groups should be ordered by purpose`
+  );
   const clockBarCard = page.locator("#sp-settings .card").filter({ hasText: "Clock Bar" }).first();
   const clockBarText = await clockBarCard.textContent();
   const voiceServicesCard = page.locator("#sp-settings .card").filter({

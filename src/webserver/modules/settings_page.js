@@ -1189,10 +1189,12 @@ function buildSettingsPage(parent) {
     coverArtCard,
     scheduleCard,
   ]);
-  appendSettingsSection(config, "System", [
+  appendSettingsSection(config, "Preferences", [
     languageCard,
     timeSettingsCard,
     temperatureCard,
+  ]);
+  appendSettingsSection(config, "System", [
     backupCard,
     firmwareCard,
     homeAssistantSettingsCard,
