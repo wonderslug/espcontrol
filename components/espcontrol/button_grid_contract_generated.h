@@ -23,6 +23,7 @@ inline const char *const CARD_CONTRACT_ALARM_DEFAULT_ACTIONS[] = {"away", "home"
 inline const char *const CARD_CONTRACT_ALARM_ICON_DISPLAY_MODES[] = {"static", "status"};
 inline const char *const CARD_CONTRACT_ALARM_LABEL_DISPLAY_MODES[] = {"name", "status"};
 inline const char *const CARD_CONTRACT_IMAGE_MODAL_MODES[] = {"fill", "fit"};
+inline const char *const CARD_CONTRACT_LIGHT_CONTROL_TABS[] = {"power", "brightness", "temperature", "color"};
 inline const char *const CARD_CONTRACT_CLIMATE_LABEL_DISPLAY_MODES[] = {"label", "status", "actual", "target"};
 inline const char *const CARD_CONTRACT_CLIMATE_NUMBER_DISPLAY_MODES[] = {"icon", "actual", "target"};
 inline const char *const CARD_CONTRACT_CLIMATE_TEMPERATURE_STEPS[] = {"1", "0.5"};
@@ -83,6 +84,7 @@ constexpr size_t CARD_CONTRACT_ALARM_MAX_VISIBLE_ACTIONS = 3;
 constexpr const char *CARD_CONTRACT_ALARM_ICON_DISPLAY_DEFAULT = "status";
 constexpr const char *CARD_CONTRACT_ALARM_LABEL_DISPLAY_DEFAULT = "status";
 constexpr const char *CARD_CONTRACT_IMAGE_MODAL_MODE_DEFAULT = "fill";
+constexpr const char *CARD_CONTRACT_LIGHT_CONTROL_TABS_DEFAULT = "power|brightness|temperature|color";
 constexpr const char *CARD_CONTRACT_CLIMATE_LABEL_DISPLAY_DEFAULT = "label";
 constexpr const char *CARD_CONTRACT_CLIMATE_NUMBER_DISPLAY_DEFAULT = "target";
 constexpr const char *CARD_CONTRACT_CLIMATE_TEMPERATURE_STEP_DEFAULT = "1";
@@ -172,6 +174,11 @@ inline bool card_contract_alarm_label_display_valid(const std::string &mode) {
 inline bool card_contract_image_modal_mode_valid(const std::string &mode) {
   return card_contract_string_in(mode, CARD_CONTRACT_IMAGE_MODAL_MODES,
     sizeof(CARD_CONTRACT_IMAGE_MODAL_MODES) / sizeof(CARD_CONTRACT_IMAGE_MODAL_MODES[0]));
+}
+
+inline bool card_contract_light_control_tab_valid(const std::string &tab) {
+  return card_contract_string_in(tab, CARD_CONTRACT_LIGHT_CONTROL_TABS,
+    sizeof(CARD_CONTRACT_LIGHT_CONTROL_TABS) / sizeof(CARD_CONTRACT_LIGHT_CONTROL_TABS[0]));
 }
 
 inline bool card_contract_climate_label_display_valid(const std::string &mode) {

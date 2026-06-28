@@ -10,6 +10,7 @@ const { loadBundledWebSource } = require("./web_source");
 const ROOT = path.resolve(__dirname, "..");
 const SOURCE = path.join(ROOT, "src", "webserver", "entry.js");
 const COMPAT_FIXTURES = path.join(ROOT, "compatibility", "fixtures", "product_compatibility.json");
+const CONFIG_DIR = path.join(ROOT, "common", "config");
 const CARD_NORMALIZATION_FIXTURES = path.join(ROOT, "common", "config", "card_normalization_fixtures.json");
 const IMAGE_CARD_NORMALIZATION_FIXTURES = path.join(ROOT, "common", "config", "image_card_normalization_fixtures.json");
 
@@ -204,10 +205,46 @@ function assertSubpageMigration(hooks, name, encoded, expected) {
   assert.deepStrictEqual(subpageShape(hooks.parseSubpageConfig(canonical)), subpageShape(expected), `${name}: canonical round-trip`);
 }
 
+function fixtureLabelFromFile(fileName) {
+  return fileName
+    .replace(/_card_normalization_fixtures\.json$/, "")
+    .replace(/_/g, " ");
+}
+
+function loadNormalizationFixtureGroups() {
+  const groups = [];
+  const shared = JSON.parse(fs.readFileSync(CARD_NORMALIZATION_FIXTURES, "utf8"));
+  for (const [label, fixtures] of Object.entries(shared)) {
+    groups.push({ label, fixtures });
+  }
+  for (const fileName of fs.readdirSync(CONFIG_DIR).sort()) {
+    if (!fileName.endsWith("_card_normalization_fixtures.json")) continue;
+    const fixtures = JSON.parse(fs.readFileSync(path.join(CONFIG_DIR, fileName), "utf8"));
+    groups.push({ label: fixtureLabelFromFile(fileName), fixtures });
+  }
+  return groups;
+}
+
+function assertNormalizationFixtures(hooks, groups) {
+  for (const group of groups) {
+    for (const fixture of group.fixtures) {
+      const parsed = buttonShape(hooks.parseButtonConfig(fixture.input));
+      assert.deepStrictEqual(parsed, buttonShape(fixture.expected), `${group.label} fixture ${fixture.name}: web parse`);
+      const canonical = hooks.serializeButtonConfig(parsed);
+      assert.deepStrictEqual(
+        buttonShape(hooks.parseButtonConfig(canonical)),
+        buttonShape(fixture.expected),
+        `${group.label} fixture ${fixture.name}: web canonical round-trip`
+      );
+    }
+  }
+}
+
 const hooks = loadHooks();
 const fixtures = JSON.parse(fs.readFileSync(COMPAT_FIXTURES, "utf8"));
 const cardNormalizationFixtures = JSON.parse(fs.readFileSync(CARD_NORMALIZATION_FIXTURES, "utf8"));
 const imageCardNormalizationFixtures = JSON.parse(fs.readFileSync(IMAGE_CARD_NORMALIZATION_FIXTURES, "utf8"));
+const normalizationFixtureGroups = loadNormalizationFixtureGroups();
 const current = fixtures.current;
 const legacyV1 = fixtures["legacy-v1"];
 assert(hooks, "web config helpers were not exported");
@@ -227,6 +264,7 @@ assert.strictEqual(hooks.cardContractLargeNumbersSupported("weather", "tomorrow"
 current.generatedContract.requiredCards.forEach((type) => {
   assert(hooks.cardContractCardKeys().includes(type), `generated contract exposes ${type || "switch"} card identity`);
 });
+assertNormalizationFixtures(hooks, normalizationFixtureGroups);
 assert.strictEqual(hooks.cardContractCardLabel("media"), "Media", "generated contract exposes card labels");
 assert.strictEqual(hooks.cardContractAllowInSubpage("subpage"), false, "generated contract exposes subpage placement rules");
 const subpageKindOption = Array.from(hooks.cardContractOptions("subpage"))

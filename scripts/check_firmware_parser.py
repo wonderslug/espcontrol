@@ -12,6 +12,7 @@ from tempfile import TemporaryDirectory
 
 
 ROOT = Path(__file__).resolve().parent.parent
+CONFIG_DIR = ROOT / "common" / "config"
 CONFIG_HEADER = ROOT / "components" / "espcontrol" / "button_grid_config.h"
 STYLE_HEADER = ROOT / "components" / "espcontrol" / "button_grid_style.h"
 CONTRACT_HEADER = ROOT / "components" / "espcontrol" / "button_grid_contract_generated.h"
@@ -652,11 +653,16 @@ def generated_fixture_assertions(fixtures: list[dict], comment: str, prefix: str
 
 def generated_card_normalization_assertions() -> str:
     shared_fixtures = json.loads(CARD_NORMALIZATION_FIXTURES.read_text(encoding="utf-8"))
-    image_fixtures = json.loads(IMAGE_CARD_NORMALIZATION_FIXTURES.read_text(encoding="utf-8"))
-    return (
-        generated_fixture_assertions(shared_fixtures["alarm"], "Shared alarm saved-card normalization fixtures.", "fixture_")
-        + generated_fixture_assertions(image_fixtures, "Shared image saved-card normalization fixtures.", "image_fixture_")
-    )
+    chunks = []
+    for label, fixtures in sorted(shared_fixtures.items()):
+        prefix = "fixture_" + "".join(ch if ch.isalnum() else "_" for ch in label.lower()) + "_"
+        chunks.append(generated_fixture_assertions(fixtures, f"Shared {label} saved-card normalization fixtures.", prefix))
+    for path in sorted(CONFIG_DIR.glob("*_card_normalization_fixtures.json")):
+        label = path.name.removesuffix("_card_normalization_fixtures.json").replace("_", " ")
+        prefix = "fixture_" + path.stem.removesuffix("_card_normalization_fixtures") + "_"
+        fixtures = json.loads(path.read_text(encoding="utf-8"))
+        chunks.append(generated_fixture_assertions(fixtures, f"Shared {label} saved-card normalization fixtures.", prefix))
+    return "".join(chunks)
 
 
 def main() -> int:
