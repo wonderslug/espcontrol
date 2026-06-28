@@ -142,16 +142,8 @@ function connectEvents() {
       syncColorUi();
       renderPreview();
     },
-    "text-button_off_color": function (val) {
-      state.offColor = val;
-      syncColorUi();
-      renderPreview();
-    },
-    "text-sensor_card_color": function (val) {
-      state.sensorColor = val;
-      syncColorUi();
-      renderPreview();
-    },
+    "text-button_off_color": function () {},
+    "text-sensor_card_color": function () {},
     "switch-indoor_temp_enable": function (val, d) {
       state._clockBarTemperatureVisibilityReceived = true;
       state._indoorOn = d.value === true || val === "ON";

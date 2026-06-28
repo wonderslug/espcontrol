@@ -26,8 +26,8 @@ var LANGUAGE_LABELS = {
   uk: "Українська (Ukrainian)"
 };
 var THEME_PRESETS = {
-  Light: { on: "0073FF", off: "CECECE", sensor: "DEDEDE" },
-  Dark: { on: "FF8C00", off: "313131", sensor: "212121" },
+  Light: { on: "0073FF" },
+  Dark: { on: WEB_UI_COLORS.primary },
 };
 var DEFAULT_COLOR_PRESET = THEME_PRESETS[defaultTheme()];
 
@@ -70,8 +70,6 @@ var state = {
   buttons: [],
   theme: defaultTheme(),
   onColor: DEFAULT_COLOR_PRESET.on,
-  offColor: DEFAULT_COLOR_PRESET.off,
-  sensorColor: DEFAULT_COLOR_PRESET.sensor,
   selectedSlots: [],
   lastClickedSlot: -1,
   clockBarSelectedItem: "",
@@ -780,20 +778,14 @@ function syncThemeUi() {
 
 function syncColorUi() {
   if (els.setOnColor && els.setOnColor._syncColor) els.setOnColor._syncColor(state.onColor);
-  if (els.setOffColor && els.setOffColor._syncColor) els.setOffColor._syncColor(state.offColor);
-  if (els.setSensorColor && els.setSensorColor._syncColor) els.setSensorColor._syncColor(state.sensorColor);
 }
 
 function resetAppearanceColors(postChanges) {
   state.onColor = DEFAULT_COLOR_PRESET.on;
-  state.offColor = DEFAULT_COLOR_PRESET.off;
-  state.sensorColor = DEFAULT_COLOR_PRESET.sensor;
   syncColorUi();
   renderPreview();
   if (postChanges) {
     postText(entityName("button_on_color"), state.onColor);
-    postText(entityName("button_off_color"), state.offColor);
-    postText(entityName("sensor_card_color"), state.sensorColor);
   }
 }
 

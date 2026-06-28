@@ -155,7 +155,7 @@ function renderPreview() {
       backBtn.innerHTML =
         '<span class="sp-btn-icon sp-back-hit mdi mdi-chevron-left"></span>' +
         '<span class="sp-btn-label">' + escHtml(backLabel) + '</span>';
-      backBtn.style.backgroundColor = "#" + (state.offColor.length === 6 ? state.offColor : "CECECE");
+      backBtn.style.backgroundColor = "#" + (WEB_UI_COLORS.secondary.length === 6 ? WEB_UI_COLORS.secondary : WEB_UI_COLORS.fallbackSecondary);
       backBtn.style.cursor = "pointer";
       backBtn.setAttribute("data-pos", pos);
       backBtn.draggable = !isConfigLocked();
@@ -180,7 +180,7 @@ function renderPreview() {
       var iconName = resolveIcon(b);
       var label = b.label || b.entity || "Configure";
       var color = (b.type === "sensor" || b.type === "local_sensor" || b.type === "door_window" || b.type === "presence" || b.type === "weather" || b.type === "weather_forecast" || b.type === "calendar" || b.type === "clock" || b.type === "timezone")
-        ? state.sensorColor : state.offColor;
+        ? WEB_UI_COLORS.tertiary : WEB_UI_COLORS.secondary;
       var previewTypeDef = BUTTON_TYPES[b.type || ""] || null;
       if (previewTypeDef && c.isSub && !buttonTypeRegistryValue(previewTypeDef, "allowInSubpage", false)) {
         previewTypeDef = null;
@@ -195,13 +195,13 @@ function renderPreview() {
         (typePreview && typePreview.buttonClass ? " " + typePreview.buttonClass : "") +
         sizeClass(slotSz) +
         (c.selected.indexOf(slot) !== -1 ? " sp-selected" : "");
-      btn.style.backgroundColor = "#" + (color.length === 6 ? color : "CECECE");
+      btn.style.backgroundColor = "#" + (color.length === 6 ? color : WEB_UI_COLORS.fallbackSecondary);
       btn.draggable = !isConfigLocked();
       btn.setAttribute("data-pos", pos);
       btn.setAttribute("data-slot", slot);
       var hasWhenOn = !typePreview && (b.sensor || (b.icon_on && b.icon_on !== "Auto"));
       if (!typePreview && hasWhenOn && typeof cardOnPattern === "function" && cardOnPattern(b) === "stripes") {
-        var onColor = state.onColor && state.onColor.length === 6 ? state.onColor : "FF8C00";
+        var onColor = state.onColor && state.onColor.length === 6 ? state.onColor : WEB_UI_COLORS.primary;
         btn.style.backgroundImage =
           "repeating-linear-gradient(135deg,#" + onColor + " 0,#" + onColor +
           " 12px,rgba(255,255,255,.22) 12px,rgba(255,255,255,.22) 20px)";
