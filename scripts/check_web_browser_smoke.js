@@ -68,6 +68,7 @@ const BUTTON_FIXTURES = [
   "sensor.energy;Energy;Gauge;Auto;sensor.energy;W;sensor;0",
   "climate.hall;Hall;Thermostat;Auto;;;climate;;",
   "media_player.living;Media;Auto;Auto;play_pause;;media;;",
+  "cover.office_blind;Blind;Blinds Open;Blinds;modal;;cover;;cover_tabs=controls%7Cposition%7Ctilt",
 ];
 
 function htmlFor(slug) {
@@ -1410,6 +1411,57 @@ async function assertEmptyCellSettings(page, posts, label) {
   );
 }
 
+async function assertCoverSettingsPanels(page, label) {
+  await page.getByRole("tab", { name: "Screen" }).click();
+  await page.waitForSelector("#sp-screen.sp-page.active");
+  await page.locator('.sp-main [data-slot="5"]').click();
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await page.waitForSelector(".sp-settings-overlay.sp-visible");
+
+  const cardSettings = page.locator(".sp-settings-modal .sp-disclosure").filter({ hasText: "Card Settings" }).first();
+  const modalSettings = page.locator(".sp-settings-modal .sp-disclosure").filter({ hasText: "Modal Settings" }).first();
+  assert(await cardSettings.isVisible(), `${label}: cover card settings panel should render`);
+  assert(await modalSettings.isVisible(), `${label}: cover modal settings panel should render`);
+  assert(!(await cardSettings.getAttribute("class")).includes("sp-open"), `${label}: cover card settings panel should start collapsed`);
+  assert(!(await modalSettings.getAttribute("class")).includes("sp-open"), `${label}: cover modal settings panel should start collapsed`);
+  assert.strictEqual(
+    await page.locator("#sp-inp-cover-interaction").evaluate((el) => !!el.closest(".sp-disclosure")),
+    false,
+    `${label}: cover type selector should sit outside collapsible panels`
+  );
+  assert.strictEqual(
+    await page.locator("#sp-inp-entity").evaluate((el) => !!el.closest(".sp-disclosure")),
+    false,
+    `${label}: cover entity field should sit outside collapsible panels`
+  );
+
+  await modalSettings.locator(".sp-disclosure-button").click();
+  assert(await modalSettings.getByText("Controls", { exact: true }).isVisible(), `${label}: cover modal settings panel should contain modal tab controls`);
+  assert.strictEqual(
+    await modalSettings.getByText("Modal Tabs", { exact: true }).count(),
+    0,
+    `${label}: cover modal settings panel should not show a Modal Tabs heading`
+  );
+  assert(
+    await modalSettings.locator(".sp-light-tab-move").count() > 0,
+    `${label}: cover modal settings panel should include non-drag move controls`
+  );
+  await page.locator("#sp-inp-cover-interaction").selectOption("toggle");
+  await page.waitForFunction(() => {
+    var panels = Array.from(document.querySelectorAll(".sp-settings-modal .sp-disclosure"));
+    var panel = panels.find(function (item) {
+      return item.textContent && item.textContent.indexOf("Modal Settings") !== -1;
+    });
+    return panel && getComputedStyle(panel).display === "none";
+  });
+
+  await page.locator(".sp-settings-close").click();
+  await page.waitForFunction(() => {
+    var overlay = document.querySelector(".sp-settings-overlay");
+    return overlay && !overlay.classList.contains("sp-visible");
+  });
+}
+
 function postRecord(requestUrl) {
   const url = new URL(requestUrl);
   const parts = url.pathname
@@ -2386,6 +2438,7 @@ async function runCase(browser, testCase) {
       `${testCase.name} after settings`,
       testCase,
     );
+    await assertCoverSettingsPanels(page, testCase.name);
     if (testCase.exerciseInteractions) {
       await assertMobileTabLayout(page, testCase.name, testCase.viewport);
     }

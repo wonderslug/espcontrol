@@ -830,10 +830,12 @@ function renderModalTabSettings(panel, b, helpers, config) {
     if (tabs.indexOf(definition.value) < 0) orderedDefinitions.push(definition);
   });
 
-  var heading = document.createElement("div");
-  heading.className = "sp-field";
-  heading.appendChild(helpers.fieldLabel("Modal Tabs"));
-  section.appendChild(heading);
+  if (!config.hideHeading) {
+    var heading = document.createElement("div");
+    heading.className = "sp-field";
+    heading.appendChild(helpers.fieldLabel("Modal Tabs"));
+    section.appendChild(heading);
+  }
 
   var list = document.createElement("div");
   list.className = "sp-light-tab-list";
@@ -856,27 +858,20 @@ function renderModalTabSettings(panel, b, helpers, config) {
 
   function saveTabs(nextTabs) {
     config.setTabs(b, nextTabs);
+    b._modalSettingsOpen = true;
     helpers.saveField("options", b.options);
     renderButtonSettings();
   }
 
-  function updateMoveButtons() {
-    var rows = listRows();
-    rows.forEach(function (row, index) {
-      var down = row.querySelector(".sp-light-tab-move-down");
-      if (down) down.disabled = index === rows.length - 1;
-    });
-  }
-
   function moveRow(row, direction) {
-    if (!row) return;
-    if (direction < 0 && row.previousElementSibling) {
-      list.insertBefore(row, row.previousElementSibling);
-      saveTabsFromRows();
-    } else if (direction > 0 && row.nextElementSibling) {
-      list.insertBefore(row.nextElementSibling, row);
-      saveTabsFromRows();
+    var sibling = direction < 0 ? row.previousElementSibling : row.nextElementSibling;
+    if (!sibling) return;
+    if (direction < 0) {
+      list.insertBefore(row, sibling);
+    } else {
+      list.insertBefore(sibling, row);
     }
+    saveTabsFromRows();
   }
 
   orderedDefinitions.forEach(function (definition) {
@@ -897,16 +892,19 @@ function renderModalTabSettings(panel, b, helpers, config) {
     drag.setAttribute("aria-label", "Drag " + definition.label);
     drag.tabIndex = -1;
 
-    var downBtn = document.createElement("button");
-    downBtn.type = "button";
-    downBtn.className = "sp-light-tab-move sp-light-tab-move-down mdi mdi-chevron-down";
-    downBtn.setAttribute("aria-label", "Move " + definition.label + " down");
-    downBtn.addEventListener("click", function () {
-      moveRow(row, 1);
-    });
+    var moveUp = document.createElement("button");
+    moveUp.type = "button";
+    moveUp.className = "sp-light-tab-move mdi mdi-chevron-up";
+    moveUp.setAttribute("aria-label", "Move " + definition.label + " up");
+
+    var moveDown = document.createElement("button");
+    moveDown.type = "button";
+    moveDown.className = "sp-light-tab-move mdi mdi-chevron-down";
+    moveDown.setAttribute("aria-label", "Move " + definition.label + " down");
 
     controls.appendChild(drag);
-    controls.appendChild(downBtn);
+    controls.appendChild(moveUp);
+    controls.appendChild(moveDown);
     row.appendChild(controls);
 
     var label = document.createElement("label");
@@ -941,6 +939,9 @@ function renderModalTabSettings(panel, b, helpers, config) {
       saveTabsFromRows();
     });
 
+    moveUp.addEventListener("click", function () { moveRow(row, -1); });
+    moveDown.addEventListener("click", function () { moveRow(row, 1); });
+
     row.addEventListener("dragstart", function (event) {
       row.classList.add("sp-dragging");
       event.dataTransfer.effectAllowed = "move";
@@ -965,7 +966,6 @@ function renderModalTabSettings(panel, b, helpers, config) {
     list.appendChild(row);
   });
 
-  updateMoveButtons();
   return section;
 }
 
