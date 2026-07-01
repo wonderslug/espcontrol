@@ -438,8 +438,25 @@ assert.deepStrictEqual(
   ["playlist", "music", "album", "artist", "track", "channel", "episode", "podcast", "tvshow", "video", "movie", "app", "url", "__custom"],
   "media playlist content type dropdown includes common Home Assistant media types"
 );
+assert.deepStrictEqual(
+  Array.from(hooks.mediaPlaylistSourceOptions()).map((option) => option[0]),
+  ["spotify", "apple_music", "youtube_music", "plex", "jellyfin", "media_source", "url", "__custom"],
+  "media playlist source dropdown includes common source presets"
+);
 assert.strictEqual(hooks.mediaPlaylistContentTypeKnown("playlist"), true, "media playlist recognizes known content types");
 assert.strictEqual(hooks.mediaPlaylistContentTypeKnown("favorite"), false, "media playlist custom content types use the custom field");
+const spotifyPlaylistParts = hooks.parseMediaPlaylistContentId("spotify:playlist:1LG2Lnt9EDQS1DqoE8E2uO", "playlist");
+assert.strictEqual(spotifyPlaylistParts.source, "spotify", "media playlist editor detects Spotify URIs");
+assert.strictEqual(spotifyPlaylistParts.contentType, "playlist", "media playlist editor detects Spotify URI media type");
+assert.strictEqual(spotifyPlaylistParts.id, "1LG2Lnt9EDQS1DqoE8E2uO", "media playlist editor extracts the Spotify ID");
+assert.strictEqual(
+  hooks.buildMediaPlaylistContentId("spotify", "playlist", "1LG2Lnt9EDQS1DqoE8E2uO"),
+  "spotify:playlist:1LG2Lnt9EDQS1DqoE8E2uO",
+  "media playlist editor rebuilds Spotify URIs from separate fields"
+);
+const mediaSourcePlaylistParts = hooks.parseMediaPlaylistContentId("media-source://music/morning-mix", "playlist");
+assert.strictEqual(mediaSourcePlaylistParts.source, "media_source", "media playlist editor detects media source URIs");
+assert.strictEqual(mediaSourcePlaylistParts.id, "music/morning-mix", "media playlist editor extracts media source paths");
 const playlistOptions = { sensor: "playlist" };
 hooks.setMediaPlaylistContentId(playlistOptions, "media-source://music/morning,mix");
 hooks.setMediaPlaylistContentType(playlistOptions, "music");
