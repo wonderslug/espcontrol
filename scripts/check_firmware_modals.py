@@ -291,7 +291,8 @@ def firmware_subpage_modal_wiring_errors(root: Path) -> list[str]:
             "create_media_control_context" not in body
             or "subscribe_media_control_state(ctx);" not in body
             or "media_control_open_modal(ctx);" not in body
-            or "LV_EVENT_CLICKED" not in body
+            or "lv_event_get_user_data(e)" not in body
+            or "LV_EVENT_CLICKED, ctx" not in body
         ):
             errors.append("components/espcontrol/button_grid_grid.h: open media control modals from home grid cards")
 
@@ -722,10 +723,9 @@ def expect_subpage_modal_wiring_errors(name: str, grid_text: str, expected: tupl
             "            nullptr, nullptr, nullptr, nullptr, 100));\n"
             "          subscribe_media_control_state(ctx);\n"
             "          lv_obj_add_event_cb(s.btn, [](lv_event_t *e) {\n"
-            "            lv_obj_t *target = static_cast<lv_obj_t *>(lv_event_get_target(e));\n"
-            "            MediaControlCtx *ctx = (MediaControlCtx *)lv_obj_get_user_data(target);\n"
+            "            MediaControlCtx *ctx = (MediaControlCtx *)lv_event_get_user_data(e);\n"
             "            if (ctx) media_control_open_modal(ctx);\n"
-            "          }, LV_EVENT_CLICKED, nullptr);\n"
+            "          }, LV_EVENT_CLICKED, ctx);\n"
             '        } else if (mode == "volume") {\n'
             '      if (sb_cfg.type == "fan_control") {\n'
             "        if (!sb_cfg.entity.empty()) {\n"
