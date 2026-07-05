@@ -589,6 +589,8 @@ inline LockCardCtx *bind_lock_status_card(BtnSlot &s, const ParsedCfg &p,
   return ctx;
 }
 
+inline MediaControlCtx *grid_media_control_runtime_for_owner(lv_obj_t *owner);
+
 inline void refresh_media_card_layout(BtnSlot &s, const ParsedCfg &p,
                                       const GridConfig &cfg,
                                       int row_span = 1) {
@@ -637,10 +639,10 @@ inline void refresh_media_card_layout(BtnSlot &s, const ParsedCfg &p,
     return;
   }
   if (mode == "control_modal") {
-    if (s.btn) lv_obj_set_user_data(s.btn, nullptr);
+    MediaControlCtx *ctx = grid_media_control_runtime_for_owner(s.btn);
     setup_media_control_button(
       s.btn, s.icon_lbl, s.sensor_container, s.sensor_lbl, s.unit_lbl, s.text_lbl, p);
-    MediaControlCtx *ctx = (MediaControlCtx *)lv_obj_get_user_data(s.btn);
+    if (s.btn) lv_obj_set_user_data(s.btn, ctx);
     if (ctx) media_control_refresh_parent_card(ctx);
     return;
   }
@@ -1023,6 +1025,17 @@ inline MediaControlCtx *grid_track_media_control_runtime(lv_obj_t *owner,
     });
   }
   return ctx;
+}
+
+inline MediaControlCtx *grid_media_control_runtime_for_owner(lv_obj_t *owner) {
+  if (owner == nullptr) return nullptr;
+  for (const GridRuntimeAllocation &allocation : grid_runtime_allocations()) {
+    if (allocation.owner == owner &&
+        allocation.deleter == grid_delete_media_control_runtime_ptr) {
+      return static_cast<MediaControlCtx *>(allocation.ptr);
+    }
+  }
+  return nullptr;
 }
 
 inline MediaControlCtx *grid_delete_media_control_with_owner(lv_obj_t *owner,
@@ -1488,10 +1501,6 @@ inline void grid_phase2(
             display_icon_font(display),
             display_volume_width_percent(display)));
           subscribe_media_control_state(ctx);
-          lv_obj_add_event_cb(s.btn, [](lv_event_t *e) {
-            MediaControlCtx *ctx = (MediaControlCtx *)lv_event_get_user_data(e);
-            if (ctx) media_control_open_modal(ctx);
-          }, LV_EVENT_CLICKED, ctx);
         } else if (mode == "volume") {
           MediaVolumeCtx *ctx = create_media_volume_context(
             s.btn, s.text_lbl, p, has_on ? on_val : DEFAULT_SLIDER_COLOR,
