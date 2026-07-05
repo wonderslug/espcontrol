@@ -337,13 +337,9 @@ inline void media_set_pending_seek_position(SliderCtx *ctx, int value) {
   media_apply_position(ctx);
 }
 
-constexpr int MEDIA_PLAYBACK_STATE_MAX = 6;
-constexpr int MEDIA_PLAYBACK_STATE_SLIDERS_MAX = 8;
-constexpr int MEDIA_PLAYBACK_STATE_CONTROLS_MAX = 4;
-constexpr int MEDIA_PLAYBACK_STATE_VOLUMES_MAX = 4;
-constexpr int MEDIA_PLAYBACK_STATE_PLAYLISTS_MAX = 4;
-constexpr int MEDIA_PLAYBACK_STATE_NOW_PLAYING_MAX = 4;
-constexpr int MEDIA_PLAYBACK_STATE_BUTTONS_MAX = 6;
+constexpr int MEDIA_PLAYBACK_STATE_MAX = MAX_GRID_SLOTS + MAX_SUBPAGE_ITEMS;
+constexpr size_t MEDIA_PLAYBACK_STATE_CONSUMERS_MAX =
+  static_cast<size_t>(MAX_GRID_SLOTS + MAX_SUBPAGE_ITEMS);
 
 struct MediaPlaybackButtonRef {
   lv_obj_t *btn = nullptr;
@@ -381,16 +377,16 @@ struct MediaPlaybackState {
   bool has_current_content_id = false;
   bool has_current_content_type = false;
   lv_timer_t *progress_timer = nullptr;
-  SliderCtx *sliders[MEDIA_PLAYBACK_STATE_SLIDERS_MAX] = {};
-  MediaControlCtx *controls[MEDIA_PLAYBACK_STATE_CONTROLS_MAX] = {};
-  MediaVolumeCtx *volumes[MEDIA_PLAYBACK_STATE_VOLUMES_MAX] = {};
-  MediaPlaylistCtx *playlists[MEDIA_PLAYBACK_STATE_PLAYLISTS_MAX] = {};
-  MediaNowPlayingCtx *now_playing[MEDIA_PLAYBACK_STATE_NOW_PLAYING_MAX] = {};
-  MediaPlaybackButtonRef buttons[MEDIA_PLAYBACK_STATE_BUTTONS_MAX] = {};
+  std::vector<SliderCtx *> sliders;
+  std::vector<MediaControlCtx *> controls;
+  std::vector<MediaVolumeCtx *> volumes;
+  std::vector<MediaPlaylistCtx *> playlists;
+  std::vector<MediaNowPlayingCtx *> now_playing;
+  std::vector<MediaPlaybackButtonRef> buttons;
 };
 
-inline MediaPlaybackState *media_playback_states() {
-  static MediaPlaybackState states[MEDIA_PLAYBACK_STATE_MAX];
+inline std::vector<MediaPlaybackState *> &media_playback_states() {
+  static std::vector<MediaPlaybackState *> states;
   return states;
 }
 
@@ -427,23 +423,23 @@ inline void media_playback_reset_state(MediaPlaybackState *state,
   state->volume_pct = 0;
   state->has_current_content_id = false;
   state->has_current_content_type = false;
-  for (int i = 0; i < MEDIA_PLAYBACK_STATE_SLIDERS_MAX; i++) state->sliders[i] = nullptr;
-  for (int i = 0; i < MEDIA_PLAYBACK_STATE_CONTROLS_MAX; i++) state->controls[i] = nullptr;
-  for (int i = 0; i < MEDIA_PLAYBACK_STATE_VOLUMES_MAX; i++) state->volumes[i] = nullptr;
-  for (int i = 0; i < MEDIA_PLAYBACK_STATE_PLAYLISTS_MAX; i++) state->playlists[i] = nullptr;
-  for (int i = 0; i < MEDIA_PLAYBACK_STATE_NOW_PLAYING_MAX; i++) state->now_playing[i] = nullptr;
-  for (int i = 0; i < MEDIA_PLAYBACK_STATE_BUTTONS_MAX; i++) state->buttons[i] = MediaPlaybackButtonRef();
+  std::vector<SliderCtx *>().swap(state->sliders);
+  std::vector<MediaControlCtx *>().swap(state->controls);
+  std::vector<MediaVolumeCtx *>().swap(state->volumes);
+  std::vector<MediaPlaylistCtx *>().swap(state->playlists);
+  std::vector<MediaNowPlayingCtx *>().swap(state->now_playing);
+  std::vector<MediaPlaybackButtonRef>().swap(state->buttons);
 }
 
 inline MediaPlaybackState *media_playback_find_state(const std::string &entity_id) {
   if (entity_id.empty()) return nullptr;
-  MediaPlaybackState *states = media_playback_states();
-  for (int i = 0; i < MEDIA_PLAYBACK_STATE_MAX; i++) {
-    if (states[i].used && states[i].entity_id == entity_id) {
-      if (states[i].generation != ha_subscription_generation()) {
-        media_playback_reset_state(&states[i], entity_id);
+  std::vector<MediaPlaybackState *> &states = media_playback_states();
+  for (MediaPlaybackState *state : states) {
+    if (state && state->used && state->entity_id == entity_id) {
+      if (state->generation != ha_subscription_generation()) {
+        media_playback_reset_state(state, entity_id);
       }
-      return &states[i];
+      return state;
     }
   }
   return nullptr;
@@ -453,19 +449,21 @@ inline MediaPlaybackState *media_playback_ensure_state(const std::string &entity
   if (entity_id.empty()) return nullptr;
   if (MediaPlaybackState *existing = media_playback_find_state(entity_id)) return existing;
 
-  MediaPlaybackState *states = media_playback_states();
-  for (int i = 0; i < MEDIA_PLAYBACK_STATE_MAX; i++) {
-    if (!states[i].used) {
-      media_playback_reset_state(&states[i], entity_id);
-      return &states[i];
+  std::vector<MediaPlaybackState *> &states = media_playback_states();
+  for (MediaPlaybackState *state : states) {
+    if (state && state->generation != ha_subscription_generation()) {
+      media_playback_reset_state(state, entity_id);
+      return state;
     }
   }
-  for (int i = 0; i < MEDIA_PLAYBACK_STATE_MAX; i++) {
-    if (states[i].generation != ha_subscription_generation()) {
-      media_playback_reset_state(&states[i], entity_id);
-      return &states[i];
-    }
+
+  if (states.size() < static_cast<size_t>(MEDIA_PLAYBACK_STATE_MAX)) {
+    MediaPlaybackState *state = new MediaPlaybackState();
+    states.push_back(state);
+    media_playback_reset_state(state, entity_id);
+    return state;
   }
+
   ESP_LOGW("media", "No shared media playback state slot available for %s", entity_id.c_str());
   return nullptr;
 }
@@ -527,8 +525,8 @@ inline void media_playback_apply_state_to_slider(MediaPlaybackState *state,
 
 inline void media_playback_apply_state_to_sliders(MediaPlaybackState *state) {
   if (!state) return;
-  for (int i = 0; i < MEDIA_PLAYBACK_STATE_SLIDERS_MAX; i++) {
-    media_playback_apply_state_to_slider(state, state->sliders[i]);
+  for (SliderCtx *ctx : state->sliders) {
+    media_playback_apply_state_to_slider(state, ctx);
   }
 }
 
@@ -545,8 +543,8 @@ inline void media_playback_apply_state_to_button(MediaPlaybackState *state,
 
 inline void media_playback_apply_state_to_buttons(MediaPlaybackState *state) {
   if (!state) return;
-  for (int i = 0; i < MEDIA_PLAYBACK_STATE_BUTTONS_MAX; i++) {
-    media_playback_apply_state_to_button(state, state->buttons[i]);
+  for (const MediaPlaybackButtonRef &button : state->buttons) {
+    media_playback_apply_state_to_button(state, button);
   }
 }
 
@@ -567,8 +565,8 @@ inline void media_playback_apply_state_to_now_playing(MediaPlaybackState *state,
 
 inline void media_playback_apply_state_to_now_playing(MediaPlaybackState *state) {
   if (!state) return;
-  for (int i = 0; i < MEDIA_PLAYBACK_STATE_NOW_PLAYING_MAX; i++) {
-    media_playback_apply_state_to_now_playing(state, state->now_playing[i]);
+  for (MediaNowPlayingCtx *ctx : state->now_playing) {
+    media_playback_apply_state_to_now_playing(state, ctx);
   }
 }
 
@@ -586,8 +584,8 @@ inline void media_playback_apply_state_to_playlist(MediaPlaybackState *state,
 
 inline void media_playback_apply_state_to_playlists(MediaPlaybackState *state) {
   if (!state) return;
-  for (int i = 0; i < MEDIA_PLAYBACK_STATE_PLAYLISTS_MAX; i++) {
-    media_playback_apply_state_to_playlist(state, state->playlists[i]);
+  for (MediaPlaylistCtx *ctx : state->playlists) {
+    media_playback_apply_state_to_playlist(state, ctx);
   }
 }
 
@@ -621,8 +619,8 @@ inline void media_playback_apply_state_to_volume(MediaPlaybackState *state,
 
 inline void media_playback_apply_state_to_volumes(MediaPlaybackState *state) {
   if (!state) return;
-  for (int i = 0; i < MEDIA_PLAYBACK_STATE_VOLUMES_MAX; i++) {
-    media_playback_apply_state_to_volume(state, state->volumes[i]);
+  for (MediaVolumeCtx *ctx : state->volumes) {
+    media_playback_apply_state_to_volume(state, ctx);
   }
 }
 
@@ -710,8 +708,8 @@ inline void media_playback_apply_state_to_control(MediaPlaybackState *state,
 
 inline void media_playback_apply_state_to_controls(MediaPlaybackState *state) {
   if (!state) return;
-  for (int i = 0; i < MEDIA_PLAYBACK_STATE_CONTROLS_MAX; i++) {
-    media_playback_apply_state_to_control(state, state->controls[i]);
+  for (MediaControlCtx *ctx : state->controls) {
+    media_playback_apply_state_to_control(state, ctx);
   }
 }
 
@@ -741,18 +739,16 @@ inline void media_playback_apply_volume_consumers(MediaPlaybackState *state) {
 
 inline void media_playback_attach_slider(MediaPlaybackState *state, SliderCtx *ctx) {
   if (!state || !ctx) return;
-  for (int i = 0; i < MEDIA_PLAYBACK_STATE_SLIDERS_MAX; i++) {
-    if (state->sliders[i] == ctx) {
+  for (SliderCtx *existing : state->sliders) {
+    if (existing == ctx) {
       media_playback_apply_state_to_slider(state, ctx);
       return;
     }
   }
-  for (int i = 0; i < MEDIA_PLAYBACK_STATE_SLIDERS_MAX; i++) {
-    if (!state->sliders[i]) {
-      state->sliders[i] = ctx;
-      media_playback_apply_state_to_slider(state, ctx);
-      return;
-    }
+  if (state->sliders.size() < MEDIA_PLAYBACK_STATE_CONSUMERS_MAX) {
+    state->sliders.push_back(ctx);
+    media_playback_apply_state_to_slider(state, ctx);
+    return;
   }
   ESP_LOGW("media", "No shared media playback slider slot available for %s",
            state->entity_id.c_str());
@@ -760,18 +756,16 @@ inline void media_playback_attach_slider(MediaPlaybackState *state, SliderCtx *c
 
 inline void media_playback_attach_control(MediaPlaybackState *state, MediaControlCtx *ctx) {
   if (!state || !ctx) return;
-  for (int i = 0; i < MEDIA_PLAYBACK_STATE_CONTROLS_MAX; i++) {
-    if (state->controls[i] == ctx) {
+  for (MediaControlCtx *existing : state->controls) {
+    if (existing == ctx) {
       media_playback_apply_state_to_control(state, ctx);
       return;
     }
   }
-  for (int i = 0; i < MEDIA_PLAYBACK_STATE_CONTROLS_MAX; i++) {
-    if (!state->controls[i]) {
-      state->controls[i] = ctx;
-      media_playback_apply_state_to_control(state, ctx);
-      return;
-    }
+  if (state->controls.size() < MEDIA_PLAYBACK_STATE_CONSUMERS_MAX) {
+    state->controls.push_back(ctx);
+    media_playback_apply_state_to_control(state, ctx);
+    return;
   }
   ESP_LOGW("media", "No shared media control slot available for %s",
            state->entity_id.c_str());
@@ -779,18 +773,16 @@ inline void media_playback_attach_control(MediaPlaybackState *state, MediaContro
 
 inline void media_playback_attach_volume(MediaPlaybackState *state, MediaVolumeCtx *ctx) {
   if (!state || !ctx) return;
-  for (int i = 0; i < MEDIA_PLAYBACK_STATE_VOLUMES_MAX; i++) {
-    if (state->volumes[i] == ctx) {
+  for (MediaVolumeCtx *existing : state->volumes) {
+    if (existing == ctx) {
       media_playback_apply_state_to_volume(state, ctx);
       return;
     }
   }
-  for (int i = 0; i < MEDIA_PLAYBACK_STATE_VOLUMES_MAX; i++) {
-    if (!state->volumes[i]) {
-      state->volumes[i] = ctx;
-      media_playback_apply_state_to_volume(state, ctx);
-      return;
-    }
+  if (state->volumes.size() < MEDIA_PLAYBACK_STATE_CONSUMERS_MAX) {
+    state->volumes.push_back(ctx);
+    media_playback_apply_state_to_volume(state, ctx);
+    return;
   }
   ESP_LOGW("media", "No shared media volume slot available for %s",
            state->entity_id.c_str());
@@ -798,18 +790,16 @@ inline void media_playback_attach_volume(MediaPlaybackState *state, MediaVolumeC
 
 inline void media_playback_attach_playlist(MediaPlaybackState *state, MediaPlaylistCtx *ctx) {
   if (!state || !ctx) return;
-  for (int i = 0; i < MEDIA_PLAYBACK_STATE_PLAYLISTS_MAX; i++) {
-    if (state->playlists[i] == ctx) {
+  for (MediaPlaylistCtx *existing : state->playlists) {
+    if (existing == ctx) {
       media_playback_apply_state_to_playlist(state, ctx);
       return;
     }
   }
-  for (int i = 0; i < MEDIA_PLAYBACK_STATE_PLAYLISTS_MAX; i++) {
-    if (!state->playlists[i]) {
-      state->playlists[i] = ctx;
-      media_playback_apply_state_to_playlist(state, ctx);
-      return;
-    }
+  if (state->playlists.size() < MEDIA_PLAYBACK_STATE_CONSUMERS_MAX) {
+    state->playlists.push_back(ctx);
+    media_playback_apply_state_to_playlist(state, ctx);
+    return;
   }
   ESP_LOGW("media", "No shared media playlist slot available for %s",
            state->entity_id.c_str());
@@ -817,18 +807,16 @@ inline void media_playback_attach_playlist(MediaPlaybackState *state, MediaPlayl
 
 inline void media_playback_attach_now_playing(MediaPlaybackState *state, MediaNowPlayingCtx *ctx) {
   if (!state || !ctx) return;
-  for (int i = 0; i < MEDIA_PLAYBACK_STATE_NOW_PLAYING_MAX; i++) {
-    if (state->now_playing[i] == ctx) {
+  for (MediaNowPlayingCtx *existing : state->now_playing) {
+    if (existing == ctx) {
       media_playback_apply_state_to_now_playing(state, ctx);
       return;
     }
   }
-  for (int i = 0; i < MEDIA_PLAYBACK_STATE_NOW_PLAYING_MAX; i++) {
-    if (!state->now_playing[i]) {
-      state->now_playing[i] = ctx;
-      media_playback_apply_state_to_now_playing(state, ctx);
-      return;
-    }
+  if (state->now_playing.size() < MEDIA_PLAYBACK_STATE_CONSUMERS_MAX) {
+    state->now_playing.push_back(ctx);
+    media_playback_apply_state_to_now_playing(state, ctx);
+    return;
   }
   ESP_LOGW("media", "No shared media now-playing slot available for %s",
            state->entity_id.c_str());
@@ -838,20 +826,17 @@ inline void media_playback_attach_button(MediaPlaybackState *state,
                                          lv_obj_t *btn,
                                          lv_obj_t *status_lbl) {
   if (!state || !btn) return;
-  for (int i = 0; i < MEDIA_PLAYBACK_STATE_BUTTONS_MAX; i++) {
-    if (state->buttons[i].btn == btn) {
-      state->buttons[i].status_lbl = status_lbl;
-      media_playback_apply_state_to_button(state, state->buttons[i]);
+  for (MediaPlaybackButtonRef &button : state->buttons) {
+    if (button.btn == btn) {
+      button.status_lbl = status_lbl;
+      media_playback_apply_state_to_button(state, button);
       return;
     }
   }
-  for (int i = 0; i < MEDIA_PLAYBACK_STATE_BUTTONS_MAX; i++) {
-    if (!state->buttons[i].btn) {
-      state->buttons[i].btn = btn;
-      state->buttons[i].status_lbl = status_lbl;
-      media_playback_apply_state_to_button(state, state->buttons[i]);
-      return;
-    }
+  if (state->buttons.size() < MEDIA_PLAYBACK_STATE_CONSUMERS_MAX) {
+    state->buttons.push_back({btn, status_lbl});
+    media_playback_apply_state_to_button(state, state->buttons.back());
+    return;
   }
   ESP_LOGW("media", "No shared media button slot available for %s",
            state->entity_id.c_str());
