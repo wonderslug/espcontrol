@@ -336,7 +336,9 @@ function buildSettingsPage(parent) {
   var schedulePresInp = entityInput("sp-set-schedule-presence", state.presenceEntity, "Presence sensor entity", ["binary_sensor", "sensor"]);
   schedulePresenceField.appendChild(schedulePresInp);
   scheduleSensor.appendChild(schedulePresenceField);
-  bindTextPost(schedulePresInp, entityName("presence_sensor_entity"), {});
+  bindTextPost(schedulePresInp, entityName("presence_sensor_entity"), {
+    post: postPresenceSensorEntity,
+  });
   scheduleBody.appendChild(scheduleSensor);
   els.setScheduleSensor = scheduleSensor;
   els.setSchedulePresence = schedulePresInp;
@@ -557,7 +559,7 @@ function buildSettingsPage(parent) {
   ], ssMode, function (mode) {
     setSsMode(mode);
     state.screensaverMode = mode;
-    postText(entityName("screensaver_mode"), mode);
+    postScreensaverMode(mode);
   }, "sp-segment sp-screensaver-mode");
   var disabledBtn = ssModeSegment.buttons.disabled;
   var timerBtn = ssModeSegment.buttons.timer;
@@ -598,7 +600,7 @@ function buildSettingsPage(parent) {
     coverArtToggle.input.addEventListener("change", function () {
       state.coverArtScreensaverOn = this.checked;
       syncCoverArtScreensaverUi();
-      postSwitch(entityName("screen_saver_cover_art"), state.coverArtScreensaverOn);
+      postCoverArtScreensaver(state.coverArtScreensaverOn);
     });
     els.setCoverArtToggle = coverArtToggle.input;
 
@@ -615,7 +617,7 @@ function buildSettingsPage(parent) {
       state.mediaPlayerSleepPreventionOn = this.checked;
       syncMediaPlayerSleepPreventionUi();
       syncCoverArtScreensaverUi();
-      postSwitch(entityName("screen_saver_media_player_sleep_prevention"), state.mediaPlayerSleepPreventionOn);
+      postMediaPlayerSleepPrevention(state.mediaPlayerSleepPreventionOn);
     });
     els.setMediaPlayerSleepPreventionToggle = sleepPreventionToggle.input;
 
@@ -630,7 +632,14 @@ function buildSettingsPage(parent) {
     coverArtEntityField.appendChild(coverArtEntityInp);
     coverArtOnlyOptions.appendChild(coverArtEntityField);
     bindTextPost(coverArtEntityInp, entityName("screen_saver_cover_art_entity"), {
-      onBlur: function (value) { state.coverArtMediaPlayerEntity = value; },
+      onBlur: function (value) {
+        state.coverArtMediaPlayerEntity = value;
+        state.mediaPlayerSleepPreventionEntity = value;
+      },
+      post: function (value) {
+        postCoverArtMediaPlayerEntity(value);
+        postMediaPlayerSleepPreventionEntity(value);
+      },
     });
     els.setCoverArtMediaPlayer = coverArtEntityInp;
 
@@ -741,7 +750,7 @@ function buildSettingsPage(parent) {
       if (!state.coverArtFilteringEnabled) {
         state.coverArtAttributeConditions = "";
         syncInput(els.setCoverArtConditions, "");
-        postText(entityName("screen_saver_cover_art_conditions"), "");
+        postCoverArtConditions("");
       }
       syncCoverArtScreensaverUi();
     });
@@ -767,6 +776,7 @@ function buildSettingsPage(parent) {
         state.coverArtFilteringEnabled = !!value || state.coverArtFilteringEnabled;
         syncCoverArtScreensaverUi();
       },
+      post: postCoverArtConditions,
     });
     els.setCoverArtConditions = coverArtConditionsInp;
     els.setCoverArtFilterOptions = coverArtFilterOptions;
@@ -792,7 +802,9 @@ function buildSettingsPage(parent) {
   var presInp = entityInput("sp-set-presence", state.presenceEntity, "Presence sensor entity", ["binary_sensor", "sensor"]);
   presenceField.appendChild(presInp);
   sensorPanel.appendChild(presenceField);
-  bindTextPost(presInp, entityName("presence_sensor_entity"), {});
+  bindTextPost(presInp, entityName("presence_sensor_entity"), {
+    post: postPresenceSensorEntity,
+  });
   var sensorClockControls = createScreensaverThenControls("sp-set-sensor-clock-mode");
   sensorPanel.appendChild(sensorClockControls.clockField);
   sensorPanel.appendChild(sensorClockControls.dimBrightnessField);
@@ -856,7 +868,7 @@ function buildSettingsPage(parent) {
   hsSelect.addEventListener("change", function () {
     state.homeScreenTimeout = parseFloat(this.value) || 0;
     syncIdleUi();
-    postNumber(entityName("home_screen_timeout"), this.value);
+    postHomeScreenTimeout(this.value);
   });
   idleBody.appendChild(hsSelect);
   els.setHSTimeout = hsSelect;
@@ -991,7 +1003,8 @@ function buildSettingsPage(parent) {
       syncFirmwareUpdateUi();
       return;
     }
-    postSwitch(entityName("firmware_auto_update"), this.checked);
+    state.autoUpdate = this.checked;
+    postFirmwareAutoUpdate(state.autoUpdate);
     syncFirmwareUpdateUi();
   });
   els.setAutoUpdateRow = autoUpdateToggle.row;
@@ -1011,7 +1024,8 @@ function buildSettingsPage(parent) {
   freqSelect.value = state.updateFrequency;
   freqSelect.addEventListener("change", function () {
     if (!firmwareUpdateControlsVisible()) return;
-    postSelect(entityName("firmware_update_frequency"), this.value);
+    state.updateFrequency = this.value;
+    postFirmwareUpdateFrequency(state.updateFrequency);
   });
   freqWrap.appendChild(freqSelect);
   fwBody.appendChild(freqWrap);
@@ -1020,6 +1034,69 @@ function buildSettingsPage(parent) {
   syncFirmwareUpdateUi();
 
   var firmwareCard = makeCollapsibleCard("Firmware", fwBody, true);
+
+  var wifiFirmwareBody = document.createElement("div");
+  var c6CurrentRow = document.createElement("div");
+  c6CurrentRow.className = "sp-fw-row sp-fw-info-row";
+  var c6CurrentLabel = document.createElement("span");
+  c6CurrentLabel.className = "sp-fw-label";
+  c6CurrentLabel.textContent = "Current C6 Firmware";
+  var c6CurrentValue = document.createElement("span");
+  c6CurrentValue.className = "sp-fw-version";
+  c6CurrentRow.appendChild(c6CurrentLabel);
+  c6CurrentRow.appendChild(c6CurrentValue);
+  wifiFirmwareBody.appendChild(c6CurrentRow);
+  els.c6FirmwareCurrent = c6CurrentValue;
+
+  var c6LatestRow = document.createElement("div");
+  c6LatestRow.className = "sp-fw-row sp-fw-info-row";
+  var c6LatestLabel = document.createElement("span");
+  c6LatestLabel.className = "sp-fw-label";
+  c6LatestLabel.textContent = "Available C6 Firmware";
+  var c6LatestValue = document.createElement("span");
+  c6LatestValue.className = "sp-fw-version";
+  c6LatestRow.appendChild(c6LatestLabel);
+  c6LatestRow.appendChild(c6LatestValue);
+  wifiFirmwareBody.appendChild(c6LatestRow);
+  els.c6FirmwareLatest = c6LatestValue;
+
+  var c6Actions = document.createElement("div");
+  c6Actions.className = "sp-fw-actions sp-fw-actions-full";
+  var c6UpdateBtn = document.createElement("button");
+  c6UpdateBtn.className = "sp-fw-btn";
+  c6UpdateBtn.textContent = "Check for Update";
+  c6UpdateBtn.addEventListener("click", function () {
+    if (!state.c6FirmwareUpdateControlsSupported) return;
+    if (c6FirmwareUpdateKnownAvailable() && state.c6FirmwareInstallControlsSupported) {
+      state.c6FirmwareInstalling = true;
+      state.c6FirmwareChecking = false;
+      syncC6FirmwareUi();
+      postC6FirmwareUpdateInstall();
+      setTimeout(function () {
+        refreshFirmwareVersion();
+      }, 5000);
+      return;
+    }
+    state.c6FirmwareChecking = true;
+    syncC6FirmwareUi();
+    postC6FirmwareUpdateCheck();
+    setTimeout(function () {
+      state.c6FirmwareChecking = false;
+      refreshFirmwareVersion();
+      syncC6FirmwareUi();
+    }, 10000);
+  });
+  c6Actions.appendChild(c6UpdateBtn);
+  wifiFirmwareBody.appendChild(c6Actions);
+  els.c6FirmwareUpdateBtn = c6UpdateBtn;
+
+  var c6Status = document.createElement("div");
+  c6Status.className = "sp-fw-status";
+  wifiFirmwareBody.appendChild(c6Status);
+  els.c6FirmwareStatus = c6Status;
+  var wifiFirmwareCard = makeCollapsibleCard("WiFi", wifiFirmwareBody, true);
+  els.c6FirmwareCard = wifiFirmwareCard;
+  syncC6FirmwareUi();
 
   var homeAssistantSettingsBody = document.createElement("div");
   var haProtocolField = document.createElement("div");
@@ -1038,10 +1115,7 @@ function buildSettingsPage(parent) {
   haProtocolSelect.addEventListener("change", function () {
     state.homeAssistantArtworkProtocol = normalizeHomeAssistantArtworkProtocol(this.value);
     this.value = state.homeAssistantArtworkProtocol;
-    postSelectWithObjectIds(
-      entityName("home_assistant_artwork_protocol"),
-      entityObjectIds("home_assistant_artwork_protocol"),
-      state.homeAssistantArtworkProtocol);
+    postHomeAssistantArtworkProtocol(state.homeAssistantArtworkProtocol);
   });
   haProtocolField.appendChild(haProtocolSelect);
   homeAssistantSettingsBody.appendChild(haProtocolField);
@@ -1093,6 +1167,7 @@ function buildSettingsPage(parent) {
   appendSettingsSection(config, "System", [
     backupCard,
     firmwareCard,
+    wifiFirmwareCard,
     homeAssistantSettingsCard,
   ]);
 
@@ -1246,7 +1321,7 @@ function createScreensaverThenControls(selectId) {
     state.clockScreensaverOn = state.screensaverAction === "clock";
     syncClockScreensaverControls();
     postScreensaverAction(state.screensaverAction);
-    postSwitch(entityName("screen_saver_clock"), state.clockScreensaverOn);
+    postClockScreensaver(state.clockScreensaverOn);
   });
   clockField.appendChild(clockSelect);
 
