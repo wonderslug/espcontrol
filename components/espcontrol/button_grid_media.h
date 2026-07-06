@@ -124,6 +124,58 @@ inline bool media_control_progress_supported(MediaControlCtx *ctx) {
 #endif
 }
 
+inline std::string media_metadata_text(esphome::StringRef value, const char *fallback) {
+  std::string text = string_ref_limited(value, HA_STATE_TEXT_MAX_LEN);
+  if (text.empty() || text == "unknown" || text == "unavailable")
+    text = fallback ? fallback : "--";
+  return text;
+}
+
+inline void media_set_metadata_text(lv_obj_t *label, esphome::StringRef value,
+                                    const char *fallback) {
+  if (!label) return;
+  std::string text = media_metadata_text(value, fallback);
+  lv_label_set_text(label, text.c_str());
+}
+
+inline bool media_external_source_input(std::string source) {
+  for (char &ch : source) {
+    ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+  }
+  return source == "tv" || source == "line-in" || source == "line in";
+}
+
+inline void media_apply_now_playing_artist_text(MediaNowPlayingCtx *ctx) {
+  if (!ctx || !ctx->artist_lbl) return;
+  const char *text = ctx->external_source
+    ? espcontrol_i18n("Source")
+    : ctx->artist;
+  lv_label_set_text(ctx->artist_lbl, text);
+}
+
+inline void media_set_now_playing_artist(MediaNowPlayingCtx *ctx,
+                                         esphome::StringRef artist) {
+  if (!ctx) return;
+  std::string text = media_metadata_text(artist, "");
+  std::strncpy(ctx->artist, text.c_str(), sizeof(ctx->artist) - 1);
+  ctx->artist[sizeof(ctx->artist) - 1] = '\0';
+}
+
+inline void media_refresh_artist_text(MediaNowPlayingCtx *ctx,
+                                      const std::string &entity_id) {
+  if (!ctx || entity_id.empty()) return;
+  ctx->artist[0] = '\0';
+  media_apply_now_playing_artist_text(ctx);
+  ha_get_attribute(
+    entity_id, std::string("media_artist"),
+    std::function<void(esphome::StringRef)>(
+      [ctx](esphome::StringRef artist) {
+        media_set_now_playing_artist(ctx, artist);
+        media_apply_now_playing_artist_text(ctx);
+      })
+  );
+}
+
 inline bool media_position_timestamp_ms(esphome::StringRef value, uint32_t &updated_ms);
 inline bool media_control_seek_pending_active(MediaControlCtx *ctx);
 inline bool media_control_track_position_reset_active(MediaControlCtx *ctx);
@@ -147,6 +199,7 @@ inline void media_playback_subscribe_metadata(MediaPlaybackState *state);
 inline void media_playback_subscribe_progress(MediaPlaybackState *state);
 inline void media_playback_subscribe_volume(MediaPlaybackState *state);
 inline void media_playback_subscribe_friendly_name(MediaPlaybackState *state);
+inline void media_playback_apply_metadata_consumers(MediaPlaybackState *state);
 
 inline void delete_media_control_context(MediaControlCtx *ctx) {
   if (!ctx) return;
@@ -365,6 +418,7 @@ struct MediaPlaybackState {
   bool has_state = false;
   bool available = true;
   bool playing = false;
+  bool external_source = false;
   bool has_duration = false;
   bool has_position = false;
   float duration = 0.0f;
@@ -412,6 +466,7 @@ inline void media_playback_reset_state(MediaPlaybackState *state,
   state->has_state = false;
   state->available = true;
   state->playing = false;
+  state->external_source = false;
   state->has_duration = false;
   state->has_position = false;
   state->duration = 0.0f;
@@ -495,6 +550,14 @@ inline std::string media_playback_metadata_value(esphome::StringRef value,
   return text;
 }
 
+inline void media_playback_set_artist(MediaPlaybackState *state,
+                                      uint32_t generation,
+                                      esphome::StringRef value) {
+  if (!media_playback_generation_valid(state, generation)) return;
+  state->artist = media_playback_metadata_value(value, HA_STATE_TEXT_MAX_LEN);
+  media_playback_apply_metadata_consumers(state);
+}
+
 inline void media_playback_apply_state_to_slider(MediaPlaybackState *state,
                                                  SliderCtx *ctx) {
   if (!state || !ctx) return;
@@ -556,7 +619,10 @@ inline void media_playback_apply_state_to_now_playing(MediaPlaybackState *state,
     lv_label_set_text(ctx->title_lbl, title.c_str());
   }
   if (ctx->artist_lbl) {
-    lv_label_set_text(ctx->artist_lbl, state->artist.c_str());
+    std::strncpy(ctx->artist, state->artist.c_str(), sizeof(ctx->artist) - 1);
+    ctx->artist[sizeof(ctx->artist) - 1] = '\0';
+    ctx->external_source = state->external_source;
+    media_apply_now_playing_artist_text(ctx);
   }
   if (ctx->play_pause_background && ctx->btn) {
     set_card_checked_state(ctx->btn, state->available && state->playing);
@@ -903,6 +969,18 @@ inline void media_playback_subscribe_metadata(MediaPlaybackState *state) {
       [state, generation](esphome::StringRef value) {
         if (!media_playback_generation_valid(state, generation)) return;
         state->title = media_playback_metadata_value(value, HA_STATE_TEXT_MAX_LEN);
+        if (!media_control_low_heap_mode()) {
+          state->artist.clear();
+          media_playback_apply_metadata_consumers(state);
+          ha_get_attribute(
+            state->entity_id, std::string("media_artist"),
+            std::function<void(esphome::StringRef)>(
+              [state, generation](esphome::StringRef artist) {
+                media_playback_set_artist(state, generation, artist);
+              })
+          );
+          return;
+        }
         media_playback_apply_metadata_consumers(state);
       })
   );
@@ -911,11 +989,22 @@ inline void media_playback_subscribe_metadata(MediaPlaybackState *state) {
     entity_id, std::string("media_artist"),
     std::function<void(esphome::StringRef)>(
       [state, generation](esphome::StringRef value) {
-        if (!media_playback_generation_valid(state, generation)) return;
-        state->artist = media_playback_metadata_value(value, HA_STATE_TEXT_MAX_LEN);
-        media_playback_apply_metadata_consumers(state);
+        media_playback_set_artist(state, generation, value);
       })
   );
+
+  auto handle_media_source = [state, generation](esphome::StringRef source) {
+    if (!media_playback_generation_valid(state, generation)) return;
+    bool external = media_external_source_input(media_metadata_text(source, ""));
+    if (external == state->external_source) return;
+    state->external_source = external;
+    media_playback_apply_metadata_consumers(state);
+  };
+  ha_subscribe_attribute(
+    entity_id, std::string("source"),
+    std::function<void(esphome::StringRef)>(handle_media_source)
+  );
+  ha_get_attribute(entity_id, std::string("source"), handle_media_source);
 }
 
 inline void media_playback_subscribe_progress(MediaPlaybackState *state) {
