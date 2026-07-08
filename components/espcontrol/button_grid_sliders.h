@@ -1872,6 +1872,14 @@ inline lv_coord_t cover_control_option_tile_height(const ControlModalLayout &lay
   return cover_control_uses_compact_portrait_option_grid(layout) ? 120 : tile_w;
 }
 
+inline const lv_font_t *cover_control_preset_icon_font(CoverControlCtx *ctx,
+                                                       const ControlModalLayout &layout) {
+  if (!ctx) return nullptr;
+  if (cover_control_uses_compact_portrait_option_grid(layout) && ctx->card_icon_font)
+    return ctx->card_icon_font;
+  return ctx->icon_font;
+}
+
 inline lv_coord_t cover_control_home_grid_row_gap(const ControlModalLayout &layout) {
   ControlModalGridMetrics &metrics = control_modal_grid_metrics();
   if (metrics.page) {
@@ -2074,13 +2082,13 @@ inline void cover_control_layout_modal(CoverControlCtx *ctx) {
     }
   }
   if (ui.presets_box) {
-    lv_coord_t box_w = layout.panel_w - layout.inset * 3;
-    lv_coord_t box_h = content_h;
+    lv_coord_t box_w = layout.panel_w;
+    lv_coord_t box_h = layout.panel_h;
     lv_obj_set_size(ui.presets_box, box_w, box_h);
-    lv_obj_align(ui.presets_box, LV_ALIGN_CENTER, 0, content_center_y);
+    lv_obj_set_pos(ui.presets_box, 0, 0);
     lv_coord_t tile_gap = control_modal_scaled_px(layout.short_side < 520 ? 10 : 12, layout.short_side);
     if (tile_gap < 8) tile_gap = 8;
-    lv_coord_t content_w = box_w;
+    lv_coord_t content_w = layout.panel_w - layout.inset * 2;
     lv_coord_t tile_min_w = compensated_width(layout.short_side < 520 ? 138 : 168,
       ctx->width_compensation_percent);
     if (tile_min_w < 118) tile_min_w = 118;
@@ -2100,7 +2108,10 @@ inline void cover_control_layout_modal(CoverControlCtx *ctx) {
       if (tile_w < min_tile_w) tile_w = min_tile_w;
     }
     lv_coord_t tile_h = cover_control_option_tile_height(layout, tile_w);
-    lv_obj_set_style_pad_all(ui.presets_box, 0, LV_PART_MAIN);
+    lv_obj_set_style_pad_top(ui.presets_box, content_top, LV_PART_MAIN);
+    lv_obj_set_style_pad_left(ui.presets_box, layout.inset, LV_PART_MAIN);
+    lv_obj_set_style_pad_right(ui.presets_box, layout.inset, LV_PART_MAIN);
+    lv_obj_set_style_pad_bottom(ui.presets_box, layout.inset, LV_PART_MAIN);
     lv_obj_set_style_pad_row(ui.presets_box, tile_gap, LV_PART_MAIN);
     lv_obj_set_style_pad_column(ui.presets_box, tile_gap, LV_PART_MAIN);
     lv_obj_set_layout(ui.presets_box, LV_LAYOUT_FLEX);
@@ -2122,7 +2133,11 @@ inline void cover_control_layout_modal(CoverControlCtx *ctx) {
       lv_obj_set_style_bg_color(btn, lv_color_hex(bg_color), LV_PART_MAIN);
       lv_obj_t *icon = lv_obj_get_child(btn, 0);
       lv_obj_t *label = lv_obj_get_child(btn, 1);
-      if (icon) lv_obj_set_style_text_color(icon, lv_color_hex(text_color), LV_PART_MAIN);
+      if (icon) {
+        lv_obj_set_style_text_color(icon, lv_color_hex(text_color), LV_PART_MAIN);
+        const lv_font_t *icon_font = cover_control_preset_icon_font(ctx, layout);
+        if (icon_font) lv_obj_set_style_text_font(icon, icon_font, LV_PART_MAIN);
+      }
       if (label) {
         lv_obj_set_style_text_color(label, lv_color_hex(text_color), LV_PART_MAIN);
         lv_obj_set_width(label, lv_pct(100));
@@ -2323,7 +2338,7 @@ inline void cover_control_open_modal(CoverControlCtx *ctx) {
   for (int i = 0; i < 5; i++) {
     ui.preset_btns[i] = cover_control_create_preset_button(
       ui.presets_box, preset_values[i],
-      ctx->card_icon_font ? ctx->card_icon_font : ctx->icon_font,
+      cover_control_preset_icon_font(ctx, control_modal_calc_layout(ctx->width_compensation_percent)),
       ctx->option_menu_font);
   }
 
