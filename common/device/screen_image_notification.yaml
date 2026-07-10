@@ -1,0 +1,349 @@
+# =============================================================================
+# SCREEN: IMAGE NOTIFICATION POPUP
+# =============================================================================
+# Top-layer overlay that shows an HA-pushed image (e.g. a doorbell camera
+# snapshot), full-screen or in a card, with an optional title/message caption.
+# The device only receives a URL; HA does all image sourcing.
+#
+# Persistent (tap to dismiss):
+#   action: esphome.<device>_send_image_notification
+#   data:
+#     image_url: "/api/camera_proxy/camera.front_door"   # required; relative or http(s)
+#     title: "Front Door"        # optional
+#     message: "Motion detected" # optional
+#     style: "fullscreen"        # optional: "fullscreen" (default) | "card"
+#     message_id: "doorbell"     # optional, echoed in events
+#
+# Auto-dismissing: esphome.<device>_send_expiring_image_notification (adds timeout: <sec>)
+#
+# On close fires (same as text notifications): esphome.notification_acknowledged
+# (tapped) or esphome.notification_expired (timed out). Payload: device_name, message_id.
+# On download/decode failure, falls back to the text notification popup with the
+# same title/message/timeout/message_id ("Image unavailable" when image-only).
+#
+# image_notification_popup.h is auto-included by ESPHome's component resource system.
+# Reuses cover_art_home_assistant_base_url (screen_cover_art.yaml) to resolve
+# relative URLs, and notification_popup_show (screen_notification_popup.yaml) for fallback.
+# =============================================================================
+
+globals:
+  - id: image_notif_style
+    type: std::string
+    initial_value: '"fullscreen"'
+  - id: image_notif_timeout
+    type: int
+    initial_value: '0'
+  - id: image_notif_title
+    type: std::string
+    initial_value: '""'
+  - id: image_notif_message
+    type: std::string
+    initial_value: '""'
+  - id: image_notif_expected_url
+    type: std::string
+    initial_value: '""'
+
+artwork_image:
+  - url: "http://127.0.0.1/none.jpg"   # placeholder; never fetched (polling: never)
+    id: image_notification_image
+    format: AUTO
+    type: RGB565
+    byte_order: LITTLE_ENDIAN
+    buffer_size: 65536
+    allow_insecure_local_urls: true
+    on_download_finished:
+      - if:
+          condition:
+            lambda: 'return id(image_notification_image)->get_url() == id(image_notif_expected_url);'
+          then:
+            - script.execute: image_notif_show
+    on_error:
+      - if:
+          condition:
+            lambda: 'return id(image_notification_image)->get_url() == id(image_notif_expected_url);'
+          then:
+            - script.execute: image_notif_fallback_to_text
+
+lvgl:
+  top_layer:
+    widgets:
+      # Root scrim: dark overlay + tap-to-dismiss. Fills screen for card mode;
+      # the full-screen group draws its own opaque backdrop over it.
+      - obj:
+          id: image_notif_root
+          x: 0
+          y: 0
+          width: ${screen_width}
+          height: ${screen_height}
+          bg_color: 0x000000
+          bg_opa: 75%
+          radius: 0
+          border_width: 0
+          pad_all: 0
+          scrollable: false
+          scrollbar_mode: "off"
+          clickable: true
+          hidden: true
+          on_click:
+            then:
+              - script.stop: image_notif_autodismiss
+              - lambda: 'image_notification_fire("esphome.notification_acknowledged");'
+              - script.execute: image_notif_teardown
+          widgets:
+            # ---- Full-screen group: black backdrop + centered image + bottom caption ----
+            - obj:
+                id: image_notif_fs_group
+                x: 0
+                y: 0
+                width: ${screen_width}
+                height: ${screen_height}
+                bg_color: 0x000000
+                bg_opa: cover
+                radius: 0
+                border_width: 0
+                pad_all: 0
+                scrollable: false
+                scrollbar_mode: "off"
+                clickable: false
+                hidden: true
+                widgets:
+                  - image:
+                      id: image_notif_fs_image
+                      align: center
+                      width: ${image_notif_fullscreen_size}px
+                      height: ${image_notif_fullscreen_size}px
+                      src: image_notification_image
+                  - obj:
+                      id: image_notif_fs_caption
+                      align: bottom_mid
+                      x: 0
+                      y: 0
+                      width: ${screen_width}
+                      height: SIZE_CONTENT
+                      bg_color: 0x000000
+                      bg_opa: 60%
+                      radius: 0
+                      border_width: 0
+                      pad_top: 12
+                      pad_bottom: 12
+                      pad_left: 20
+                      pad_right: 20
+                      scrollable: false
+                      clickable: false
+                      hidden: true
+                      layout:
+                        type: flex
+                        flex_flow: COLUMN
+                        flex_align_cross: start
+                        pad_row: 6
+                      widgets:
+                        - label:
+                            id: image_notif_fs_title
+                            text: ""
+                            text_font: ${setup_body_font_id}
+                            text_color: 0xFFFFFF
+                            long_mode: wrap
+                            width: 100%
+                        - label:
+                            id: image_notif_fs_message
+                            text: ""
+                            text_font: ${label_font}
+                            text_color: 0xDDDDDD
+                            long_mode: wrap
+                            width: 100%
+            # ---- Card group: centered panel with image on top, caption below ----
+            - obj:
+                id: image_notif_card_group
+                align: center
+                width: ${content_width}
+                height: SIZE_CONTENT
+                bg_color: 0x1E1E1E
+                bg_opa: cover
+                radius: 16
+                border_width: 0
+                pad_top: 24
+                pad_bottom: 24
+                pad_left: 24
+                pad_right: 24
+                scrollable: false
+                clickable: false
+                hidden: true
+                layout:
+                  type: flex
+                  flex_flow: COLUMN
+                  flex_align_main: center
+                  flex_align_cross: center
+                  pad_row: 12
+                widgets:
+                  - image:
+                      id: image_notif_card_image
+                      width: ${image_notif_card_size}px
+                      height: ${image_notif_card_size}px
+                      src: image_notification_image
+                  - label:
+                      id: image_notif_card_title
+                      text: ""
+                      text_font: ${setup_body_font_id}
+                      text_color: 0xFFFFFF
+                      long_mode: wrap
+                      width: 100%
+                  - label:
+                      id: image_notif_card_message
+                      text: ""
+                      text_font: ${label_font}
+                      text_color: 0xAAAAAA
+                      long_mode: wrap
+                      width: 100%
+
+script:
+  # Show the decoded image in the active style's group. Called from
+  # on_download_finished once the loaded URL matches the expected URL.
+  - id: image_notif_show
+    mode: restart
+    then:
+      - script.stop: image_notif_autodismiss
+      - lambda: |-
+          const bool card = id(image_notif_style) == "card";
+
+          // Captions (empty labels are hidden).
+          lv_obj_t *title_lbl = card ? id(image_notif_card_title) : id(image_notif_fs_title);
+          lv_obj_t *msg_lbl   = card ? id(image_notif_card_message) : id(image_notif_fs_message);
+          if (id(image_notif_title).empty()) {
+            lv_obj_add_flag(title_lbl, LV_OBJ_FLAG_HIDDEN);
+          } else {
+            lv_label_set_text(title_lbl, id(image_notif_title).c_str());
+            lv_obj_clear_flag(title_lbl, LV_OBJ_FLAG_HIDDEN);
+          }
+          if (id(image_notif_message).empty()) {
+            lv_obj_add_flag(msg_lbl, LV_OBJ_FLAG_HIDDEN);
+          } else {
+            lv_label_set_text(msg_lbl, id(image_notif_message).c_str());
+            lv_obj_clear_flag(msg_lbl, LV_OBJ_FLAG_HIDDEN);
+          }
+
+          // Full-screen caption strip hides entirely when there is no text.
+          if (!card) {
+            if (id(image_notif_title).empty() && id(image_notif_message).empty()) {
+              lv_obj_add_flag(id(image_notif_fs_caption), LV_OBJ_FLAG_HIDDEN);
+            } else {
+              lv_obj_clear_flag(id(image_notif_fs_caption), LV_OBJ_FLAG_HIDDEN);
+            }
+          }
+
+          // Show the active group, hide the other.
+          if (card) {
+            lv_obj_add_flag(id(image_notif_fs_group), LV_OBJ_FLAG_HIDDEN);
+            lv_obj_clear_flag(id(image_notif_card_group), LV_OBJ_FLAG_HIDDEN);
+          } else {
+            lv_obj_add_flag(id(image_notif_card_group), LV_OBJ_FLAG_HIDDEN);
+            lv_obj_clear_flag(id(image_notif_fs_group), LV_OBJ_FLAG_HIDDEN);
+          }
+      # Refresh the active image widget from the decoded buffer.
+      - lvgl.image.update:
+          id: image_notif_fs_image
+          src: image_notification_image
+      - lvgl.image.update:
+          id: image_notif_card_image
+          src: image_notification_image
+      # Reveal root above everything else, and mutually exclude the text popup.
+      - lvgl.widget.hide: notification_scrim
+      - lvgl.widget.show: image_notif_root
+      - lambda: 'lv_obj_move_foreground(id(image_notif_root));'
+      - if:
+          condition:
+            lambda: 'return id(image_notif_timeout) > 0;'
+          then:
+            - script.execute: image_notif_autodismiss
+
+  # Auto-dismiss after image_notif_timeout seconds (expiring notifications only).
+  - id: image_notif_autodismiss
+    mode: restart
+    then:
+      - delay: !lambda 'return (uint32_t) id(image_notif_timeout) * 1000u;'
+      - lambda: 'image_notification_fire("esphome.notification_expired");'
+      - script.execute: image_notif_teardown
+
+  # Hide the overlay and free the decode buffer.
+  - id: image_notif_teardown
+    mode: restart
+    then:
+      - lvgl.widget.hide: image_notif_root
+      - lvgl.widget.hide: image_notif_fs_group
+      - lvgl.widget.hide: image_notif_card_group
+      - artwork_image.release: image_notification_image
+
+  # Download/decode failed: free the buffer and hand off to the text popup with
+  # the same title/message/timeout/message_id (localized "Image unavailable" if
+  # there is no text). The text popup then owns dismissal and fires the events.
+  - id: image_notif_fallback_to_text
+    mode: restart
+    then:
+      - script.stop: image_notif_autodismiss
+      - script.execute: image_notif_teardown
+      - script.execute: screensaver_wake
+      - lambda: |-
+          std::string body = id(image_notif_message);
+          if (id(image_notif_title).empty() && body.empty()) {
+            body = espcontrol_i18n(std::string("Image unavailable"));
+          }
+          notification_popup_show(
+            id(notification_scrim),
+            id(notification_title_lbl),
+            id(notification_body_lbl),
+            id(image_notif_title), body,
+            id(image_notif_timeout),
+            s_image_notif_msg_id);
+
+api:
+  actions:
+    - action: send_image_notification
+      variables:
+        image_url: string
+        title: string
+        message: string
+        style: string
+        message_id: string
+      then:
+        - script.execute: screensaver_wake
+        - lambda: |-
+            id(image_notif_title)   = title;
+            id(image_notif_message) = message;
+            id(image_notif_style)   = style.empty() ? std::string("fullscreen") : style;
+            id(image_notif_timeout) = 0;
+            image_notification_set_msg_id(message_id);
+            std::string url = image_notification_resolve_url(
+                image_url, id(cover_art_home_assistant_base_url));
+            id(image_notif_expected_url) = url;
+            auto *img = id(image_notification_image);
+            if (id(image_notif_style) == "card") {
+              img->set_target_size(${image_notif_card_size}, ${image_notif_card_size});
+            } else {
+              img->set_target_size(${image_notif_fullscreen_size}, ${image_notif_fullscreen_size});
+            }
+            img->request_update_url(url);
+    - action: send_expiring_image_notification
+      variables:
+        image_url: string
+        title: string
+        message: string
+        style: string
+        timeout: int
+        message_id: string
+      then:
+        - script.execute: screensaver_wake
+        - lambda: |-
+            id(image_notif_title)   = title;
+            id(image_notif_message) = message;
+            id(image_notif_style)   = style.empty() ? std::string("fullscreen") : style;
+            id(image_notif_timeout) = timeout;
+            image_notification_set_msg_id(message_id);
+            std::string url = image_notification_resolve_url(
+                image_url, id(cover_art_home_assistant_base_url));
+            id(image_notif_expected_url) = url;
+            auto *img = id(image_notification_image);
+            if (id(image_notif_style) == "card") {
+              img->set_target_size(${image_notif_card_size}, ${image_notif_card_size});
+            } else {
+              img->set_target_size(${image_notif_fullscreen_size}, ${image_notif_fullscreen_size});
+            }
+            img->request_update_url(url);
