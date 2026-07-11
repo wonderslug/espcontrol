@@ -320,6 +320,9 @@ api:
               img->set_target_size(${image_notif_fullscreen_size}, ${image_notif_fullscreen_size});
             }
             id(image_notif_expected_url) = img->request_update_url(url);
+            if (id(image_notif_expected_url).empty()) {
+              id(image_notif_fallback_to_text).execute();
+            }
     - action: send_expiring_image_notification
       variables:
         image_url: string
@@ -345,3 +348,6 @@ api:
               img->set_target_size(${image_notif_fullscreen_size}, ${image_notif_fullscreen_size});
             }
             id(image_notif_expected_url) = img->request_update_url(url);
+            if (id(image_notif_expected_url).empty()) {
+              id(image_notif_fallback_to_text).execute();
+            }
