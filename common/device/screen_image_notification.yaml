@@ -313,14 +313,13 @@ api:
             image_notification_set_msg_id(message_id);
             std::string url = image_notification_resolve_url(
                 image_url, id(cover_art_home_assistant_base_url));
-            id(image_notif_expected_url) = url;
             auto *img = id(image_notification_image);
             if (id(image_notif_style) == "card") {
               img->set_target_size(${image_notif_card_size}, ${image_notif_card_size});
             } else {
               img->set_target_size(${image_notif_fullscreen_size}, ${image_notif_fullscreen_size});
             }
-            img->request_update_url(url);
+            id(image_notif_expected_url) = img->request_update_url(url);
     - action: send_expiring_image_notification
       variables:
         image_url: string
@@ -339,11 +338,10 @@ api:
             image_notification_set_msg_id(message_id);
             std::string url = image_notification_resolve_url(
                 image_url, id(cover_art_home_assistant_base_url));
-            id(image_notif_expected_url) = url;
             auto *img = id(image_notification_image);
             if (id(image_notif_style) == "card") {
               img->set_target_size(${image_notif_card_size}, ${image_notif_card_size});
             } else {
               img->set_target_size(${image_notif_fullscreen_size}, ${image_notif_fullscreen_size});
             }
-            img->request_update_url(url);
+            id(image_notif_expected_url) = img->request_update_url(url);
