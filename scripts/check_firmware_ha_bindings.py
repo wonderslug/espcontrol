@@ -817,7 +817,7 @@ def firmware_cover_art_refresh_errors(path: Path, root: Path) -> list[str]:
         "script.execute: cover_art_pause_after_touch" in text
         and "script.execute: cover_art_pause_after_touch\n              - script.wait: cover_art_pause_after_touch" not in text
     ):
-        errors.append(f"{rel}: finish recording the cover art touch pause before waking the display")
+        errors.append(f"{rel}: finish recording the cover art touch delay before waking the display")
     if (
         "script.execute: cover_art_pause_after_touch" in text
         and "script.execute: screensaver_wake\n              - script.wait: screensaver_wake" not in text

@@ -187,10 +187,6 @@ function createSseHandlers() {
       state.coverArtDelay = parseFloat(val) || 0;
       syncCoverArtScreensaverUi();
     },
-    "number-screen_saver__cover_art_touch_pause": function (val) {
-      state.coverArtTouchPause = parseFloat(val) || 0;
-      syncCoverArtScreensaverUi();
-    },
     "number-screen_saver__track_overlay_duration": function (val) {
       state.coverArtTrackOverlayDuration = parseFloat(val) || 0;
       syncCoverArtScreensaverUi();

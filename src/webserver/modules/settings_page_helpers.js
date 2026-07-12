@@ -166,14 +166,6 @@ function syncCoverArtScreensaverUi() {
       coverArtDelay,
       coverArtDelay > 0 ? formatDuration(coverArtDelay) : "Immediately");
   }
-  if (els.setCoverArtTouchPause) {
-    var coverArtTouchPause = Math.max(0, parseFloat(state.coverArtTouchPause) || 0);
-    state.coverArtTouchPause = coverArtTouchPause;
-    setSelectValue(
-      els.setCoverArtTouchPause,
-      coverArtTouchPause,
-      coverArtTouchPause > 0 ? formatDuration(coverArtTouchPause) : "Immediately");
-  }
   if (els.setCoverArtTrackOverlayDuration) {
     var value = state.coverArtTrackOverlayDuration;
     setSelectValue(

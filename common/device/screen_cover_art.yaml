@@ -336,17 +336,17 @@ script:
     then:
       - script.stop: cover_art_delay_timer
       - lambda: |-
-          float seconds = id(cover_art_touch_pause).state;
-          if (std::isnan(seconds) || seconds < 0.0f) seconds = 120.0f;
+          float seconds = id(cover_art_delay).state;
+          if (std::isnan(seconds) || seconds < 0.0f) seconds = 10.0f;
           if (seconds <= 0.0f) {
             id(cover_art_manual_pause_until_ms) = 0;
-            ESP_LOGI("cover_art", "Cover art touch pause disabled");
+            ESP_LOGI("cover_art", "Cover art returns immediately after touch");
             return;
           }
           if (seconds > 300.0f) seconds = 300.0f;
           uint32_t duration_ms = (uint32_t)(seconds * 1000.0f);
           id(cover_art_manual_pause_until_ms) = millis() + duration_ms;
-          ESP_LOGI("cover_art", "Pausing cover art for %.0fs after touch", seconds);
+          ESP_LOGI("cover_art", "Waiting %.0fs to show cover art again after touch", seconds);
 
   - id: cover_art_wake_touch_block
     mode: restart
