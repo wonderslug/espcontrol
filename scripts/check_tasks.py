@@ -689,6 +689,10 @@ def self_test() -> None:
     if helper_fallback is None or task_ids(helper_selected) != task_ids(plan("fast")):
         raise AssertionError("shared script helpers matched only by a catch-all do not select fast")
 
+    esphome_selected, _, esphome_fallback = changed_plan([".github/esphome.env"])
+    if esphome_fallback is not None or "firmware-release" not in task_ids(esphome_selected):
+        raise AssertionError("ESPHome version changes do not select firmware release checks")
+
     broadened_selected, _, broadened_fallback = changed_plan([
         "docs/reference/faq.md",
         "unexpected-area/file.xyz",

@@ -102,7 +102,7 @@ TASKS = (
          ("python3", "scripts/check_firmware_card_runtime.py", "--self-test"), dependencies=("generated",), profiles=PRODUCT,
          domains=("firmware", "product"), inputs=("components/**", "common/config/card_contract.json", "scripts/check_firmware_card_runtime.py")),
     task("firmware-release", ("python3", "scripts/check_firmware_release.py"), profiles=FAST + RELEASE,
-         domains=("firmware", "workflow"), inputs=("builds/**", "devices/**", ".github/workflows/release.yml", "scripts/check_firmware_release.py")),
+         domains=("firmware", "workflow"), inputs=("builds/**", "devices/**", ".github/esphome.env", ".github/workflows/release.yml", "scripts/check_firmware_release.py")),
     task("device-matrix", ("python3", "scripts/check_device_matrix.py"), profiles=FAST,
          domains=("firmware", "product"), inputs=("builds/**", "devices/**", "scripts/check_device_matrix.py")),
     task("device-profiles", ("python3", "scripts/check_device_profiles.py"), dependencies=("generated", "device-slots"), profiles=PRODUCT,

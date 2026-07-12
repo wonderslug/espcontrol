@@ -47,7 +47,7 @@ This detailed routing table is generated directly from `scripts/check_tasks_data
 | `firmware-display-tokens` | firmware | `components/**`<br>`scripts/check_firmware_display_tokens.py` | `npm run check:firmware-display-tokens` |
 | `firmware-ha-bindings` | firmware | `components/**`<br>`devices/**`<br>`scripts/check_firmware_ha_bindings.py` | `npm run check:firmware-ha-bindings` |
 | `firmware-card-runtime` | firmware, product | `components/**`<br>`common/config/card_contract.json`<br>`scripts/check_firmware_card_runtime.py` | `npm run check:firmware-card-runtime` |
-| `firmware-release` | firmware, workflow | `builds/**`<br>`devices/**`<br>`.github/workflows/release.yml`<br>`scripts/check_firmware_release.py` | `npm run check:firmware-release` |
+| `firmware-release` | firmware, workflow | `builds/**`<br>`devices/**`<br>`.github/esphome.env`<br>`.github/workflows/release.yml`<br>`scripts/check_firmware_release.py` | `npm run check:firmware-release` |
 | `device-matrix` | firmware, product | `builds/**`<br>`devices/**`<br>`scripts/check_device_matrix.py` | `npm run check:device-matrix` |
 | `device-profiles` | firmware, product | `devices/**`<br>`scripts/check_device_profiles.py` | `npm run check:device-profiles` |
 | `release-confidence` | product, workflow | `builds/**`<br>`devices/**`<br>`scripts/check_release_confidence.py` | `npm run check:release-confidence` |
