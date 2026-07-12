@@ -1946,6 +1946,12 @@ def self_test() -> None:
     if firmware_fallback is not None or "firmware-parser" not in task_ids(firmware_selected):
         raise AssertionError("firmware changes do not select firmware checks")
 
+    subpage_selected, _, subpage_fallback = changed_plan([
+        "components/espcontrol/button_grid_subpages.h"
+    ])
+    if subpage_fallback is not None or "firmware-tests" not in task_ids(subpage_selected):
+        raise AssertionError("subpage parser changes do not select compiled firmware tests")
+
     generated_selected, _, generated_fallback = changed_plan(["components/espcontrol/i18n_generated.h"])
     if generated_fallback is not None or "generated" not in task_ids(generated_selected):
         raise AssertionError("generated inputs do not select their validation task")
