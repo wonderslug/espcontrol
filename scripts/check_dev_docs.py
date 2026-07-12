@@ -450,6 +450,7 @@ def generated_check_matrix() -> str:
         alias = f"check:{item.id}"
         command = f"`npm run {alias}`" if alias in package else f"`python3 scripts/check_tasks.py run-task {item.id}`"
         inputs = "<br>".join(f"`{path}`" for path in item.inputs)
+        cache_inputs = "<br>".join(f"`{path}`" for path in item.cache_inputs) or "—"
         cache_env = "<br>".join(f"`{name}`" for name in item.cache_env) or "—"
         cache_tools = "<br>".join(f"`{name}`" for name in item.cache_tools) or "—"
         registered_rows.append((
@@ -460,6 +461,7 @@ def generated_check_matrix() -> str:
             cache_env,
             cache_tools,
             inputs,
+            cache_inputs,
             command,
         ))
     return "\n\n".join((
@@ -475,6 +477,7 @@ def generated_check_matrix() -> str:
                 "Cache environment",
                 "Cache tools",
                 "Declared inputs",
+                "Cache-only inputs",
                 "Focused command",
             ),
             registered_rows,

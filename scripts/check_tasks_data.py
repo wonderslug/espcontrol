@@ -26,6 +26,7 @@ class Task:
     parallel_safe: bool = False
     cache_env: tuple[str, ...] = ()
     cache_tools: tuple[str, ...] = ()
+    cache_inputs: tuple[str, ...] = ()
 
 
 def task(
@@ -40,6 +41,7 @@ def task(
     parallel_safe: bool = False,
     cache_env: tuple[str, ...] = (),
     cache_tools: tuple[str, ...] = (),
+    cache_inputs: tuple[str, ...] = (),
 ) -> Task:
     return Task(
         task_id,
@@ -53,6 +55,7 @@ def task(
         parallel_safe,
         cache_env,
         cache_tools,
+        cache_inputs,
     )
 
 
@@ -89,9 +92,12 @@ TASKS = (
          domains=("firmware", "workflow"), inputs=("scripts/local_esphome.py",), cache="never"),
     task("dev-docs", ("python3", "scripts/check_dev_docs.py", "--check"), profiles=FAST,
          domains=("docs",), inputs=MAINTAINER_DOCS + (
-             "docs/**", "scripts/check_dev_docs.py", "package.json", ".github/workflows/**",
+             "scripts/check_dev_docs.py", "package.json", ".github/workflows/**",
              "common/config/card_contract.json", "src/webserver/types/**",
              "components/espcontrol/button_grid*.h",
+         ), cache_inputs=(
+             "common/**", "components/**", "compatibility/**", "devices/**",
+             "docs/**", "product/**", "scripts/**", "src/**",
          ), parallel_safe=True),
     task("pr-process", ("python3", "scripts/check_pr_process.py", "--self-test"), profiles=FAST,
          domains=("workflow",), inputs=(".github/**", "scripts/check_pr_process.py"), cache="never"),

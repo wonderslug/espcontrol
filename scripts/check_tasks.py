@@ -75,6 +75,8 @@ def validate_registry(tasks: tuple[Task, ...] = TASKS) -> dict[str, Task]:
             raise ConfigurationError(f"task {item.id} has invalid cache environment declarations")
         if len(set(item.cache_tools)) != len(item.cache_tools) or any(not name for name in item.cache_tools):
             raise ConfigurationError(f"task {item.id} has invalid cache tool declarations")
+        if len(set(item.cache_inputs)) != len(item.cache_inputs) or any(not path for path in item.cache_inputs):
+            raise ConfigurationError(f"task {item.id} has invalid cache input declarations")
     for item in tasks:
         missing = set(item.dependencies) - set(registry)
         if missing:
@@ -353,6 +355,7 @@ def task_json(item: Task) -> dict[str, object]:
         "parallel_safe": item.parallel_safe,
         "cache_env": list(item.cache_env),
         "cache_tools": list(item.cache_tools),
+        "cache_inputs": list(item.cache_inputs),
     }
 
 
@@ -582,6 +585,7 @@ class CacheKeyBuilder:
             },
             "inputs": self.pattern_fingerprints(item.inputs),
             "generated_inputs": self.pattern_fingerprints(item.generated_inputs),
+            "cache_inputs": self.pattern_fingerprints(item.cache_inputs),
             "python_command_dependencies": self.python_command_dependencies(item),
             "orchestrator": [
                 self.file_fingerprint(self.root / "scripts" / "check_tasks.py"),
@@ -1268,11 +1272,17 @@ def self_test() -> None:
         if "compatibility/fixtures/product_compatibility.json" not in registry[task_id].inputs:
             raise AssertionError(f"{task_id} cache keys omit compatibility fixtures")
     if not {
+        "common/**",
+        "components/**",
+        "compatibility/**",
+        "devices/**",
         "package.json",
         ".github/workflows/**",
-        "common/config/card_contract.json",
         "docs/**",
-    } <= set(registry["dev-docs"].inputs):
+        "product/**",
+        "scripts/**",
+        "src/**",
+    } <= set(registry["dev-docs"].inputs + registry["dev-docs"].cache_inputs):
         raise AssertionError("dev-docs cache keys omit runtime validation inputs")
     if not {"c++", "g++", "clang++"} <= set(registry["firmware-parser"].cache_tools):
         raise AssertionError("firmware parser cache keys omit compiler tool versions")
@@ -1328,6 +1338,10 @@ def self_test() -> None:
     expect_invalid(
         (Task("cache-tools", (("true",),), cache_tools=("tool", "tool")),),
         "duplicate cache tool declarations",
+    )
+    expect_invalid(
+        (Task("cache-inputs", (("true",),), cache_inputs=("path", "path")),),
+        "duplicate cache input declarations",
     )
 
     first = Task("first", (("true",),), dependencies=("second",), inputs=("x",))
@@ -1625,6 +1639,7 @@ def self_test() -> None:
             (repo / "scripts" / "cache_entry.py").write_text("import cache_helper\n")
             (repo / "scripts" / "cache_helper.py").write_text("VALUE = 'helper-v1'\n")
             (repo / "input.txt").write_text("authored-v1\n")
+            (repo / "cache-only.txt").write_text("cache-only-v1\n")
             (repo / "generated.txt").write_text("generated-v1\n")
             (repo / "package-lock.json").write_text("lock-v1\n")
             (repo / "nested" / "deep").mkdir(parents=True)
@@ -1645,7 +1660,15 @@ def self_test() -> None:
                 generated_inputs=("generated.txt",),
                 cache="deterministic",
                 cache_env=("CHECK_TASK_TEST_ENV",),
+                cache_inputs=("cache-only.txt",),
             )
+
+            cache_only_key_v1 = CacheKeyBuilder(linked).key(cache_task, {})
+            (linked / "cache-only.txt").write_text("cache-only-v2\n")
+            cache_only_key_v2 = CacheKeyBuilder(linked).key(cache_task, {})
+            if cache_only_key_v1 == cache_only_key_v2:
+                raise AssertionError("a cache-only input did not invalidate the cache key")
+            (linked / "cache-only.txt").write_text("cache-only-v1\n")
 
             helper_task = Task(
                 "helper-import",
