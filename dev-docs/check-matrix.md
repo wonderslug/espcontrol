@@ -55,7 +55,7 @@ This detailed routing table is generated directly from `scripts/check_tasks_data
 | `card-contract-outputs` | product, firmware, web, docs | Yes | deterministic | — | — | `common/config/card_contract.json`<br>`scripts/check_card_contract_outputs.py` | — | `npm run check:card-contract-outputs` |
 | `device-slots` | firmware, product | Yes | deterministic | — | — | `common/assets/**`<br>`devices/**`<br>`scripts/generate_device_slots.py` | — | `python3 scripts/check_tasks.py run-task device-slots` |
 | `icon-groups` | firmware, product, docs | Yes | deterministic | — | — | `common/assets/**`<br>`devices/**`<br>`docs/.vitepress/theme/components/IconGallery.vue`<br>`scripts/check_icon_groups.py` | — | `python3 scripts/check_tasks.py run-task icon-groups` |
-| `timezones` | firmware, web | Yes | deterministic | `TZ` | — | `common/**`<br>`src/webserver/**`<br>`components/espcontrol/sun_calc.h`<br>`scripts/check_timezones.py` | — | `npm run check:timezones` |
+| `timezones` | firmware, web | Yes | never | — | — | `common/**`<br>`src/webserver/**`<br>`components/espcontrol/sun_calc.h`<br>`scripts/check_timezones.py` | — | `npm run check:timezones` |
 | `public-firmware-script` | firmware, workflow | Yes | deterministic | — | — | `scripts/**`<br>`docs/public/**` | — | `npm run check:public-firmware-script` |
 | `web-browser-smoke` | web | No | deterministic | `PLAYWRIGHT_BROWSERS_PATH`<br>`PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD` | — | `src/webserver/**`<br>`scripts/check_web_browser_smoke.js`<br>`package-lock.json` | — | `npm run check:web-browser-smoke` |
 | `docs-build` | docs | No | never | — | — | `docs/**`<br>`dev-docs/**`<br>`DEVELOPERS.md`<br>`README.md`<br>`product/README.md`<br>`package-lock.json` | — | `python3 scripts/check_tasks.py run-task docs-build` |

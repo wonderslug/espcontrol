@@ -1292,6 +1292,8 @@ def self_test() -> None:
         raise AssertionError("firmware parser cache keys omit normalization fixtures")
     if "components/espcontrol/sun_calc.h" not in registry["timezones"].inputs:
         raise AssertionError("timezone cache keys omit the firmware timezone table")
+    if registry["timezones"].cache != "never":
+        raise AssertionError("timezone validation is cached without a stable host tzdata fingerprint")
     if not {"common/**", "scripts/generate_device_slots.py"} <= set(registry["firmware-modals"].inputs):
         raise AssertionError("firmware modal cache keys omit common or generator inputs")
     if "common/**" not in registry["firmware-ha-bindings"].inputs:

@@ -156,7 +156,7 @@ TASKS = (
     task("timezones", ("python3", "scripts/check_timezones.py"),
          ("python3", "scripts/check_timezones.py", "--self-test"), profiles=FAST,
          domains=("firmware", "web"), inputs=("common/**", "src/webserver/**", "components/espcontrol/sun_calc.h", "scripts/check_timezones.py"),
-         parallel_safe=True, cache_env=("TZ",)),
+         parallel_safe=True, cache="never"),
     task("public-firmware-script", ("python3", "scripts/check_public_firmware.py", "--self-test"), profiles=PRODUCT,
          domains=("firmware", "workflow"), inputs=("scripts/**", "docs/public/**"), parallel_safe=True),
     task("web-browser-smoke", ("node", "scripts/check_web_browser_smoke.js"), dependencies=("generated", "device-manifest-output"), profiles=CI,
