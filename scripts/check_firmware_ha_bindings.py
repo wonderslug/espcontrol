@@ -819,6 +819,11 @@ def firmware_cover_art_refresh_errors(path: Path, root: Path) -> list[str]:
     ):
         errors.append(f"{rel}: finish recording the cover art touch pause before waking the display")
     if (
+        "script.execute: cover_art_pause_after_touch" in text
+        and "script.execute: screensaver_wake\n              - script.wait: screensaver_wake" not in text
+    ):
+        errors.append(f"{rel}: finish cover art wake cleanup before starting its return timer")
+    if (
         "cover_art_artist_label" in text
         and "if (!id(cover_art_artist).empty()) return id(cover_art_artist);" not in text
     ):
