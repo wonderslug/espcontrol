@@ -38,7 +38,6 @@ var state = {
   coverArtAttributeConditions: "",
   coverArtFilteringEnabled: false,
   coverArtDelay: 10,
-  coverArtTouchPause: 120,
   coverArtTrackOverlayDuration: 5,
   coverArtHideExternalInputOn: true,
   homeAssistantArtworkProtocol: "http",

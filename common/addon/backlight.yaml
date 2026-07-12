@@ -807,11 +807,22 @@ script:
       - if:
           condition:
             lambda: |-
-              const bool cover_art_touch_pause_active =
+              const bool cover_art_touch_return_pending =
                 id(cover_art_manual_pause_until_ms) != 0 &&
                 (int32_t)(id(cover_art_manual_pause_until_ms) - millis()) > 0;
+              const bool cover_art_immediate_return =
+                id(cover_art_manual_pause_until_ms) != 0 &&
+                !std::isnan(id(cover_art_delay).state) && id(cover_art_delay).state <= 0.0f;
+              float show_after_seconds = id(cover_art_delay).state;
+              if (std::isnan(show_after_seconds) || show_after_seconds < 0.0f) show_after_seconds = 10.0f;
+              const bool cover_art_disabled_mode_delay =
+                id(screensaver_mode).state != "timer" &&
+                id(screensaver_mode).state != "sensor" &&
+                show_after_seconds > 0.0f;
               return (id(media_player_sleep_prevention_enabled).state ||
-                      cover_art_touch_pause_active) &&
+                      cover_art_touch_return_pending ||
+                      cover_art_immediate_return ||
+                      cover_art_disabled_mode_delay) &&
                      id(cover_art_media_playing) &&
                      id(cover_art_screensaver_enabled).state &&
                      !alarm_display_takeover_active();

@@ -26,6 +26,7 @@ S3_PACKAGES_PATH = ROOT / "devices" / "guition-esp32-s3-4848s040" / "packages.ya
 DEVICE_DEVICE_PATHS = tuple(sorted((ROOT / "devices").glob("*/device/device.yaml")))
 DEVICE_SENSOR_PATHS = tuple(sorted((ROOT / "devices").glob("*/device/sensors.yaml")))
 DEVICE_PACKAGE_PATHS = tuple(sorted((ROOT / "devices").glob("*/packages.yaml")))
+DEVICE_TOUCH_PATHS = tuple(sorted((ROOT / "devices").glob("*/device/*.yaml")))
 CONNECTIVITY_PATHS = (
     ROOT / "common" / "addon" / "connectivity.yaml",
     ROOT / "common" / "addon" / "connectivity_deployed.yaml",
@@ -828,6 +829,19 @@ def firmware_cover_art_refresh_errors(path: Path, root: Path) -> list[str]:
         or "id(cover_art_runtime).retry_url.clear()" not in playback_started_body
     ):
         errors.append(f"{rel}: reset artwork retry state when playback resumes without a visible image")
+    if playback_started_body and "espcontrol::cover_art::display_allowed(" in playback_started_body:
+        errors.append(f"{rel}: let the playback-start event activate cover art before mirrored playback state settles")
+    if (
+        "cover_art_artist_label" in text
+        and "if (!id(cover_art_artist).empty()) return id(cover_art_artist);" not in text
+    ):
+        errors.append(f"{rel}: prefer a real artist name over the external-source fallback label")
+    pause_body = yaml_script_body(text, "cover_art_pause_after_touch")
+    if pause_body is not None and (
+        "return id(cover_art_screensaver_active);" not in pause_body
+        or "id(cover_art_manual_pause_until_ms) = 1;" not in pause_body
+    ):
+        errors.append(f"{rel}: only arm cover art return after an active cover-art dismissal")
     return errors
 
 
@@ -880,6 +894,23 @@ def firmware_media_sleep_prevention_errors(
             )
             if cover_art_sleep_match and cover_art_sleep_match.group(1) != "show_cover_art_view":
                 errors.append(f"{rel}: start cover art directly after the normal screensaver timeout")
+        if (
+            "cover_art_touch_return_pending" in text
+            and "id(cover_art_delay).state <= 0.0f" not in text
+        ):
+            errors.append(f"{rel}: re-arm cover art after touch when Show After is immediate")
+        if (
+            "const bool cover_art_immediate_return" in text
+            and "id(cover_art_manual_pause_until_ms) != 0 &&" not in text
+        ):
+            errors.append(f"{rel}: gate immediate cover art return to an actual dismissal")
+        if "const bool cover_art_immediate_return" in text and (
+            "const bool cover_art_disabled_mode_delay" not in text
+            or 'id(screensaver_mode).state != "timer"' not in text
+            or 'id(screensaver_mode).state != "sensor"' not in text
+            or "show_after_seconds > 0.0f" not in text
+        ):
+            errors.append(f"{rel}: restart positive Show After delay after touches in disabled screensaver mode")
 
     if display_path.exists():
         rel = display_path.relative_to(root)
@@ -897,11 +928,32 @@ def firmware_media_sleep_prevention_errors(
             "script.execute: cover_art_delay_timer" in playback_started_body
             and (
                 "id(media_player_sleep_prevention_enabled).state" not in playback_started_body
+                or 'id(screensaver_mode).state != "timer"' not in playback_started_body
+                or 'id(screensaver_mode).state != "sensor"' not in playback_started_body
                 or "script.execute: screensaver_idle_check" not in playback_started_body
             )
         ):
-            errors.append(f"{rel}: do not start cover art immediately unless media sleep prevention or screensaver is active")
+            errors.append(f"{rel}: let cover art use its own delay when the normal screensaver is disabled")
 
+    return errors
+
+
+def firmware_touch_cover_art_delay_errors(paths: tuple[Path, ...], root: Path) -> list[str]:
+    errors: list[str] = []
+    required_sequence = (
+        "on_touch:\n"
+        "      - script.execute: cover_art_pause_after_touch\n"
+        "      - script.wait: cover_art_pause_after_touch\n"
+        "      - script.execute: screensaver_wake"
+    )
+    for path in paths:
+        text = path.read_text(encoding="utf-8")
+        if "on_touch:" not in text or "script.execute: screensaver_wake" not in text:
+            continue
+        if required_sequence not in text:
+            errors.append(
+                f"{path.relative_to(root)}: restart the cover art Show After delay before every touchscreen wake"
+            )
     return errors
 
 
@@ -1731,6 +1783,7 @@ def run_scan() -> int:
     errors.extend(firmware_cover_art_refresh_errors(COVER_ART_PATH, ROOT))
     errors.extend(firmware_cover_art_disable_errors(COVER_ART_PATH, ROOT))
     errors.extend(firmware_media_sleep_prevention_errors(BACKLIGHT_PATH, DISPLAY_CONFIG_PATH, COVER_ART_PATH, ROOT))
+    errors.extend(firmware_touch_cover_art_delay_errors(DEVICE_TOUCH_PATHS, ROOT))
     errors.extend(firmware_media_sleep_prevention_subscription_errors(DEVICE_SENSOR_PATHS, ROOT))
     errors.extend(firmware_media_control_low_heap_metadata_errors(FIRMWARE_DIR, ROOT))
     errors.extend(firmware_cover_art_low_heap_progress_errors(FIRMWARE_DIR, COVER_ART_PATH, ROOT))
@@ -3567,7 +3620,7 @@ def run_self_test() -> int:
         (
             "do not let cover art alone keep the idle timer awake",
             "do not turn on media sleep prevention",
-            "do not start cover art immediately",
+            "let cover art use its own delay",
         ),
     )
     expect_media_sleep_prevention_errors(
@@ -3580,7 +3633,19 @@ def run_self_test() -> int:
         "            lambda: |-\n"
         "              return id(cover_art_screensaver_active) ||\n"
         "                     (id(media_player_sleep_prevention_enabled).state &&\n"
-        "                      id(media_player_playing));\n",
+        "                      id(media_player_playing));\n"
+        "  - id: screensaver_wake\n"
+        "    then:\n"
+        "      - if:\n"
+        "          condition:\n"
+        "            lambda: |-\n"
+        "              const bool cover_art_immediate_return =\n"
+        "                id(cover_art_manual_pause_until_ms) != 0 &&\n"
+        "                id(cover_art_delay).state <= 0.0f;\n"
+        "              const bool cover_art_disabled_mode_delay =\n"
+        "                id(screensaver_mode).state != \"timer\" &&\n"
+        "                id(screensaver_mode).state != \"sensor\" &&\n"
+        "                show_after_seconds > 0.0f;\n",
         "switch:\n"
         "  - platform: template\n"
         "    id: cover_art_screensaver_enabled\n"
@@ -3593,6 +3658,8 @@ def run_self_test() -> int:
         "          condition:\n"
         "            lambda: |-\n"
         "              return id(media_player_sleep_prevention_enabled).state ||\n"
+        "                     (id(screensaver_mode).state != \"timer\" &&\n"
+        "                      id(screensaver_mode).state != \"sensor\") ||\n"
         "                     id(display_asleep);\n"
         "          then:\n"
         "            - script.execute: cover_art_delay_timer\n"
@@ -3631,6 +3698,8 @@ def run_self_test() -> int:
         "          condition:\n"
         "            lambda: |-\n"
         "              return id(media_player_sleep_prevention_enabled).state ||\n"
+        "                     (id(screensaver_mode).state != \"timer\" &&\n"
+        "                      id(screensaver_mode).state != \"sensor\") ||\n"
         "                     id(display_asleep);\n"
         "          then:\n"
         "            - script.execute: cover_art_delay_timer\n"
@@ -3669,6 +3738,8 @@ def run_self_test() -> int:
         "          condition:\n"
         "            lambda: |-\n"
         "              return id(media_player_sleep_prevention_enabled).state ||\n"
+        "                     (id(screensaver_mode).state != \"timer\" &&\n"
+        "                      id(screensaver_mode).state != \"sensor\") ||\n"
         "                     id(display_asleep);\n"
         "          then:\n"
         "            - script.execute: cover_art_delay_timer\n"

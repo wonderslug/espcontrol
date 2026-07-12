@@ -193,10 +193,6 @@ lvgl:
           scrollbar_mode: "off"
           clickable: true
           hidden: true
-          on_press:
-            then:
-              - script.execute: cover_art_pause_after_touch
-              - script.execute: screensaver_wake
           widgets:
             - obj:
                 id: cover_art_backdrop
@@ -324,19 +320,25 @@ script:
   - id: cover_art_pause_after_touch
     mode: restart
     then:
-      - script.stop: cover_art_delay_timer
-      - lambda: |-
-          float seconds = id(cover_art_touch_pause).state;
-          if (std::isnan(seconds) || seconds < 0.0f) seconds = 120.0f;
-          if (seconds <= 0.0f) {
-            id(cover_art_manual_pause_until_ms) = 0;
-            ESP_LOGI("cover_art", "Cover art touch pause disabled");
-            return;
-          }
-          if (seconds > 300.0f) seconds = 300.0f;
-          uint32_t duration_ms = (uint32_t)(seconds * 1000.0f);
-          id(cover_art_manual_pause_until_ms) = millis() + duration_ms;
-          ESP_LOGI("cover_art", "Pausing cover art for %.0fs after touch", seconds);
+      - if:
+          condition:
+            lambda: 'return id(cover_art_screensaver_active);'
+          then:
+            - script.stop: cover_art_delay_timer
+            - lambda: |-
+                float seconds = id(cover_art_delay).state;
+                if (std::isnan(seconds) || seconds < 0.0f) seconds = 10.0f;
+                if (seconds <= 0.0f) {
+                  // A non-zero sentinel distinguishes a real cover-art dismissal
+                  // from an ordinary touchscreen wake when return is immediate.
+                  id(cover_art_manual_pause_until_ms) = 1;
+                  ESP_LOGI("cover_art", "Cover art returns immediately after touch");
+                  return;
+                }
+                if (seconds > 300.0f) seconds = 300.0f;
+                uint32_t duration_ms = (uint32_t)(seconds * 1000.0f);
+                id(cover_art_manual_pause_until_ms) = millis() + duration_ms;
+                ESP_LOGI("cover_art", "Waiting %.0fs to show cover art again after touch", seconds);
 
   - id: cover_art_wake_touch_block
     mode: restart
@@ -1077,10 +1079,8 @@ script:
             - lvgl.label.update:
                 id: cover_art_artist_label
                 text: !lambda |-
-                  if (id(cover_art_external_input_active)) {
-                    return espcontrol_i18n(std::string("Source"));
-                  }
-                  return id(cover_art_artist);
+                  if (!id(cover_art_artist).empty()) return id(cover_art_artist);
+                  return espcontrol_i18n(std::string("Source"));
             - lvgl.widget.show: cover_art_artist_label
           else:
             - lvgl.widget.hide: cover_art_artist_label
@@ -1411,6 +1411,9 @@ script:
                      (id(cover_art_manual_pause_until_ms) == 0 ||
                       (int32_t)(id(cover_art_manual_pause_until_ms) - millis()) <= 0);
           then:
+            - globals.set:
+                id: cover_art_manual_pause_until_ms
+                value: '0'
             - script.execute: show_cover_art_view
 
   - id: cover_art_playback_refresh
@@ -2094,16 +2097,14 @@ script:
                   now.is_valid() ? now.hour : 0,
                   (int) id(schedule_on_hour).state,
                   (int) id(schedule_off_hour).state);
-              return espcontrol::cover_art::display_allowed(
+              return espcontrol::cover_art::feature_allowed(
                   id(cover_art_screensaver_enabled).state,
-                  id(cover_art_media_playing),
                   !id(cover_art_media_player_entity).state.empty(),
                   id(cover_art_attribute_conditions_match),
                   id(cover_art_hide_external_input_enabled).state,
-                  id(cover_art_external_input_active),
-                  schedule_blocks,
-                  alarm_display_takeover_active(),
-                  false);
+                  id(cover_art_external_input_active)) &&
+                  !schedule_blocks &&
+                  !alarm_display_takeover_active();
           then:
             - lambda: |-
                 if (!id(cover_art_runtime).image_available) {
@@ -2116,6 +2117,8 @@ script:
                 condition:
                   lambda: |-
                     return id(media_player_sleep_prevention_enabled).state ||
+                           (id(screensaver_mode).state != "timer" &&
+                            id(screensaver_mode).state != "sensor") ||
                            id(display_asleep) ||
                            id(screen_schedule_asleep) ||
                            id(screensaver_display_off_active) ||

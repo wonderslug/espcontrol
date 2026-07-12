@@ -1822,7 +1822,6 @@ function backupFixture(device, slots) {
       cover_art_media_player_entity: "media_player.living",
       cover_art_attribute_conditions: "app_id=com.apple.TVMusic",
       cover_art_delay: 30,
-      cover_art_touch_pause: 180,
       cover_art_track_overlay_duration: 10,
       cover_art_hide_external_input: false,
       home_assistant_artwork_protocol: "https",
@@ -2055,15 +2054,6 @@ async function assertBackupImportSmoke(page, posts, testCase) {
         value: "30",
       },
       "backup cover art delay import",
-    ],
-    [
-      {
-        domain: "number",
-        name: "screen_saver__cover_art_touch_pause",
-        action: "set",
-        value: "180",
-      },
-      "backup cover art touch pause import",
     ],
     [
       {

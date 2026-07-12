@@ -59,7 +59,6 @@ function exportConfig() {
       cover_art_media_player_entity: state.coverArtMediaPlayerEntity,
       cover_art_attribute_conditions: state.coverArtAttributeConditions,
       cover_art_delay: state.coverArtDelay,
-      cover_art_touch_pause: state.coverArtTouchPause,
       cover_art_track_overlay_duration: state.coverArtTrackOverlayDuration,
       cover_art_hide_external_input: state.coverArtHideExternalInputOn,
       home_assistant_artwork_protocol: normalizeHomeAssistantArtworkProtocol(state.homeAssistantArtworkProtocol),
@@ -240,7 +239,6 @@ function importConfig() {
         postCoverArtMediaPlayerEntity(importedSettings.coverArtMediaPlayerEntity);
         postCoverArtConditions(importedSettings.coverArtAttributeConditions);
         postCoverArtDelay(importedSettings.coverArtDelay);
-        postCoverArtTouchPause(importedSettings.coverArtTouchPause);
         postCoverArtTrackOverlayDuration(importedSettings.coverArtTrackOverlayDuration);
         postCoverArtHideExternalInput(importedSettings.coverArtHideExternalInput);
         postHomeAssistantArtworkProtocol(importedSettings.coverArtHomeAssistantProtocol);
@@ -291,7 +289,6 @@ function importConfig() {
         state.coverArtMediaPlayerEntity = importedSettings.coverArtMediaPlayerEntity;
         state.coverArtAttributeConditions = importedSettings.coverArtAttributeConditions;
         state.coverArtDelay = importedSettings.coverArtDelay;
-        state.coverArtTouchPause = importedSettings.coverArtTouchPause;
         state.coverArtTrackOverlayDuration = importedSettings.coverArtTrackOverlayDuration;
         state.coverArtHideExternalInputOn = importedSettings.coverArtHideExternalInput;
         state.homeAssistantArtworkProtocol = importedSettings.coverArtHomeAssistantProtocol;
