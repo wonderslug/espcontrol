@@ -10,7 +10,7 @@ type LargeNumbersRule = true | {
 };
 
 export const CARD_CONTRACT_VERSION = 1 as const;
-export const CARD_CONTRACT_NORMALIZATION_HOOKS = ["normalize_action_fields", "action_large_numbers_supported", "normalize_action_options", "normalize_media_fields", "normalize_media_options", "normalize_fan_fields", "normalize_fan_options", "normalize_date_time_fields", "normalize_date_time_options", "normalize_mower_fields", "normalize_occupancy_fields", "normalize_occupancy_options", "normalize_sensor_fields", "normalize_sensor_options", "normalize_vacuum_fields"] as const;
+export const CARD_CONTRACT_NORMALIZATION_HOOKS = ["normalize_action_fields", "action_large_numbers_supported", "normalize_action_options", "normalize_media_fields", "normalize_media_options", "normalize_fan_fields", "normalize_fan_options", "normalize_date_time_fields", "normalize_date_time_options", "normalize_mower_fields", "normalize_occupancy_fields", "normalize_occupancy_options", "normalize_access_fields", "normalize_access_options", "normalize_sensor_fields", "normalize_sensor_options", "normalize_vacuum_fields"] as const;
 export const CARD_CONTRACT_MIGRATION_ACTIONS: Readonly<Record<string, MigrationActionSpec>> = {
   "legacy_local_action": {
     "when": [
@@ -1128,13 +1128,17 @@ export const CARD_CONTRACT_CARDS: Readonly<Record<string, CardTypeSpec>> = {
           "stop",
           "set_position"
         ],
-        "defaultValue": "modal"
+        "defaultValue": "modal",
+        "storageField": "sensor",
+        "omitDefault": false
       },
       {
         "name": "cover_position",
         "label": "Position",
         "kind": "number",
         "defaultValue": "50",
+        "storageField": "unit",
+        "omitDefault": false,
         "min": 0,
         "max": 100,
         "step": 1
@@ -1149,9 +1153,50 @@ export const CARD_CONTRACT_CARDS: Readonly<Record<string, CardTypeSpec>> = {
           "tilt",
           "presets"
         ],
-        "defaultValue": "position|controls|tilt|presets"
+        "defaultValue": "position|controls|tilt|presets",
+        "omitDefault": true
       }
     ],
+    "normalization": {
+      "fields": {
+        "entity": {
+          "policy": "keep"
+        },
+        "label": {
+          "policy": "keep"
+        },
+        "icon": {
+          "policy": "keep"
+        },
+        "icon_on": {
+          "policy": "keep"
+        },
+        "sensor": {
+          "policy": "hook",
+          "hook": "normalize_access_fields"
+        },
+        "unit": {
+          "policy": "hook",
+          "hook": "normalize_access_fields"
+        },
+        "type": {
+          "policy": "default",
+          "value": "cover"
+        },
+        "precision": {
+          "policy": "clear"
+        },
+        "options": {
+          "policy": "hook",
+          "hook": "normalize_access_options"
+        }
+      },
+      "unknownOptions": "drop",
+      "canonicalOptionOrder": [
+        "cover_tabs"
+      ],
+      "optionHook": "normalize_access_options"
+    },
     "behavior": {
       "cover": {
         "commandServices": {
@@ -1668,7 +1713,9 @@ export const CARD_CONTRACT_CARDS: Readonly<Record<string, CardTypeSpec>> = {
           "open",
           "close"
         ],
-        "defaultValue": ""
+        "defaultValue": "",
+        "storageField": "sensor",
+        "omitDefault": false
       },
       {
         "name": "label_display",
@@ -1678,9 +1725,50 @@ export const CARD_CONTRACT_CARDS: Readonly<Record<string, CardTypeSpec>> = {
           "label",
           "status"
         ],
-        "defaultValue": "label"
+        "defaultValue": "label",
+        "omitDefault": true
       }
     ],
+    "normalization": {
+      "fields": {
+        "entity": {
+          "policy": "keep"
+        },
+        "label": {
+          "policy": "keep"
+        },
+        "icon": {
+          "policy": "keep"
+        },
+        "icon_on": {
+          "policy": "hook",
+          "hook": "normalize_access_fields"
+        },
+        "sensor": {
+          "policy": "hook",
+          "hook": "normalize_access_fields"
+        },
+        "unit": {
+          "policy": "clear"
+        },
+        "type": {
+          "policy": "default",
+          "value": "garage"
+        },
+        "precision": {
+          "policy": "clear"
+        },
+        "options": {
+          "policy": "hook",
+          "hook": "normalize_access_options"
+        }
+      },
+      "unknownOptions": "drop",
+      "canonicalOptionOrder": [
+        "label_display"
+      ],
+      "optionHook": "normalize_access_options"
+    },
     "default": {
       "entity": "",
       "label": "",
@@ -1710,7 +1798,9 @@ export const CARD_CONTRACT_CARDS: Readonly<Record<string, CardTypeSpec>> = {
           "close",
           "stop"
         ],
-        "defaultValue": ""
+        "defaultValue": "",
+        "storageField": "sensor",
+        "omitDefault": false
       },
       {
         "name": "label_display",
@@ -1720,9 +1810,50 @@ export const CARD_CONTRACT_CARDS: Readonly<Record<string, CardTypeSpec>> = {
           "label",
           "status"
         ],
-        "defaultValue": "label"
+        "defaultValue": "label",
+        "omitDefault": true
       }
     ],
+    "normalization": {
+      "fields": {
+        "entity": {
+          "policy": "keep"
+        },
+        "label": {
+          "policy": "keep"
+        },
+        "icon": {
+          "policy": "keep"
+        },
+        "icon_on": {
+          "policy": "hook",
+          "hook": "normalize_access_fields"
+        },
+        "sensor": {
+          "policy": "hook",
+          "hook": "normalize_access_fields"
+        },
+        "unit": {
+          "policy": "clear"
+        },
+        "type": {
+          "policy": "default",
+          "value": "gate"
+        },
+        "precision": {
+          "policy": "clear"
+        },
+        "options": {
+          "policy": "hook",
+          "hook": "normalize_access_options"
+        }
+      },
+      "unknownOptions": "drop",
+      "canonicalOptionOrder": [
+        "label_display"
+      ],
+      "optionHook": "normalize_access_options"
+    },
     "default": {
       "entity": "",
       "label": "",
@@ -2028,9 +2159,47 @@ export const CARD_CONTRACT_CARDS: Readonly<Record<string, CardTypeSpec>> = {
           "lock",
           "unlock"
         ],
-        "defaultValue": ""
+        "defaultValue": "",
+        "storageField": "sensor",
+        "omitDefault": false
       }
     ],
+    "normalization": {
+      "fields": {
+        "entity": {
+          "policy": "keep"
+        },
+        "label": {
+          "policy": "keep"
+        },
+        "icon": {
+          "policy": "keep"
+        },
+        "icon_on": {
+          "policy": "hook",
+          "hook": "normalize_access_fields"
+        },
+        "sensor": {
+          "policy": "hook",
+          "hook": "normalize_access_fields"
+        },
+        "unit": {
+          "policy": "clear"
+        },
+        "type": {
+          "policy": "default",
+          "value": "lock"
+        },
+        "precision": {
+          "policy": "clear"
+        },
+        "options": {
+          "policy": "clear"
+        }
+      },
+      "unknownOptions": "drop",
+      "canonicalOptionOrder": []
+    },
     "behavior": {
       "lock": {
         "commandServices": {

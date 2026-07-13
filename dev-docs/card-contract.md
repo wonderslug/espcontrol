@@ -48,6 +48,7 @@ Generated consumers include:
 - `src/webserver/generated/saved_config_date_time.ts`
 - `src/webserver/generated/saved_config_mower.ts`
 - `src/webserver/generated/saved_config_occupancy.ts`
+- `src/webserver/generated/saved_config_access.ts`
 - `components/espcontrol/button_grid_contract_generated.h`
 - `components/espcontrol/button_grid_saved_config_vacuum_generated.h`
 - `components/espcontrol/button_grid_saved_config_sensor_generated.h`
@@ -58,6 +59,7 @@ Generated consumers include:
 - `components/espcontrol/button_grid_saved_config_date_time_generated.h`
 - `components/espcontrol/button_grid_saved_config_mower_generated.h`
 - `components/espcontrol/button_grid_saved_config_occupancy_generated.h`
+- `components/espcontrol/button_grid_saved_config_access_generated.h`
 - `docs/generated/cards/capabilities.md`
 
 Vacuum's routine saved-field policies and legacy migration actions are
@@ -101,6 +103,11 @@ default icon.
 Door/Window and Presence cards use generated occupancy routing for routine
 cleanup. Their reviewed field hook retains subtype-aware and presence default
 icons, while the named option hook preserves only the Active Color flag.
+
+Cover, Garage, Gate, and Lock cards use generated access routing for routine
+cleanup. Their reviewed field hook retains mode-sensitive unit and active-icon
+decisions, while the named option hook preserves the established modal-tab and
+status-label settings.
 
 An `allowed` field policy may declare `aliases` whose targets are in its
 allowed-value list. This preserves renamed legacy values before applying the
@@ -375,3 +382,5 @@ Lawn Mower also uses generated production routing, with only its named mode and
 default-icon hook kept by hand.
 Door/Window and Presence also use generated production routing, with only their
 named default-icon and Active Color option hooks kept by hand.
+Cover, Garage, Gate, and Lock also use generated production routing, with only
+their named mode-sensitive field and option hooks kept by hand.

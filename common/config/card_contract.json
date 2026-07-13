@@ -13,6 +13,8 @@
     "normalize_mower_fields",
     "normalize_occupancy_fields",
     "normalize_occupancy_options",
+    "normalize_access_fields",
+    "normalize_access_options",
     "normalize_sensor_fields",
     "normalize_sensor_options",
     "normalize_vacuum_fields"
@@ -660,13 +662,17 @@
           "label": "Type",
           "kind": "choice",
           "values": ["modal", "", "tilt", "toggle", "open", "close", "stop", "set_position"],
-          "defaultValue": "modal"
+          "defaultValue": "modal",
+          "storageField": "sensor",
+          "omitDefault": false
         },
         {
           "name": "cover_position",
           "label": "Position",
           "kind": "number",
           "defaultValue": "50",
+          "storageField": "unit",
+          "omitDefault": false,
           "min": 0,
           "max": 100,
           "step": 1
@@ -676,9 +682,26 @@
           "label": "Visible Tabs",
           "kind": "text",
           "values": ["position", "controls", "tilt", "presets"],
-          "defaultValue": "position|controls|tilt|presets"
+          "defaultValue": "position|controls|tilt|presets",
+          "omitDefault": true
         }
       ],
+      "normalization": {
+        "fields": {
+          "entity": { "policy": "keep" },
+          "label": { "policy": "keep" },
+          "icon": { "policy": "keep" },
+          "icon_on": { "policy": "keep" },
+          "sensor": { "policy": "hook", "hook": "normalize_access_fields" },
+          "unit": { "policy": "hook", "hook": "normalize_access_fields" },
+          "type": { "policy": "default", "value": "cover" },
+          "precision": { "policy": "clear" },
+          "options": { "policy": "hook", "hook": "normalize_access_options" }
+        },
+        "unknownOptions": "drop",
+        "canonicalOptionOrder": ["cover_tabs"],
+        "optionHook": "normalize_access_options"
+      },
       "behavior": {
         "cover": {
           "commandServices": {
@@ -992,16 +1015,35 @@
           "label": "Interaction",
           "kind": "choice",
           "values": ["", "open", "close"],
-          "defaultValue": ""
+          "defaultValue": "",
+          "storageField": "sensor",
+          "omitDefault": false
         },
         {
           "name": "label_display",
           "label": "Display",
           "kind": "choice",
           "values": ["label", "status"],
-          "defaultValue": "label"
+          "defaultValue": "label",
+          "omitDefault": true
         }
       ],
+      "normalization": {
+        "fields": {
+          "entity": { "policy": "keep" },
+          "label": { "policy": "keep" },
+          "icon": { "policy": "keep" },
+          "icon_on": { "policy": "hook", "hook": "normalize_access_fields" },
+          "sensor": { "policy": "hook", "hook": "normalize_access_fields" },
+          "unit": { "policy": "clear" },
+          "type": { "policy": "default", "value": "garage" },
+          "precision": { "policy": "clear" },
+          "options": { "policy": "hook", "hook": "normalize_access_options" }
+        },
+        "unknownOptions": "drop",
+        "canonicalOptionOrder": ["label_display"],
+        "optionHook": "normalize_access_options"
+      },
       "default": {
         "entity": "",
         "label": "",
@@ -1024,16 +1066,35 @@
           "label": "Interaction",
           "kind": "choice",
           "values": ["", "open", "close", "stop"],
-          "defaultValue": ""
+          "defaultValue": "",
+          "storageField": "sensor",
+          "omitDefault": false
         },
         {
           "name": "label_display",
           "label": "Display",
           "kind": "choice",
           "values": ["label", "status"],
-          "defaultValue": "label"
+          "defaultValue": "label",
+          "omitDefault": true
         }
       ],
+      "normalization": {
+        "fields": {
+          "entity": { "policy": "keep" },
+          "label": { "policy": "keep" },
+          "icon": { "policy": "keep" },
+          "icon_on": { "policy": "hook", "hook": "normalize_access_fields" },
+          "sensor": { "policy": "hook", "hook": "normalize_access_fields" },
+          "unit": { "policy": "clear" },
+          "type": { "policy": "default", "value": "gate" },
+          "precision": { "policy": "clear" },
+          "options": { "policy": "hook", "hook": "normalize_access_options" }
+        },
+        "unknownOptions": "drop",
+        "canonicalOptionOrder": ["label_display"],
+        "optionHook": "normalize_access_options"
+      },
       "default": {
         "entity": "",
         "label": "",
@@ -1239,9 +1300,26 @@
           "label": "Type",
           "kind": "choice",
           "values": ["", "lock", "unlock"],
-          "defaultValue": ""
+          "defaultValue": "",
+          "storageField": "sensor",
+          "omitDefault": false
         }
       ],
+      "normalization": {
+        "fields": {
+          "entity": { "policy": "keep" },
+          "label": { "policy": "keep" },
+          "icon": { "policy": "keep" },
+          "icon_on": { "policy": "hook", "hook": "normalize_access_fields" },
+          "sensor": { "policy": "hook", "hook": "normalize_access_fields" },
+          "unit": { "policy": "clear" },
+          "type": { "policy": "default", "value": "lock" },
+          "precision": { "policy": "clear" },
+          "options": { "policy": "clear" }
+        },
+        "unknownOptions": "drop",
+        "canonicalOptionOrder": []
+      },
       "behavior": {
         "lock": {
           "commandServices": {

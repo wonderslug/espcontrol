@@ -26,6 +26,7 @@ function checkCompiledHelper() {
 #include <cassert>
 #include <string>
 #include "button_grid_saved_config_action_generated.h"
+#include "button_grid_saved_config_access_generated.h"
 #include "button_grid_saved_config_date_time_generated.h"
 #include "button_grid_saved_config_fan_generated.h"
 #include "button_grid_saved_config_media_generated.h"
@@ -261,6 +262,37 @@ int main() {
     unrelated, [](Config &) {},
     [](const std::string &options, const Config &) { return options; }
   ));
+  Config cover{"cover", "bad_mode", "55", "2", "cover_tabs=position%7Ccontrols", "Custom", "cover.office", "Office", "Blinds"};
+  bool access_fields_called = false;
+  bool access_options_called = false;
+  assert(normalize_saved_config_access(
+    cover,
+    [&](Config &config) {
+      access_fields_called = true;
+      config.sensor.clear();
+      config.unit.clear();
+    },
+    [&](const std::string &, const Config &config) {
+      access_options_called = config.type == "cover" && config.sensor.empty();
+      return std::string();
+    }
+  ));
+  assert(access_fields_called && access_options_called);
+  assert(cover.entity == "cover.office" && cover.label == "Office");
+  assert(cover.sensor.empty() && cover.unit.empty() && cover.precision.empty());
+  assert(cover.icon == "Blinds" && cover.icon_on == "Custom" && cover.options.empty());
+  Config lock{"lock", "unlock", "unit", "2", "unknown=1", "Lock Open", "lock.front", "Front", "Lock"};
+  assert(normalize_saved_config_access(
+    lock,
+    [](Config &config) { config.icon_on = config.sensor.empty() ? "Lock Open" : "Auto"; },
+    [](const std::string &, const Config &) { return std::string("unexpected"); }
+  ));
+  assert(lock.sensor == "unlock" && lock.icon_on == "Auto");
+  assert(lock.unit.empty() && lock.precision.empty() && lock.options.empty());
+  assert(!normalize_saved_config_access(
+    unrelated, [](Config &) {},
+    [](const std::string &options, const Config &) { return options; }
+  ));
 }
 `);
     childProcess.execFileSync(compiler(), [
@@ -465,6 +497,19 @@ function main() {
   assert.deepStrictEqual(presence, { type: "presence", entity: "", label: "Living Room", icon: "Motion Sensor Off", icon_on: "Motion Sensor", sensor: "binary_sensor.presence", unit: "", precision: "", options: "active_color" });
   assert.strictEqual(generatedOccupancy.normalizeSavedConfigOccupancy({ type: "sensor", options: "keep" }, () => {}, (options) => options), false);
 
+  const generatedAccess = loadTypeScriptModule(path.join(ROOT, "src/webserver/generated/saved_config_access.ts"));
+  const gate = { type: "gate", entity: "cover.gate", label: "Driveway", icon: "Gate", icon_on: "Gate Open", sensor: "bad_mode", unit: "unit", precision: "2", options: "label_display=status,unknown=1" };
+  let accessFieldsCalled = false;
+  let accessOptionsCalled = false;
+  assert.strictEqual(generatedAccess.normalizeSavedConfigAccess(
+    gate,
+    (config) => { accessFieldsCalled = true; config.sensor = ""; },
+    (_options, config) => { accessOptionsCalled = config.type === "gate" && config.sensor === ""; return "label_display=status"; },
+  ), true);
+  assert(accessFieldsCalled && accessOptionsCalled);
+  assert.deepStrictEqual(gate, { type: "gate", entity: "cover.gate", label: "Driveway", icon: "Gate", icon_on: "Gate Open", sensor: "", unit: "", precision: "", options: "label_display=status" });
+  assert.strictEqual(generatedAccess.normalizeSavedConfigAccess({ type: "sensor", options: "keep" }, () => {}, (options) => options), false);
+
   const browser = fs.readFileSync(path.join(ROOT, "src/webserver/application/config_codec.ts"), "utf8");
   assert.match(browser, /from "\.\.\/generated\/saved_config_vacuum";/);
   assert.match(browser, /migrateSavedConfigVacuumLegacy\(b\)/);
@@ -510,6 +555,12 @@ function main() {
   assert.match(browser, /normalizeSavedConfigOccupancy\(b, normalizeSavedConfigOccupancyFields, normalizeSavedConfigOccupancyOptions\)/);
   assert.doesNotMatch(browser, /else if \(b && b\.type === "door_window"\)/);
   assert.doesNotMatch(browser, /else if \(b && b\.type === "presence"\)/);
+  assert.match(browser, /from "\.\.\/generated\/saved_config_access";/);
+  assert.match(browser, /normalizeSavedConfigAccess\(b, normalizeSavedConfigAccessFields, normalizeSavedConfigAccessOptions\)/);
+  assert.doesNotMatch(browser, /if \(b && b\.type === "garage"\)/);
+  assert.doesNotMatch(browser, /if \(b && b\.type === "gate"\)/);
+  assert.doesNotMatch(browser, /if \(b && b\.type === "cover"\)/);
+  assert.doesNotMatch(browser, /if \(b && b\.type === "lock"\)/);
 
   const vacuumCard = fs.readFileSync(path.join(ROOT, "src/webserver/cards/vacuum.ts"), "utf8");
   assert.match(vacuumCard, /normalizeSavedConfigVacuumSensor\(String\(b\.sensor \|\| ""\)\)/);
@@ -565,9 +616,16 @@ function main() {
   assert.match(firmware, /normalize_saved_config_occupancy\(\s*p, normalize_saved_config_occupancy_fields,/);
   assert.doesNotMatch(firmware, /if \(p\.type == "door_window"\) \{\s*p\.entity\.clear\(\);/);
   assert.doesNotMatch(firmware, /if \(p\.type == "presence"\) \{\s*p\.entity\.clear\(\);/);
+  assert.match(firmware, /#include "button_grid_saved_config_access_generated\.h"/);
+  assert.match(firmware, /normalize_saved_config_access\(\s*p, normalize_saved_config_access_fields,/);
+  const normalizeParser = firmware.slice(firmware.indexOf("inline ParsedCfg normalize_parsed_cfg"));
+  assert.doesNotMatch(normalizeParser, /if \(p\.type == "garage"\) \{\s*if \(!card_runtime_garage_mode_valid/);
+  assert.doesNotMatch(normalizeParser, /if \(p\.type == "gate"\) \{\s*if \(!card_runtime_gate_mode_valid/);
+  assert.doesNotMatch(normalizeParser, /if \(p\.type == "cover"\) \{\s*if \(!card_runtime_cover_mode_valid/);
+  assert.doesNotMatch(normalizeParser, /if \(p\.type == "lock"\) \{\s*if \(!card_runtime_lock_mode_valid/);
 
   checkCompiledHelper();
-  console.log("Saved-config production check passed: Action, Date/Time, Fan, Lawn Mower, Media, Occupancy, Sensor, Vacuum, and static card normalization use generated browser and compiled firmware helpers.");
+  console.log("Saved-config production check passed: Access, Action, Date/Time, Fan, Lawn Mower, Media, Occupancy, Sensor, Vacuum, and static card normalization use generated browser and compiled firmware helpers.");
 }
 
 main();

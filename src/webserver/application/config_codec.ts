@@ -14,6 +14,7 @@ import { normalizeSavedConfigFan } from "../generated/saved_config_fan";
 import { normalizeSavedConfigDateTime } from "../generated/saved_config_date_time";
 import { normalizeSavedConfigMower } from "../generated/saved_config_mower";
 import { normalizeSavedConfigOccupancy } from "../generated/saved_config_occupancy";
+import { normalizeSavedConfigAccess } from "../generated/saved_config_access";
 export function installConfigCodecModule(): GlobalDescriptors {
     // ── Subpage helpers ────────────────────────────────────────────────────
     function normalizeWithRegisteredCardType(this: any, b?: any) {
@@ -127,6 +128,38 @@ export function installConfigCodecModule(): GlobalDescriptors {
             ? normalizeDoorWindowOptions(options || "")
             : normalizePresenceOptions(options || "");
     }
+    function normalizeSavedConfigAccessFields(this: any, b?: any) {
+        if (!b)
+            return;
+        if (b.type === "garage") {
+            b.sensor = normalizeGarageMode(b.sensor);
+            if (b.sensor)
+                b.icon_on = "Auto";
+        }
+        else if (b.type === "gate") {
+            b.sensor = normalizeGateMode(b.sensor);
+            if (b.sensor)
+                b.icon_on = "Auto";
+        }
+        else if (b.type === "cover") {
+            b.sensor = normalizeCoverMode(b.sensor, true);
+            if (b.sensor !== "set_position")
+                b.unit = "";
+        }
+        else if (b.type === "lock") {
+            b.sensor = normalizeLockMode(b.sensor);
+            b.icon_on = b.sensor ? "Auto" : ((!b.icon_on || b.icon_on === "Auto") ? "Lock Open" : b.icon_on);
+        }
+    }
+    function normalizeSavedConfigAccessOptions(this: any, options?: any, b?: any) {
+        if (!b)
+            return "";
+        if (b.type === "garage")
+            return normalizeGarageOptions(options || "", b.sensor);
+        if (b.type === "gate")
+            return normalizeGateOptions(options || "", b.sensor);
+        return normalizeCoverOptionsForMode(options || "", b.sensor);
+    }
     function normalizeButtonConfig(this: any, b?: any) {
         if (b)
             b.options = b.options || "";
@@ -166,35 +199,7 @@ export function installConfigCodecModule(): GlobalDescriptors {
             b.precision = normalizeClimatePrecisionConfig(b.precision);
             b.options = normalizeClimateOptions(b.options, true);
         }
-        if (b && b.type === "garage") {
-            if (b.sensor !== "open" && b.sensor !== "close")
-                b.sensor = "";
-            b.unit = "";
-            b.precision = "";
-            if (b.sensor === "open" || b.sensor === "close")
-                b.icon_on = "Auto";
-            b.options = normalizeGarageOptions(b.options, b.sensor);
-        }
-        if (b && b.type === "gate") {
-            if (b.sensor !== "open" && b.sensor !== "close" && b.sensor !== "stop")
-                b.sensor = "";
-            b.unit = "";
-            b.precision = "";
-            if (b.sensor === "open" || b.sensor === "close" || b.sensor === "stop")
-                b.icon_on = "Auto";
-            b.options = normalizeGateOptions(b.options, b.sensor);
-        }
-        if (b && b.type === "cover") {
-            b.sensor = normalizeCoverMode(b.sensor, true);
-            b.options = normalizeCoverOptionsForMode(b.options, b.sensor);
-        }
-        if (b && b.type === "lock") {
-            b.sensor = (b.sensor === "lock" || b.sensor === "unlock") ? b.sensor : "";
-            b.unit = "";
-            b.precision = "";
-            b.options = "";
-            b.icon_on = b.sensor ? "Auto" : ((!b.icon_on || b.icon_on === "Auto") ? "Lock Open" : b.icon_on);
-        }
+        var normalizedSavedAccess: any = !!(b && normalizeSavedConfigAccess(b, normalizeSavedConfigAccessFields, normalizeSavedConfigAccessOptions));
         if (b && b.type === "alarm") {
             b.sensor = "";
             b.unit = "";
@@ -260,7 +265,7 @@ export function installConfigCodecModule(): GlobalDescriptors {
         if (b && !normalizedSavedSensor && !b.type) {
             b.options = normalizeSwitchConfirmationOptions(b.options);
         }
-        else if (b && !normalizedSavedSensor && !normalizedSavedOccupancy && !normalizedSavedStatic && !normalizedSavedFan && !normalizedSavedMower && b.type !== "action" && b.type !== "alarm" && b.type !== "alarm_action" && !isClimateCardType(b.type) && b.type !== "cover" && b.type !== "garage" && b.type !== "gate" && b.type !== "webhook" && b.type !== "todo" && b.type !== "media" && b.type !== "subpage" && b.type !== "image" && b.type !== "light_control" && b.type !== "vacuum" && !cardLargeNumbersSupported(b)) {
+        else if (b && !normalizedSavedSensor && !normalizedSavedAccess && !normalizedSavedOccupancy && !normalizedSavedStatic && !normalizedSavedFan && !normalizedSavedMower && b.type !== "action" && b.type !== "alarm" && b.type !== "alarm_action" && !isClimateCardType(b.type) && b.type !== "webhook" && b.type !== "todo" && b.type !== "media" && b.type !== "subpage" && b.type !== "image" && b.type !== "light_control" && b.type !== "vacuum" && !cardLargeNumbersSupported(b)) {
             b.options = "";
         }
         return b;
