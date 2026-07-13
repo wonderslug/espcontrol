@@ -65,6 +65,11 @@
     "expected": { "entity": "select.scene", "label": "Scene", "icon": "Flash", "icon_on": "Auto", "sensor": "input_select.select_option", "unit": "", "type": "action", "precision": "", "options": "" }
   },
   {
+    "name": "action state explicitly preserves zero precision",
+    "input": "scene.movie;Movie;Flash;Auto;scene.turn_on;;action;;state_entity=sensor.power,state_unit=W,state_precision=0,large_numbers",
+    "expected": { "entity": "scene.movie", "label": "Movie", "icon": "Flash", "icon_on": "Auto", "sensor": "scene.turn_on", "unit": "", "type": "action", "precision": "", "options": "state_entity=sensor.power,state_unit=W,state_precision=0,large_numbers" }
+  },
+  {
     "name": "unknown card type drops unknown options",
     "input": "sensor.x;Mystery;Auto;Auto;sensor.y;W;future_card;2;future_option=1",
     "expected": { "entity": "sensor.x", "label": "Mystery", "icon": "Auto", "icon_on": "Auto", "sensor": "sensor.y", "unit": "W", "type": "future_card", "precision": "2", "options": "" }

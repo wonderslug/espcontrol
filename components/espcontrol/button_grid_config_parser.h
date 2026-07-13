@@ -866,7 +866,7 @@ inline std::string action_card_options_normalized(const std::string &options,
       if (!state_unit.empty()) {
         append_config_token(out, "state_unit=" + encode_compact_field(state_unit));
       }
-      if (state_precision == "1" || state_precision == "2") {
+      if (state_precision == "0" || state_precision == "1" || state_precision == "2") {
         append_config_token(out, "state_precision=" + state_precision);
       }
       append_large_numbers_option(out, options);
