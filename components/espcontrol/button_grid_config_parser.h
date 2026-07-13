@@ -13,6 +13,7 @@
 #include "button_grid_saved_config_action_generated.h"
 #include "button_grid_saved_config_media_generated.h"
 #include "button_grid_saved_config_sensor_generated.h"
+#include "button_grid_saved_config_static_generated.h"
 #include "button_grid_saved_config_vacuum_generated.h"
 
 constexpr const char *SENSOR_STATE_LABELS_OPTION = card_runtime_option_name_state_labels();
@@ -1106,16 +1107,7 @@ inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
       : "Auto";
     if (!image_card_label_enabled(p)) p.label.clear();
   }
-  if (p.type == "screen_lock") {
-    p.entity.clear();
-    p.label.clear();
-    p.sensor.clear();
-    p.unit.clear();
-    p.precision.clear();
-    p.options.clear();
-    p.icon = "Lock";
-    p.icon_on = "Lock Open";
-  }
+  const bool normalized_saved_static = normalize_saved_config_static(p);
   if (p.type == "calendar") {
     if (p.entity.empty()) p.entity = "sensor.date";
     p.label.clear();
@@ -1153,12 +1145,6 @@ inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
     p.icon_on = "Auto";
     if (p.icon.empty() || p.icon == "Auto") p.icon = "Check";
     p.options = todo_card_options_normalized(p.options);
-  }
-  if (p.type == "light_switch") {
-    p.sensor.clear();
-    p.unit.clear();
-    p.precision.clear();
-    p.options.clear();
   }
   if (p.type == "light_control") {
     p.sensor.clear();
@@ -1209,7 +1195,7 @@ inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
     if (p.icon_on.empty() || p.icon_on == "Auto") p.icon_on = "Motion Sensor";
     p.options = presence_card_options_normalized(p.options);
   }
-  if (!p.type.empty() && p.type != "action" && p.type != "alarm" && p.type != "alarm_action" && !climate_card_type(p.type) && p.type != "cover" && p.type != "garage" && p.type != "gate" && p.type != "webhook" && p.type != "screen_lock" && p.type != "todo" && p.type != "sensor" && p.type != "door_window" && p.type != "presence" && p.type != "media" && p.type != "subpage" && p.type != "image" && p.type != "light_control" && p.type != "vacuum" && p.type != "lawn_mower" && !fan_card_type(p.type) && !card_large_numbers_supported(p)) {
+  if (!normalized_saved_static && !p.type.empty() && p.type != "action" && p.type != "alarm" && p.type != "alarm_action" && !climate_card_type(p.type) && p.type != "cover" && p.type != "garage" && p.type != "gate" && p.type != "webhook" && p.type != "todo" && p.type != "sensor" && p.type != "door_window" && p.type != "presence" && p.type != "media" && p.type != "subpage" && p.type != "image" && p.type != "light_control" && p.type != "vacuum" && p.type != "lawn_mower" && !fan_card_type(p.type) && !card_large_numbers_supported(p)) {
     p.options.clear();
   }
   normalize_saved_config_sensor(p, was_legacy_text_sensor,

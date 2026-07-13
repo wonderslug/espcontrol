@@ -854,7 +854,9 @@
           "label": "Mode",
           "kind": "choice",
           "values": ["switch", "push"],
-          "defaultValue": "switch"
+          "defaultValue": "switch",
+          "storageField": "sensor",
+          "omitDefault": false
         }
       ],
       "behavior": {
@@ -865,6 +867,21 @@
           },
           "defaultIconOn": "Lightbulb"
         }
+      },
+      "normalization": {
+        "fields": {
+          "entity": { "policy": "keep" },
+          "label": { "policy": "keep" },
+          "icon": { "policy": "keep" },
+          "icon_on": { "policy": "keep" },
+          "sensor": { "policy": "keep" },
+          "unit": { "policy": "keep" },
+          "type": { "policy": "default", "value": "internal" },
+          "precision": { "policy": "keep" },
+          "options": { "policy": "clear" }
+        },
+        "unknownOptions": "drop",
+        "canonicalOptionOrder": []
       },
       "default": {
         "entity": "",
@@ -899,6 +916,21 @@
       "allowInSubpage": true,
       "pickerKey": "light_brightness",
       "domains": ["light"],
+      "normalization": {
+        "fields": {
+          "entity": { "policy": "keep" },
+          "label": { "policy": "keep" },
+          "icon": { "policy": "keep" },
+          "icon_on": { "policy": "keep" },
+          "sensor": { "policy": "clear" },
+          "unit": { "policy": "clear" },
+          "type": { "policy": "default", "value": "light_switch" },
+          "precision": { "policy": "clear" },
+          "options": { "policy": "clear" }
+        },
+        "unknownOptions": "drop",
+        "canonicalOptionOrder": []
+      },
       "default": {
         "entity": "",
         "label": "",
@@ -1185,6 +1217,21 @@
           "defaultIconOn": "Auto"
         }
       },
+      "normalization": {
+        "fields": {
+          "entity": { "policy": "keep" },
+          "label": { "policy": "keep" },
+          "icon": { "policy": "keep" },
+          "icon_on": { "policy": "keep" },
+          "sensor": { "policy": "keep" },
+          "unit": { "policy": "keep" },
+          "type": { "policy": "default", "value": "push" },
+          "precision": { "policy": "keep" },
+          "options": { "policy": "clear" }
+        },
+        "unknownOptions": "drop",
+        "canonicalOptionOrder": []
+      },
       "default": {
         "entity": "",
         "label": "",
@@ -1201,6 +1248,21 @@
       "label": "Screen Lock",
       "allowInSubpage": true,
       "domains": [],
+      "normalization": {
+        "fields": {
+          "entity": { "policy": "clear" },
+          "label": { "policy": "clear" },
+          "icon": { "policy": "default", "value": "Lock" },
+          "icon_on": { "policy": "default", "value": "Lock Open" },
+          "sensor": { "policy": "clear" },
+          "unit": { "policy": "clear" },
+          "type": { "policy": "default", "value": "screen_lock" },
+          "precision": { "policy": "clear" },
+          "options": { "policy": "clear" }
+        },
+        "unknownOptions": "drop",
+        "canonicalOptionOrder": []
+      },
       "default": {
         "entity": "",
         "label": "",

@@ -18,7 +18,7 @@ Each card entry can define:
 - `default` - default saved config for a new card.
 - aliases or picker metadata where supported by the schema.
 
-Pilot card definitions also contain a `normalization` section. It records a
+Migrated card definitions also contain a `normalization` section. It records a
 policy for every saved field, the canonical stored-option order, the current
 unknown-option policy, named migration actions, and any reviewed custom hook.
 Hooks must be listed in `normalizationHooks`; arbitrary executable expressions
@@ -41,11 +41,15 @@ Generated consumers include:
 - `src/webserver/generated/card_contract.ts`
 - `src/webserver/generated/saved_config_vacuum.ts`
 - `src/webserver/generated/saved_config_sensor.ts`
+- `src/webserver/generated/saved_config_action.ts`
+- `src/webserver/generated/saved_config_media.ts`
+- `src/webserver/generated/saved_config_static.ts`
 - `components/espcontrol/button_grid_contract_generated.h`
 - `components/espcontrol/button_grid_saved_config_vacuum_generated.h`
 - `components/espcontrol/button_grid_saved_config_sensor_generated.h`
 - `components/espcontrol/button_grid_saved_config_action_generated.h`
 - `components/espcontrol/button_grid_saved_config_media_generated.h`
+- `components/espcontrol/button_grid_saved_config_static_generated.h`
 - `docs/generated/cards/capabilities.md`
 
 Vacuum's routine saved-field policies and legacy migration actions are
@@ -66,6 +70,10 @@ invokes the reviewed `normalize_action_fields` hook before
 Media routine orchestration is generated for browser and firmware. The
 generated routine invokes the reviewed `normalize_media_fields` hook before
 `normalize_media_options`.
+
+Trigger, Internal, Screen Lock, and basic Light Switch cards use the shared
+static-card generator. Their rules are entirely declarative, so these families
+need no custom normalization hooks in either browser or firmware.
 
 An `allowed` field policy may declare `aliases` whose targets are in its
 allowed-value list. This preserves renamed legacy values before applying the
@@ -326,4 +334,9 @@ Saved-configuration normalization moves to generated helpers one card family at 
 
 Shadow helpers are deliberately not included by production firmware yet, so this stage adds 0 bytes of device flash and 0 bytes of RAM. The shadow check fails if the generated C++ header is included from another firmware header; this preserves the 8 KiB flash guard until a later PR deliberately switches a production family.
 
-Production rollout starts with one low-risk field or migration at a time. Vacuum routine fields and legacy actions now use generated browser and firmware helpers. Sensor rollout has begun with its declarative legacy local-sensor and text-sensor migrations; the remaining Sensor hooks and other card families stay on their established production paths until their focused production steps.
+Production rollout proceeds in focused card-family groups. Vacuum, Sensor,
+Action, and Media now use generated production routing, with reviewed hooks
+retained for their genuinely card-specific decisions. Trigger, Internal,
+Screen Lock, and basic Light Switch are the first fully declarative group; the
+remaining card families stay on their established production paths until their
+focused migration steps.

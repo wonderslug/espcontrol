@@ -28,6 +28,7 @@ function checkCompiledHelper() {
 #include "button_grid_saved_config_action_generated.h"
 #include "button_grid_saved_config_media_generated.h"
 #include "button_grid_saved_config_sensor_generated.h"
+#include "button_grid_saved_config_static_generated.h"
 #include "button_grid_saved_config_vacuum_generated.h"
 struct Config {
   std::string type;
@@ -38,19 +39,20 @@ struct Config {
   std::string icon_on;
   std::string entity;
   std::string label;
+  std::string icon;
 };
 int main() {
-  Config local_action{"local", "stale", "unit", "2", "unknown=1", "Custom", "", ""};
+  Config local_action{"local", "stale", "unit", "2", "unknown=1", "Custom", "", "", ""};
   assert(migrate_saved_config_action_legacy(local_action));
   assert(local_action.type == "action" && local_action.sensor == "local");
   assert(local_action.unit.empty() && local_action.precision.empty() && local_action.options.empty());
   assert(local_action.icon_on == "Auto");
-  Config option_select{"option_select", "stale", "unit", "2", "unknown=1", "Custom", "", ""};
+  Config option_select{"option_select", "stale", "unit", "2", "unknown=1", "Custom", "", "", ""};
   assert(migrate_saved_config_action_legacy(option_select));
   assert(option_select.type == "action" && option_select.sensor == "input_select.select_option");
   assert(option_select.unit.empty() && option_select.precision.empty() && option_select.options.empty());
   assert(option_select.icon_on == "Auto");
-  Config regular_action{"action", "scene.turn_on", "", "", "", "Auto", "", ""};
+  Config regular_action{"action", "scene.turn_on", "", "", "", "Auto", "", "", ""};
   assert(!migrate_saved_config_action_legacy(regular_action));
   bool action_fields_called = false;
   bool action_options_called = false;
@@ -69,7 +71,7 @@ int main() {
   ));
   assert(action_fields_called && action_options_called);
   assert(regular_action.precision.empty() && regular_action.options == "unknown=1option-hook");
-  Config media{"media", "controls", "", "state", "unknown=1", "Auto", "media_player.living_room", "Media"};
+  Config media{"media", "controls", "", "state", "unknown=1", "Auto", "media_player.living_room", "Media", ""};
   bool media_fields_called = false;
   bool media_options_called = false;
   assert(normalize_saved_config_media(
@@ -87,15 +89,15 @@ int main() {
   assert(media_fields_called && media_options_called);
   assert(media.sensor == "play_pause" && media.label == "Play/Pause");
   assert(media.options == "unknown=1option-hook");
-  Config start{"action", "vacuum.start", "area", "2", "unknown=1", "Custom", "", ""};
+  Config start{"action", "vacuum.start", "area", "2", "unknown=1", "Custom", "", "", ""};
   assert(migrate_saved_config_vacuum_legacy(start));
   assert(start.type == "vacuum" && start.sensor == "start_stop");
   assert(start.unit.empty() && start.precision.empty() && start.options.empty());
   assert(start.icon_on == "Auto");
-  Config dock{"action", "vacuum.return_to_base", "area", "2", "unknown=1", "Custom", "", ""};
+  Config dock{"action", "vacuum.return_to_base", "area", "2", "unknown=1", "Custom", "", "", ""};
   assert(migrate_saved_config_vacuum_legacy(dock));
   assert(dock.type == "vacuum" && dock.sensor == "dock");
-  Config unrelated{"action", "light.turn_on", "", "", "", "Auto", "", ""};
+  Config unrelated{"action", "light.turn_on", "", "", "", "Auto", "", "", ""};
   assert(!migrate_saved_config_vacuum_legacy(unrelated));
   assert(normalize_saved_config_vacuum_sensor("dock") == "dock");
   assert(normalize_saved_config_vacuum_sensor("vacuum.start") == "start_stop");
@@ -105,13 +107,13 @@ int main() {
   assert(normalize_saved_config_vacuum_precision("2").empty());
   assert(normalize_saved_config_vacuum_options("").empty());
   assert(normalize_saved_config_vacuum_options("unknown=1").empty());
-  Config local_sensor{"local_sensor", "stale", "unit", "7", "unknown=1", "Custom", "", ""};
+  Config local_sensor{"local_sensor", "stale", "unit", "7", "unknown=1", "Custom", "", "", ""};
   assert(migrate_saved_config_sensor_legacy(local_sensor));
   assert(local_sensor.type == "sensor" && local_sensor.sensor == "local");
   assert(local_sensor.icon_on == "Auto" && local_sensor.options.empty());
-  Config regular_sensor{"sensor", "", "", "", "", "Auto", "", ""};
+  Config regular_sensor{"sensor", "", "", "", "", "Auto", "", "", ""};
   assert(!migrate_saved_config_sensor_legacy(regular_sensor));
-  Config text_sensor{"text_sensor", "stale", "unit", "7", "unknown=1", "Custom", "sensor.old", "Old label"};
+  Config text_sensor{"text_sensor", "stale", "unit", "7", "unknown=1", "Custom", "sensor.old", "Old label", ""};
   assert(migrate_saved_config_sensor_legacy(text_sensor));
   assert(text_sensor.type == "sensor" && text_sensor.precision == "text");
   assert(text_sensor.entity.empty() && text_sensor.label.empty() && text_sensor.unit.empty());
@@ -136,6 +138,17 @@ int main() {
     [](Config &, bool) {},
     [](const std::string &options, const std::string &) { return options; }
   ));
+  Config screen_lock{"screen_lock", "stale", "unit", "2", "unknown=1", "Auto", "switch.stale", "Stale", "Security"};
+  assert(normalize_saved_config_static(screen_lock));
+  assert(screen_lock.entity.empty() && screen_lock.label.empty() && screen_lock.sensor.empty());
+  assert(screen_lock.unit.empty() && screen_lock.precision.empty() && screen_lock.options.empty());
+  assert(screen_lock.icon == "Lock" && screen_lock.icon_on == "Lock Open");
+  Config light_switch{"light_switch", "stale", "unit", "2", "unknown=1", "Custom", "light.kitchen", "Kitchen", "Custom"};
+  assert(normalize_saved_config_static(light_switch));
+  assert(light_switch.sensor.empty() && light_switch.unit.empty());
+  assert(light_switch.precision.empty() && light_switch.options.empty());
+  assert(light_switch.entity == "light.kitchen" && light_switch.icon == "Custom");
+  assert(!normalize_saved_config_static(unrelated));
 }
 `);
     childProcess.execFileSync(compiler(), [
@@ -254,6 +267,21 @@ function main() {
     { type: "action", options: "keep", precision: "" }, false, () => {}, (options) => options,
   ), false);
 
+  const generatedStatic = loadTypeScriptModule(path.join(ROOT, "src/webserver/generated/saved_config_static.ts"));
+  const screenLock = {
+    type: "screen_lock", entity: "switch.stale", label: "Stale", icon: "Security", icon_on: "Auto",
+    sensor: "stale", unit: "unit", precision: "2", options: "unknown=1",
+  };
+  assert.strictEqual(generatedStatic.normalizeSavedConfigStatic(screenLock), true);
+  assert.deepStrictEqual(screenLock, {
+    type: "screen_lock", entity: "", label: "", icon: "Lock", icon_on: "Lock Open",
+    sensor: "", unit: "", precision: "", options: "",
+  });
+  const internal = { type: "internal", entity: "relay_1", sensor: "push", options: "unknown=1" };
+  assert.strictEqual(generatedStatic.normalizeSavedConfigStatic(internal), true);
+  assert.deepStrictEqual(internal, { type: "internal", entity: "relay_1", sensor: "push", options: "" });
+  assert.strictEqual(generatedStatic.normalizeSavedConfigStatic({ type: "sensor", options: "keep" }), false);
+
   const browser = fs.readFileSync(path.join(ROOT, "src/webserver/application/config_codec.ts"), "utf8");
   assert.match(browser, /from "\.\.\/generated\/saved_config_vacuum";/);
   assert.match(browser, /migrateSavedConfigVacuumLegacy\(b\)/);
@@ -278,6 +306,10 @@ function main() {
   assert.match(browser, /from "\.\.\/generated\/saved_config_media";/);
   assert.match(browser, /normalizeSavedConfigMedia\(b, normalizeSavedConfigMediaFields, normalizeMediaOptions\)/);
   assert.doesNotMatch(browser, /if \(b && b\.type === "media"\)/);
+  assert.match(browser, /from "\.\.\/generated\/saved_config_static";/);
+  assert.match(browser, /normalizeSavedConfigStatic\(b\)/);
+  assert.doesNotMatch(browser, /if \(b && b\.type === "screen_lock"\)/);
+  assert.doesNotMatch(browser, /if \(b && b\.type === "light_switch"\)/);
 
   const vacuumCard = fs.readFileSync(path.join(ROOT, "src/webserver/cards/vacuum.ts"), "utf8");
   assert.match(vacuumCard, /normalizeSavedConfigVacuumSensor\(String\(b\.sensor \|\| ""\)\)/);
@@ -313,9 +345,13 @@ function main() {
   assert.match(firmware, /#include "button_grid_saved_config_media_generated\.h"/);
   assert.match(firmware, /normalize_saved_config_media\(p, normalize_saved_config_media_fields,/);
   assert.doesNotMatch(firmware, /if \(p\.type == "media"\) \{\s*if \(p\.sensor == "controls"\)/);
+  assert.match(firmware, /#include "button_grid_saved_config_static_generated\.h"/);
+  assert.match(firmware, /normalize_saved_config_static\(p\)/);
+  assert.doesNotMatch(firmware, /if \(p\.type == "screen_lock"\)/);
+  assert.doesNotMatch(firmware, /if \(p\.type == "light_switch"\)/);
 
   checkCompiledHelper();
-  console.log("Saved-config production check passed: Action, Media, Sensor, and Vacuum production normalization use generated browser and compiled firmware helpers.");
+  console.log("Saved-config production check passed: Action, Media, Sensor, Vacuum, and static card normalization use generated browser and compiled firmware helpers.");
 }
 
 main();

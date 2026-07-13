@@ -9,6 +9,7 @@ import {
 import { migrateSavedConfigSensorLegacy, normalizeSavedConfigSensor } from "../generated/saved_config_sensor";
 import { migrateSavedConfigActionLegacy, normalizeSavedConfigAction } from "../generated/saved_config_action";
 import { normalizeSavedConfigMedia } from "../generated/saved_config_media";
+import { normalizeSavedConfigStatic } from "../generated/saved_config_static";
 export function installConfigCodecModule(): GlobalDescriptors {
     // ── Subpage helpers ────────────────────────────────────────────────────
     function normalizeWithRegisteredCardType(this: any, b?: any) {
@@ -179,16 +180,7 @@ export function installConfigCodecModule(): GlobalDescriptors {
                 normalizeWebhookConfig(b);
         }
         normalizeWithRegisteredCardType(b);
-        if (b && b.type === "screen_lock") {
-            b.entity = "";
-            b.label = "";
-            b.sensor = "";
-            b.unit = "";
-            b.precision = "";
-            b.options = "";
-            b.icon = "Lock";
-            b.icon_on = "Lock Open";
-        }
+        var normalizedSavedStatic: any = !!(b && normalizeSavedConfigStatic(b));
         if (b && b.type === "calendar") {
             if (!b.entity)
                 b.entity = cardContractDefaultConfig("calendar").entity;
@@ -240,12 +232,6 @@ export function installConfigCodecModule(): GlobalDescriptors {
             if (!imageLabelEnabled(b))
                 b.label = "";
         }
-        if (b && b.type === "light_switch") {
-            b.sensor = "";
-            b.unit = "";
-            b.precision = "";
-            b.options = "";
-        }
         if (b && b.type === "light_control") {
             b.sensor = "";
             b.unit = "";
@@ -288,7 +274,7 @@ export function installConfigCodecModule(): GlobalDescriptors {
                 b.icon_on = "Motion Sensor";
             b.options = normalizePresenceOptions(b.options);
         }
-        else if (b && !normalizedSavedSensor && b.type !== "action" && b.type !== "alarm" && b.type !== "alarm_action" && !isClimateCardType(b.type) && b.type !== "cover" && b.type !== "garage" && b.type !== "gate" && b.type !== "webhook" && b.type !== "screen_lock" && b.type !== "todo" && b.type !== "media" && b.type !== "presence" && b.type !== "subpage" && b.type !== "image" && b.type !== "light_control" && b.type !== "vacuum" && b.type !== "lawn_mower" && !isFanCardType(b.type) && !cardLargeNumbersSupported(b)) {
+        else if (b && !normalizedSavedSensor && !normalizedSavedStatic && b.type !== "action" && b.type !== "alarm" && b.type !== "alarm_action" && !isClimateCardType(b.type) && b.type !== "cover" && b.type !== "garage" && b.type !== "gate" && b.type !== "webhook" && b.type !== "todo" && b.type !== "media" && b.type !== "presence" && b.type !== "subpage" && b.type !== "image" && b.type !== "light_control" && b.type !== "vacuum" && b.type !== "lawn_mower" && !isFanCardType(b.type) && !cardLargeNumbersSupported(b)) {
             b.options = "";
         }
         return b;
