@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "button_grid_card_runtime.h"
+#include "button_grid_saved_config_action_generated.h"
 #include "button_grid_saved_config_sensor_generated.h"
 #include "button_grid_saved_config_vacuum_generated.h"
 
@@ -951,15 +952,7 @@ inline std::string action_card_options_normalized(const std::string &options,
 }
 
 inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
-  if (p.type == "local") {
-    p.type = "action";
-    p.sensor = "local";
-    p.unit.clear();
-    p.precision.clear();
-    p.options.clear();
-    p.icon_on = "Auto";
-    if (p.icon.empty() || p.icon == "Auto" || p.icon == "Flash") p.icon = "Gesture Tap";
-  }
+  migrate_saved_config_action_legacy(p);
   const bool was_legacy_text_sensor = p.type == "text_sensor";
   migrate_saved_config_sensor_legacy(p);
   // Slider cards used to store "h" here for horizontal layout. Sliders are
@@ -1156,15 +1149,6 @@ inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
   }
   if (p.type == "subpage") {
     p.options = subpage_card_options_normalized(p.options, p.sensor, p.precision);
-  }
-  if (p.type == "option_select") {
-    p.type = "action";
-    p.sensor = card_runtime_option_select_canonical_action();
-    p.unit.clear();
-    p.precision.clear();
-    p.options.clear();
-    p.icon_on = "Auto";
-    if (p.icon.empty() || p.icon == "Auto" || p.icon == "Chevron Down") p.icon = "Flash";
   }
   if (action_card_option_select(p)) {
     p.sensor = card_runtime_option_select_canonical_action();

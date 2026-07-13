@@ -7,6 +7,7 @@ import {
     normalizeSavedConfigVacuumSensor,
 } from "../generated/saved_config_vacuum";
 import { migrateSavedConfigSensorLegacy, normalizeSavedConfigSensor } from "../generated/saved_config_sensor";
+import { migrateSavedConfigActionLegacy } from "../generated/saved_config_action";
 export function installConfigCodecModule(): GlobalDescriptors {
     // ── Subpage helpers ────────────────────────────────────────────────────
     function normalizeWithRegisteredCardType(this: any, b?: any) {
@@ -37,16 +38,8 @@ export function installConfigCodecModule(): GlobalDescriptors {
     function normalizeButtonConfig(this: any, b?: any) {
         if (b)
             b.options = b.options || "";
-        if (b && b.type === "local") {
-            b.type = "action";
-            b.sensor = ACTION_CARD_LOCAL_ACTION;
-            b.unit = "";
-            b.precision = "";
-            b.options = "";
-            b.icon_on = "Auto";
-            if (!b.icon || b.icon === "Auto" || b.icon === "Flash")
-                b.icon = "Gesture Tap";
-        }
+        if (b)
+            migrateSavedConfigActionLegacy(b);
         var wasLegacyTextSensor: any = !!(b && b.type === "text_sensor");
         if (b)
             migrateSavedConfigSensorLegacy(b);
@@ -267,16 +260,6 @@ export function installConfigCodecModule(): GlobalDescriptors {
         if (b && b.type === "subpage") {
             applySubpagePresetConfig(b);
             b.options = normalizeSubpageOptions(b.options, b.sensor, b.precision);
-        }
-        if (b && b.type === "option_select") {
-            b.type = "action";
-            b.sensor = ACTION_CARD_OPTION_SELECT_ACTION;
-            b.unit = "";
-            b.precision = "";
-            b.icon_on = "Auto";
-            b.options = "";
-            if (!b.icon || b.icon === "Auto" || b.icon === "Chevron Down")
-                b.icon = "Flash";
         }
         if (b && actionCardIsOptionSelect(b)) {
             b.sensor = ACTION_CARD_OPTION_SELECT_ACTION;

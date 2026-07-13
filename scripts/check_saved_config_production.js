@@ -25,6 +25,7 @@ function checkCompiledHelper() {
     fs.writeFileSync(source, `
 #include <cassert>
 #include <string>
+#include "button_grid_saved_config_action_generated.h"
 #include "button_grid_saved_config_sensor_generated.h"
 #include "button_grid_saved_config_vacuum_generated.h"
 struct Config {
@@ -38,6 +39,18 @@ struct Config {
   std::string label;
 };
 int main() {
+  Config local_action{"local", "stale", "unit", "2", "unknown=1", "Custom", "", ""};
+  assert(migrate_saved_config_action_legacy(local_action));
+  assert(local_action.type == "action" && local_action.sensor == "local");
+  assert(local_action.unit.empty() && local_action.precision.empty() && local_action.options.empty());
+  assert(local_action.icon_on == "Auto");
+  Config option_select{"option_select", "stale", "unit", "2", "unknown=1", "Custom", "", ""};
+  assert(migrate_saved_config_action_legacy(option_select));
+  assert(option_select.type == "action" && option_select.sensor == "input_select.select_option");
+  assert(option_select.unit.empty() && option_select.precision.empty() && option_select.options.empty());
+  assert(option_select.icon_on == "Auto");
+  Config regular_action{"action", "scene.turn_on", "", "", "", "Auto", "", ""};
+  assert(!migrate_saved_config_action_legacy(regular_action));
   Config start{"action", "vacuum.start", "area", "2", "unknown=1", "Custom", "", ""};
   assert(migrate_saved_config_vacuum_legacy(start));
   assert(start.type == "vacuum" && start.sensor == "start_stop");
@@ -101,6 +114,15 @@ int main() {
 
 function main() {
   const contract = JSON.parse(fs.readFileSync(path.join(ROOT, "common/config/card_contract.json"), "utf8"));
+  assert.deepStrictEqual(contract.cards.action.normalization.migrationActions.slice(0, 2), ["legacy_local_action", "legacy_option_select"]);
+  const generatedAction = loadTypeScriptModule(path.join(ROOT, "src/webserver/generated/saved_config_action.ts"));
+  const localAction = { type: "local", sensor: "stale", unit: "unit", precision: "2", options: "unknown=1", icon_on: "Custom" };
+  assert.strictEqual(generatedAction.migrateSavedConfigActionLegacy(localAction), true);
+  assert.deepStrictEqual(localAction, { type: "action", sensor: "local", unit: "", precision: "", options: "", icon_on: "Auto" });
+  const optionSelect = { type: "option_select", sensor: "stale", unit: "unit", precision: "2", options: "unknown=1", icon_on: "Custom" };
+  assert.strictEqual(generatedAction.migrateSavedConfigActionLegacy(optionSelect), true);
+  assert.deepStrictEqual(optionSelect, { type: "action", sensor: "input_select.select_option", unit: "", precision: "", options: "", icon_on: "Auto" });
+  assert.strictEqual(generatedAction.migrateSavedConfigActionLegacy({ type: "action", sensor: "scene.turn_on" }), false);
   const fields = contract.cards.vacuum.normalization.fields;
   assert.strictEqual(fields.sensor.policy, "allowed");
   assert.strictEqual(fields.sensor.fallback, "start_stop");
@@ -174,6 +196,10 @@ function main() {
   assert.doesNotMatch(browser, /if \(b && b\.type === "local_sensor"\)/);
   assert.doesNotMatch(browser, /if \(b && b\.type === "text_sensor"\)/);
   assert.doesNotMatch(browser, /else if \(b && b\.type === "sensor"\)/);
+  assert.match(browser, /from "\.\.\/generated\/saved_config_action";/);
+  assert.match(browser, /migrateSavedConfigActionLegacy\(b\)/);
+  assert.doesNotMatch(browser, /if \(b && b\.type === "local"\) \{\s*b\.type = "action"/);
+  assert.doesNotMatch(browser, /if \(b && b\.type === "option_select"\) \{\s*b\.type = "action"/);
 
   const vacuumCard = fs.readFileSync(path.join(ROOT, "src/webserver/cards/vacuum.ts"), "utf8");
   assert.match(vacuumCard, /normalizeSavedConfigVacuumSensor\(String\(b\.sensor \|\| ""\)\)/);
@@ -200,9 +226,13 @@ function main() {
   assert.match(firmware, /normalize_saved_config_sensor\(p, was_legacy_text_sensor,/);
   assert.doesNotMatch(firmware, /p\.type == "local_sensor"/);
   assert.doesNotMatch(firmware, /if \(p\.type == "text_sensor"\)/);
+  assert.match(firmware, /#include "button_grid_saved_config_action_generated\.h"/);
+  assert.match(firmware, /migrate_saved_config_action_legacy\(p\)/);
+  assert.doesNotMatch(firmware, /if \(p\.type == "local"\)/);
+  assert.doesNotMatch(firmware, /if \(p\.type == "option_select"\)/);
 
   checkCompiledHelper();
-  console.log("Saved-config production check passed: Vacuum and Sensor routine orchestration use generated browser and compiled firmware helpers.");
+  console.log("Saved-config production check passed: Action type migrations plus Vacuum and Sensor routine orchestration use generated browser and compiled firmware helpers.");
 }
 
 main();
