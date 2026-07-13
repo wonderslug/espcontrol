@@ -57,6 +57,11 @@ function shadowCases() {
       expected: config({ label: "Küche 🤖", icon: "Robot Vacuum Variant", sensor: "dock" }),
     },
     {
+      name: "compact vacuum decodes valid escapes beside malformed text",
+      input: "~vacuum.robot,a%3Ab%ZZ,Auto,Auto,status,,vacuum,,",
+      expected: config({ label: "a:b%ZZ", sensor: "status" }),
+    },
+    {
       name: "vacuum preserves a 255 byte label",
       input: `vacuum.robot;${"x".repeat(255)};Auto;Auto;status;ignored;vacuum;2;unknown=1`,
       expected: config({ label: "x".repeat(255), sensor: "status" }),
