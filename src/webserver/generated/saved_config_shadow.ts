@@ -379,22 +379,22 @@ export function normalizeSavedConfigActionShadow(input: Partial<CardConfig>): Ca
     config.unit = ""; config.precision = ""; config.options = ""; config.icon_on = "Auto";
     if (!config.icon || config.icon === "Auto" || config.icon === "Flash") config.icon = "Gesture Tap"; return config;
   }
-  config.precision = ""; const source = config.options; const out: string[] = []; const stateEntity = optionValue(source, "state_entity");
+  config.precision = ""; const source = config.options; const out: string[] = []; const stateEntity = optionValue(source, "state_entity").trim();
   if (stateEntity) {
     out.push("state_entity=" + encodeOptionValue(stateEntity)); const rawPrecision = optionValue(source, "state_precision");
     if (rawPrecision === "icon" || rawPrecision === "text") out.push("state_precision=" + rawPrecision);
     else {
-      const stateUnit = optionValue(source, "state_unit"); const numericPrecision = ["0", "1", "2"].indexOf(rawPrecision) >= 0;
+      const stateUnit = optionValue(source, "state_unit").trim(); const numericPrecision = ["0", "1", "2"].indexOf(rawPrecision) >= 0;
       if (stateUnit) out.push("state_unit=" + encodeOptionValue(stateUnit));
       if (numericPrecision) out.push("state_precision=" + rawPrecision);
       if (optionValue(source, "large_numbers") === "off") out.push("large_numbers=off"); else if (optionPresent(source, "large_numbers")) out.push("large_numbers");
     }
   }
   if (config.sensor === "script.turn_on") {
-    const fields = optionValue(source, "script_fields"); if (fields) out.push("script_fields=" + encodeOptionValue(fields));
+    const fields = optionValue(source, "script_fields").trim(); if (fields) out.push("script_fields=" + encodeOptionValue(fields));
     if (optionPresent(source, "confirm_on")) {
       out.push("confirm_on"); const values: readonly (readonly [string, string])[] = [["confirm_message", "Run this script?"], ["confirm_yes", "Yes"], ["confirm_no", "No"]];
-      for (const [name, defaultValue] of values) { const value = optionValue(source, name); if (value && value !== defaultValue) out.push(name + "=" + encodeOptionValue(value)); }
+      for (const [name, defaultValue] of values) { const value = optionValue(source, name).trim(); if (value && value !== defaultValue) out.push(name + "=" + encodeOptionValue(value)); }
     }
   }
   config.options = out.join(","); return config;
