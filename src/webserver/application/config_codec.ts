@@ -15,6 +15,7 @@ import { normalizeSavedConfigDateTime } from "../generated/saved_config_date_tim
 import { normalizeSavedConfigMower } from "../generated/saved_config_mower";
 import { normalizeSavedConfigOccupancy } from "../generated/saved_config_occupancy";
 import { normalizeSavedConfigAccess } from "../generated/saved_config_access";
+import { normalizeSavedConfigSecurity } from "../generated/saved_config_security";
 export function installConfigCodecModule(): GlobalDescriptors {
     // ── Subpage helpers ────────────────────────────────────────────────────
     function normalizeWithRegisteredCardType(this: any, b?: any) {
@@ -160,6 +161,23 @@ export function installConfigCodecModule(): GlobalDescriptors {
             return normalizeGateOptions(options || "", b.sensor);
         return normalizeCoverOptionsForMode(options || "", b.sensor);
     }
+    function normalizeSavedConfigSecurityFields(this: any, b?: any) {
+        if (!b)
+            return;
+        if (b.type === "alarm") {
+            if (!b.icon || b.icon === "Auto")
+                b.icon = "Security";
+            return;
+        }
+        b.sensor = alarmActionInfo(b.sensor) ? b.sensor : "away";
+        if (!b.label)
+            b.label = alarmActionInfo(b.sensor).label;
+        if (!b.icon || b.icon === "Auto" || b.icon === alarmActionLegacyIcon(b.sensor))
+            b.icon = alarmActionInfo(b.sensor).icon;
+    }
+    function normalizeSavedConfigSecurityOptions(this: any, options?: any, _b?: any) {
+        return normalizeAlarmOptions(options || "");
+    }
     function normalizeButtonConfig(this: any, b?: any) {
         if (b)
             b.options = b.options || "";
@@ -200,27 +218,8 @@ export function installConfigCodecModule(): GlobalDescriptors {
             b.options = normalizeClimateOptions(b.options, true);
         }
         var normalizedSavedAccess: any = !!(b && normalizeSavedConfigAccess(b, normalizeSavedConfigAccessFields, normalizeSavedConfigAccessOptions));
-        if (b && b.type === "alarm") {
-            b.sensor = "";
-            b.unit = "";
-            b.precision = "";
-            b.icon_on = "Auto";
-            if (!b.icon || b.icon === "Auto")
-                b.icon = "Security";
-            b.options = normalizeAlarmOptions(b.options);
-        }
-        if (b && b.type === "alarm_action") {
-            b.sensor = alarmActionInfo(b.sensor) ? b.sensor : "away";
-            b.unit = "";
-            b.precision = "";
-            b.icon_on = "Auto";
-            if (!b.label)
-                b.label = alarmActionInfo(b.sensor).label;
-            if (!b.icon || b.icon === "Auto" || b.icon === alarmActionLegacyIcon(b.sensor)) {
-                b.icon = alarmActionInfo(b.sensor).icon;
-            }
-            b.options = normalizeAlarmOptions(b.options);
-        }
+        if (b)
+            normalizeSavedConfigSecurity(b, normalizeSavedConfigSecurityFields, normalizeSavedConfigSecurityOptions);
         if (b && b.type === "webhook") {
             if (typeof normalizeWebhookConfig === "function")
                 normalizeWebhookConfig(b);

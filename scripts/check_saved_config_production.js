@@ -27,6 +27,7 @@ function checkCompiledHelper() {
 #include <string>
 #include "button_grid_saved_config_action_generated.h"
 #include "button_grid_saved_config_access_generated.h"
+#include "button_grid_saved_config_security_generated.h"
 #include "button_grid_saved_config_date_time_generated.h"
 #include "button_grid_saved_config_fan_generated.h"
 #include "button_grid_saved_config_media_generated.h"
@@ -293,6 +294,43 @@ int main() {
     unrelated, [](Config &) {},
     [](const std::string &options, const Config &) { return options; }
   ));
+  Config alarm{"alarm", "stale", "unit", "2", "pin_arm=0,unknown=1", "Custom", "alarm_control_panel.home", "Home", "Auto"};
+  bool security_fields_called = false;
+  bool security_options_called = false;
+  assert(normalize_saved_config_security(
+    alarm,
+    [&](Config &config) {
+      security_fields_called = true;
+      config.icon = "Security";
+    },
+    [&](const std::string &, const Config &config) {
+      security_options_called = config.type == "alarm" && config.sensor.empty();
+      return std::string("pin_arm=0");
+    }
+  ));
+  assert(security_fields_called && security_options_called);
+  assert(alarm.entity == "alarm_control_panel.home" && alarm.label == "Home");
+  assert(alarm.icon == "Security" && alarm.icon_on == "Auto");
+  assert(alarm.sensor.empty() && alarm.unit.empty() && alarm.precision.empty());
+  assert(alarm.options == "pin_arm=0");
+  Config alarm_action{"alarm_action", "bad", "unit", "2", "pin_disarm=0", "Custom", "alarm_control_panel.home", "", "Auto"};
+  assert(normalize_saved_config_security(
+    alarm_action,
+    [](Config &config) {
+      config.sensor = "away";
+      config.label = "Arm Away";
+      config.icon = "Shield Lock";
+    },
+    [](const std::string &, const Config &) { return std::string("pin_disarm=0"); }
+  ));
+  assert(alarm_action.sensor == "away" && alarm_action.label == "Arm Away");
+  assert(alarm_action.icon == "Shield Lock" && alarm_action.icon_on == "Auto");
+  assert(alarm_action.unit.empty() && alarm_action.precision.empty());
+  assert(alarm_action.options == "pin_disarm=0");
+  assert(!normalize_saved_config_security(
+    unrelated, [](Config &) {},
+    [](const std::string &options, const Config &) { return options; }
+  ));
 }
 `);
     childProcess.execFileSync(compiler(), [
@@ -510,6 +548,19 @@ function main() {
   assert.deepStrictEqual(gate, { type: "gate", entity: "cover.gate", label: "Driveway", icon: "Gate", icon_on: "Gate Open", sensor: "", unit: "", precision: "", options: "label_display=status" });
   assert.strictEqual(generatedAccess.normalizeSavedConfigAccess({ type: "sensor", options: "keep" }, () => {}, (options) => options), false);
 
+  const generatedSecurity = loadTypeScriptModule(path.join(ROOT, "src/webserver/generated/saved_config_security.ts"));
+  const alarmAction = { type: "alarm_action", entity: "alarm_control_panel.home", label: "", icon: "Security", icon_on: "Custom", sensor: "bad", unit: "unit", precision: "2", options: "pin_arm=0,unknown=1" };
+  let securityFieldsCalled = false;
+  let securityOptionsCalled = false;
+  assert.strictEqual(generatedSecurity.normalizeSavedConfigSecurity(
+    alarmAction,
+    (config) => { securityFieldsCalled = true; config.sensor = "away"; config.label = "Arm Away"; config.icon = "Shield Lock"; },
+    (_options, config) => { securityOptionsCalled = config.type === "alarm_action" && config.sensor === "away"; return "pin_arm=0"; },
+  ), true);
+  assert(securityFieldsCalled && securityOptionsCalled);
+  assert.deepStrictEqual(alarmAction, { type: "alarm_action", entity: "alarm_control_panel.home", label: "Arm Away", icon: "Shield Lock", icon_on: "Auto", sensor: "away", unit: "", precision: "", options: "pin_arm=0" });
+  assert.strictEqual(generatedSecurity.normalizeSavedConfigSecurity({ type: "sensor", options: "keep" }, () => {}, (options) => options), false);
+
   const browser = fs.readFileSync(path.join(ROOT, "src/webserver/application/config_codec.ts"), "utf8");
   assert.match(browser, /from "\.\.\/generated\/saved_config_vacuum";/);
   assert.match(browser, /migrateSavedConfigVacuumLegacy\(b\)/);
@@ -561,6 +612,10 @@ function main() {
   assert.doesNotMatch(browser, /if \(b && b\.type === "gate"\)/);
   assert.doesNotMatch(browser, /if \(b && b\.type === "cover"\)/);
   assert.doesNotMatch(browser, /if \(b && b\.type === "lock"\)/);
+  assert.match(browser, /from "\.\.\/generated\/saved_config_security";/);
+  assert.match(browser, /normalizeSavedConfigSecurity\(b, normalizeSavedConfigSecurityFields, normalizeSavedConfigSecurityOptions\)/);
+  assert.doesNotMatch(browser, /if \(b && b\.type === "alarm"\)/);
+  assert.doesNotMatch(browser, /if \(b && b\.type === "alarm_action"\)/);
 
   const vacuumCard = fs.readFileSync(path.join(ROOT, "src/webserver/cards/vacuum.ts"), "utf8");
   assert.match(vacuumCard, /normalizeSavedConfigVacuumSensor\(String\(b\.sensor \|\| ""\)\)/);
@@ -623,9 +678,13 @@ function main() {
   assert.doesNotMatch(normalizeParser, /if \(p\.type == "gate"\) \{\s*if \(!card_runtime_gate_mode_valid/);
   assert.doesNotMatch(normalizeParser, /if \(p\.type == "cover"\) \{\s*if \(!card_runtime_cover_mode_valid/);
   assert.doesNotMatch(normalizeParser, /if \(p\.type == "lock"\) \{\s*if \(!card_runtime_lock_mode_valid/);
+  assert.match(firmware, /#include "button_grid_saved_config_security_generated\.h"/);
+  assert.match(firmware, /normalize_saved_config_security\(\s*p, normalize_saved_config_security_fields,/);
+  assert.doesNotMatch(normalizeParser, /if \(p\.type == "alarm"\) \{\s*p\.sensor\.clear\(\);/);
+  assert.doesNotMatch(normalizeParser, /if \(p\.type == "alarm_action"\) \{\s*if \(!alarm_action_mode_valid/);
 
   checkCompiledHelper();
-  console.log("Saved-config production check passed: Access, Action, Date/Time, Fan, Lawn Mower, Media, Occupancy, Sensor, Vacuum, and static card normalization use generated browser and compiled firmware helpers.");
+  console.log("Saved-config production check passed: Access, Action, Date/Time, Fan, Lawn Mower, Media, Occupancy, Security, Sensor, Vacuum, and static card normalization use generated browser and compiled firmware helpers.");
 }
 
 main();

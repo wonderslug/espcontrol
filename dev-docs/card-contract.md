@@ -384,3 +384,5 @@ Door/Window and Presence also use generated production routing, with only their
 named default-icon and Active Color option hooks kept by hand.
 Cover, Garage, Gate, and Lock also use generated production routing, with only
 their named mode-sensitive field and option hooks kept by hand.
+Alarm and Alarm Action also use generated production routing, with only their
+named action/default-icon and option hooks kept by hand.

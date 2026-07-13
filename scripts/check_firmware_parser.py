@@ -28,6 +28,7 @@ SAVED_CONFIG_DATE_TIME_HEADER = ROOT / "components" / "espcontrol" / "button_gri
 SAVED_CONFIG_MOWER_HEADER = ROOT / "components" / "espcontrol" / "button_grid_saved_config_mower_generated.h"
 SAVED_CONFIG_OCCUPANCY_HEADER = ROOT / "components" / "espcontrol" / "button_grid_saved_config_occupancy_generated.h"
 SAVED_CONFIG_ACCESS_HEADER = ROOT / "components" / "espcontrol" / "button_grid_saved_config_access_generated.h"
+SAVED_CONFIG_SECURITY_HEADER = ROOT / "components" / "espcontrol" / "button_grid_saved_config_security_generated.h"
 BACKLIGHT_HEADER = ROOT / "components" / "espcontrol" / "backlight.h"
 CLOCK_BAR_HEADER = ROOT / "components" / "espcontrol" / "clock_bar.h"
 LAYOUT_HEADER = ROOT / "components" / "espcontrol" / "button_grid_layout.h"
@@ -700,6 +701,7 @@ def main() -> int:
         shutil.copy2(SAVED_CONFIG_MOWER_HEADER, tmp_path / "button_grid_saved_config_mower_generated.h")
         shutil.copy2(SAVED_CONFIG_OCCUPANCY_HEADER, tmp_path / "button_grid_saved_config_occupancy_generated.h")
         shutil.copy2(SAVED_CONFIG_ACCESS_HEADER, tmp_path / "button_grid_saved_config_access_generated.h")
+        shutil.copy2(SAVED_CONFIG_SECURITY_HEADER, tmp_path / "button_grid_saved_config_security_generated.h")
         shutil.copy2(CLOCK_BAR_HEADER, tmp_path / "clock_bar.h")
         shutil.copy2(BACKLIGHT_HEADER, tmp_path / "backlight.h")
         shutil.copy2(LAYOUT_HEADER, tmp_path / "button_grid_layout.h")

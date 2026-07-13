@@ -12,6 +12,7 @@
 #include "button_grid_card_runtime.h"
 #include "button_grid_saved_config_action_generated.h"
 #include "button_grid_saved_config_access_generated.h"
+#include "button_grid_saved_config_security_generated.h"
 #include "button_grid_saved_config_date_time_generated.h"
 #include "button_grid_saved_config_fan_generated.h"
 #include "button_grid_saved_config_media_generated.h"
@@ -1069,6 +1070,22 @@ inline std::string normalize_saved_config_access_options(
   return cover_card_options_normalized(options, p.sensor);
 }
 
+inline void normalize_saved_config_security_fields(ParsedCfg &p) {
+  if (p.type == "alarm") {
+    if (p.icon.empty() || p.icon == "Auto") p.icon = "Security";
+    return;
+  }
+  if (!alarm_action_mode_valid(p.sensor)) p.sensor = "away";
+  if (p.icon.empty() || p.icon == "Auto" || alarm_action_legacy_icon_name(p.sensor, p.icon)) {
+    p.icon = alarm_action_icon_name(p.sensor);
+  }
+}
+
+inline std::string normalize_saved_config_security_options(
+    const std::string &options, const ParsedCfg &) {
+  return alarm_card_options_normalized(options);
+}
+
 inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
   migrate_saved_config_action_legacy(p);
   const bool was_legacy_text_sensor = p.type == "text_sensor";
@@ -1099,24 +1116,8 @@ inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
   }
   const bool normalized_saved_access = normalize_saved_config_access(
       p, normalize_saved_config_access_fields, normalize_saved_config_access_options);
-  if (p.type == "alarm") {
-    p.sensor.clear();
-    p.unit.clear();
-    p.precision.clear();
-    p.icon_on = "Auto";
-    if (p.icon.empty() || p.icon == "Auto") p.icon = "Security";
-    p.options = alarm_card_options_normalized(p.options);
-  }
-  if (p.type == "alarm_action") {
-    if (!alarm_action_mode_valid(p.sensor)) p.sensor = "away";
-    p.unit.clear();
-    p.precision.clear();
-    p.icon_on = "Auto";
-    if (p.icon.empty() || p.icon == "Auto" || alarm_action_legacy_icon_name(p.sensor, p.icon)) {
-      p.icon = alarm_action_icon_name(p.sensor);
-    }
-    p.options = alarm_card_options_normalized(p.options);
-  }
+  normalize_saved_config_security(
+      p, normalize_saved_config_security_fields, normalize_saved_config_security_options);
   if (p.type == "webhook") {
     p.sensor = normalize_webhook_method(p.sensor);
     if (p.sensor == "GET" || p.sensor == "DELETE") p.unit.clear();
