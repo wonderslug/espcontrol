@@ -170,12 +170,23 @@ int main() {
 
   CHECK(lifecycle.request(DisplayRequestSource::SCREEN_SCHEDULE,
                           DisplayMode::DISPLAY_OFF));
+  CHECK(lifecycle.request_active(DisplayRequestSource::SCREEN_SCHEDULE));
+  CHECK(lifecycle.request(DisplayRequestSource::IDLE_TIMER,
+                          DisplayMode::DISPLAY_OFF));
   CHECK(lifecycle.request(DisplayRequestSource::USER_WAKE, DisplayMode::ACTIVE));
   CHECK(decision_is(lifecycle, DisplayMode::ACTIVE,
                     DisplayRequestSource::USER_WAKE));
   CHECK(lifecycle.clear(DisplayRequestSource::USER_WAKE));
   CHECK(decision_is(lifecycle, DisplayMode::DISPLAY_OFF,
                     DisplayRequestSource::SCREEN_SCHEDULE));
+  // A scheduled morning wake clears the automatic request that was hidden
+  // beneath the higher-priority night schedule.
+  CHECK(lifecycle.clear(DisplayRequestSource::SCREEN_SCHEDULE));
+  CHECK(!lifecycle.request_active(DisplayRequestSource::SCREEN_SCHEDULE));
+  CHECK(lifecycle.clear(DisplayRequestSource::IDLE_TIMER));
+  CHECK(decision_is(lifecycle, DisplayMode::ACTIVE));
+  CHECK(lifecycle.request(DisplayRequestSource::SCREEN_SCHEDULE,
+                          DisplayMode::DISPLAY_OFF));
   CHECK(lifecycle.request(DisplayRequestSource::SCREEN_SCHEDULE,
                           DisplayMode::CLOCK));
   CHECK(decision_is(lifecycle, DisplayMode::CLOCK,

@@ -1511,6 +1511,9 @@ def firmware_screen_schedule_screensaver_override_errors(backlight_path: Path, r
             controller_reconciles_live_schedule = (
                 "screen_schedule_night_active(" in text
                 and "controller.request(espcontrol::DisplayRequestSource::SCREEN_SCHEDULE" in text
+                and "schedule_was_active" in text
+                and "controller.clear(espcontrol::DisplayRequestSource::IDLE_TIMER)" in text
+                and "controller.clear(espcontrol::DisplayRequestSource::PRESENCE_SENSOR)" in text
                 and "restore_value: true" not in text[text.find("id: screen_schedule_asleep"):text.find("id: backlight_manual_off")]
                 and "id: screen_schedule_asleep" not in sleep_body
                 and reconcile_index != -1
