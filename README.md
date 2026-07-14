@@ -41,6 +41,23 @@ Home Assistant can push a message to the screen using two new ESPHome API action
 
 Both accept `message`, `title`, and `message_id`. Arriving notifications wake the screensaver. On dismiss the device fires `esphome.notification_acknowledged` or `esphome.notification_expired` for HA automation correlation.
 
+### HA-driven image notifications
+
+Home Assistant can push an image to the screen — for example a doorbell camera
+snapshot — using two new ESPHome API actions:
+
+- `esphome.<device>_send_image_notification` — persistent, stays until tapped
+- `esphome.<device>_send_expiring_image_notification` — auto-dismisses after `timeout` seconds
+
+Both accept `image_url` (required; a relative HA path such as
+`/api/camera_proxy/camera.front_door`, or any `http(s)` image URL), plus optional
+`title`, `message`, `style` (`fullscreen` — the default — or `card`), and `message_id`.
+The device downloads and decodes the image (JPEG/PNG); Home Assistant does all the
+sourcing. Arriving notifications wake the screensaver. If the image can't be fetched
+or decoded, the panel falls back to a text notification so the alert still gets through.
+On dismiss the device fires `esphome.notification_acknowledged` or
+`esphome.notification_expired`, carrying `device_name` and `message_id`, for HA correlation.
+
 ### Fully-local web UI (no CDN dependencies)
 
 All web UI assets — the device JavaScript bundle, MDI icon font, Inter and Roboto fonts — are embedded in flash at compile time. The setup page loads instantly from the device with no external network requests. This also means the panel's configuration UI remains accessible when your internet is down.

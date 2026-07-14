@@ -44,6 +44,8 @@ substitutions:
   screen_schedule_clock_default_brightness: "10"
   cover_art_size: "480"
   cover_art_decode_size: "320"
+  image_notif_fullscreen_size: "${cover_art_decode_size}"
+  image_notif_card_size: "300"
   cover_art_x: "0"
   cover_art_y: "0"
   cover_art_accent_x: "0"
@@ -125,6 +127,7 @@ packages:
   screen_clock:    !include ../../common/device/screen_clock.yaml
   screen_art:      !include ../../common/device/screen_cover_art.yaml
   screen_notification: !include ../../common/device/screen_notification_popup.yaml
+  screen_image_notification: !include ../../common/device/screen_image_notification.yaml
   # ---------------------------------------------------------------------------
   # Main page and dynamic sensor subscriptions (after setup screens)
   # ---------------------------------------------------------------------------

@@ -50,6 +50,8 @@ substitutions:
   backlight_pwm_frequency: ${ "20000Hz" if network_transport == "ethernet" else "1000Hz" }
   cover_art_size: "600"
   cover_art_decode_size: "600"
+  image_notif_fullscreen_size: "${cover_art_decode_size}"
+  image_notif_card_size: "440"
   cover_art_x: "0"
   cover_art_y: "0"
   cover_art_accent_x: "585"
@@ -141,6 +143,7 @@ packages:
   screen_art:      !include ../../common/device/screen_cover_art.yaml
   image_cards:     !include ../../common/device/image_cards_6.yaml
   screen_notification: !include ../../common/device/screen_notification_popup.yaml
+  screen_image_notification: !include ../../common/device/screen_image_notification.yaml
   # ---------------------------------------------------------------------------
   # Main page and dynamic sensor subscriptions (after setup screens)
   # ---------------------------------------------------------------------------
