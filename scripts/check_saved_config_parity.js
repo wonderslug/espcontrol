@@ -71,16 +71,7 @@ function cppSource(cases) {
 #include <iostream>
 #include <string>
 #include <vector>
-namespace esphome {
-class StringRef {
- public:
-  StringRef(const char *value) : value_(value ? value : "") {}
-  const char *c_str() const { return value_; }
-  size_t size() const { return std::strlen(value_); }
- private:
-  const char *value_;
-};
-}
+#include "esphome/core/string_ref.h"
 struct lv_obj_t {};
 inline void lv_label_set_text(lv_obj_t *, const char *) {}
 inline const char *espcontrol_i18n(const char *text) { return text ? text : ""; }
@@ -153,6 +144,7 @@ function compiledFirmwareResults(cases) {
     childProcess.execFileSync(compiler(), [
       "-std=c++17", "-Wall", "-Wextra", "-Werror",
       `-I${path.join(ROOT, "components", "espcontrol")}`,
+      `-I${path.join(ROOT, "tests", "firmware", "stubs")}`,
       source, "-o", binary,
     ], { stdio: "pipe" });
     return JSON.parse(childProcess.execFileSync(binary, { encoding: "utf8" }));

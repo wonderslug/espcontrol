@@ -146,7 +146,7 @@ function cppSource(cases) {
 #include <iostream>
 #include <string>
 #include <vector>
-namespace esphome { class StringRef { public: StringRef(const char *v): value_(v ? v : "") {} const char *c_str() const { return value_; } size_t size() const { return std::strlen(value_); } private: const char *value_; }; }
+#include "esphome/core/string_ref.h"
 struct lv_obj_t {};
 inline void lv_label_set_text(lv_obj_t *, const char *) {}
 inline const char *espcontrol_i18n(const char *text) { return text ? text : ""; }
@@ -180,7 +180,12 @@ function compiledShadow(cases) {
     const source = path.join(temporary, "shadow.cpp");
     const binary = path.join(temporary, "shadow");
     fs.writeFileSync(source, cppSource(cases));
-    childProcess.execFileSync(compiler(), ["-std=c++17", "-Wall", "-Wextra", "-Werror", `-I${path.join(ROOT, "components/espcontrol")}`, source, "-o", binary]);
+    childProcess.execFileSync(compiler(), [
+      "-std=c++17", "-Wall", "-Wextra", "-Werror",
+      `-I${path.join(ROOT, "components/espcontrol")}`,
+      `-I${path.join(ROOT, "tests/firmware/stubs")}`,
+      source, "-o", binary,
+    ]);
     return JSON.parse(childProcess.execFileSync(binary, { encoding: "utf8" }));
   } finally {
     fs.rmSync(temporary, { recursive: true, force: true });
