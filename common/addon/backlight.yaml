@@ -574,6 +574,14 @@ script:
       - script.execute: backlight_schedule_display_off
 
   # Setup screen burn-in protection
+  - id: setup_screen_dim_cancel
+    mode: restart
+    then:
+      - script.stop: setup_screen_dim
+      - globals.set:
+          id: setup_screen_dimmed_shadow_active
+          value: 'false'
+
   - id: setup_screen_dim
     mode: restart
     then:
