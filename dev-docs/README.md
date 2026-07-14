@@ -127,6 +127,9 @@ start in the contract and flow outward from there.
   and parser notes.
 - [Cover Art Mode](cover-art-mode.md) - ownership, presentation, memory budgets,
   and behavioural checks for the now-playing takeover.
+- [Display Lifecycle Transition Contract](display-lifecycle.md) - current mode
+  flags, request priority, takeover restoration, invariants, and the event
+  sequences required by the centralised lifecycle migration.
 - [Font Guidelines](font-guidelines.md) - how to reuse existing firmware font
   roles and avoid unnecessary new font sizes.
 - [Devices and Builds](devices-and-builds.md) - device profiles, generated
