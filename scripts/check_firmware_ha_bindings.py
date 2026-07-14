@@ -948,6 +948,7 @@ def firmware_cover_art_lifecycle_controller_errors(
     reconcile = yaml_script_body(backlight_text, "display_mode_reconcile") or ""
     effect = yaml_script_body(cover_art_text, "display_mode_effect_cover_art") or ""
     hide_effect = yaml_script_body(cover_art_text, "cover_art_hide_effect") or ""
+    hide_adapter = yaml_script_body(cover_art_text, "hide_cover_art_view") or ""
 
     adapter_markers = (
         "target_mode == static_cast<int>(espcontrol::DisplayMode::COVER_ART)",
@@ -974,6 +975,13 @@ def firmware_cover_art_lifecycle_controller_errors(
         or "script.execute: display_mode_reconcile" not in clear
     ):
         errors.append(f"{backlight_rel}: dismiss cover art by clearing its controller media request")
+    if (
+        "script.execute: display_mode_clear_cover_art" not in hide_adapter
+        or "script.wait: display_mode_clear_cover_art" not in hide_adapter
+    ):
+        errors.append(
+            f"{cover_art_rel}: keep hide_cover_art_view synchronous for compatibility callers"
+        )
     if "DisplayRequestSource::MEDIA_PLAYBACK" in reconcile:
         errors.append(f"{backlight_rel}: do not rebuild media requests from the compatibility cover art flag")
     if (
@@ -4070,6 +4078,10 @@ def run_self_test() -> int:
         "    then:\n"
         "      - lambda: 'id(display_mode_controller).transition_is_current(generation, target); return std::string(\"${device_slug}\") == \"guition-esp32-s3-4848s040\";'\n"
         "      - artwork_image.release: cover_art_downloaded_image\n"
+        "  - id: hide_cover_art_view\n"
+        "    then:\n"
+        "      - script.execute: display_mode_clear_cover_art\n"
+        "      - script.wait: display_mode_clear_cover_art\n"
         "  - id: cover_art_delay_timer\n"
         "    then:\n"
         "      - lambda: 'id(display_mode_controller).generation_is_current(generation);'\n"

@@ -1434,6 +1434,7 @@ script:
     then:
       - script.stop: cover_art_delay_timer
       - script.execute: display_mode_clear_cover_art
+      - script.wait: display_mode_clear_cover_art
 
   - id: display_mode_effect_cover_art
     mode: restart
