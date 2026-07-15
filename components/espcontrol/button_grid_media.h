@@ -997,18 +997,6 @@ inline void media_playback_subscribe_metadata(MediaPlaybackState *state) {
       [state, generation](esphome::StringRef value) {
         if (!media_playback_generation_valid(state, generation)) return;
         state->title = media_playback_metadata_value(value, HA_STATE_TEXT_MAX_LEN);
-        if (!media_control_low_heap_mode()) {
-          state->artist.clear();
-          media_playback_apply_metadata_consumers(state);
-          ha_get_attribute(
-            state->entity_id, std::string("media_artist"),
-            std::function<void(esphome::StringRef)>(
-              [state, generation](esphome::StringRef artist) {
-                media_playback_set_artist(state, generation, artist);
-              })
-          );
-          return;
-        }
         media_playback_apply_metadata_consumers(state);
       })
   );
@@ -2616,9 +2604,7 @@ inline MediaVolumeCtx *create_media_volume_context(lv_obj_t *btn,
                                                    const lv_font_t *icon_font,
                                                    int width_compensation_percent = 100,
                                                    lv_obj_t *pct_lbl = nullptr,
-                                                   lv_obj_t *unit_lbl = nullptr,
-                                                   std::function<void()> suspend_display_takeover = nullptr,
-                                                   std::function<void()> resume_display_takeover = nullptr) {
+                                                   lv_obj_t *unit_lbl = nullptr) {
   MediaVolumeCtx *ctx = new MediaVolumeCtx();
   ctx->entity_id = p.entity;
   ctx->label = media_label(p);
@@ -2636,8 +2622,6 @@ inline MediaVolumeCtx *create_media_volume_context(lv_obj_t *btn,
   ctx->unit_font = unit_font;
   ctx->label_font = label_font;
   ctx->icon_font = icon_font;
-  ctx->suspend_display_takeover = suspend_display_takeover;
-  ctx->resume_display_takeover = resume_display_takeover;
   if (btn) lv_obj_set_user_data(btn, ctx);
   return ctx;
 }

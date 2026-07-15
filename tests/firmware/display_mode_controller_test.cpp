@@ -39,7 +39,28 @@ static DisplayMode expected_mode_for_priority(int priority) {
 int main() {
   DisplayModeController controller;
   CHECK(decision_is(controller, DisplayMode::ACTIVE));
+  CHECK(controller.target_mode_is(DisplayMode::ACTIVE));
+  CHECK(controller.current_mode_is(DisplayMode::ACTIVE));
   CHECK(!controller.transition_required(controller.resolve()));
+  CHECK(!presence_can_wake_display(controller.resolve()));
+
+  for (DisplayMode mode : {DisplayMode::DISPLAY_OFF, DisplayMode::DIMMED,
+                           DisplayMode::CLOCK}) {
+    DisplayModeController presence_wake;
+    CHECK(presence_wake.request(DisplayRequestSource::PRESENCE_SENSOR, mode));
+    CHECK(presence_can_wake_display(presence_wake.resolve()));
+  }
+  DisplayModeController idle_wake;
+  CHECK(idle_wake.request(DisplayRequestSource::IDLE_TIMER, DisplayMode::DIMMED));
+  CHECK(presence_can_wake_display(idle_wake.resolve()));
+  DisplayModeController cover_art_presence;
+  CHECK(cover_art_presence.request(DisplayRequestSource::MEDIA_PLAYBACK,
+                                   DisplayMode::COVER_ART));
+  CHECK(!presence_can_wake_display(cover_art_presence.resolve()));
+  DisplayModeController scheduled_presence;
+  CHECK(scheduled_presence.request(DisplayRequestSource::SCREEN_SCHEDULE,
+                                   DisplayMode::CLOCK));
+  CHECK(!presence_can_wake_display(scheduled_presence.resolve()));
 
   // Every higher-priority policy beats every lower-priority policy.
   for (int higher = 1; higher <= 8; ++higher) {
@@ -52,6 +73,8 @@ int main() {
   }
 
   CHECK(controller.request(DisplayRequestSource::SETUP_TIMEOUT, DisplayMode::SETUP_DIMMED));
+  CHECK(controller.target_source_is(DisplayRequestSource::SETUP_TIMEOUT));
+  CHECK(!controller.current_source_is(DisplayRequestSource::SETUP_TIMEOUT));
   CHECK(controller.transition_required(controller.resolve()));
   CHECK(decision_is(controller, DisplayMode::SETUP_DIMMED,
                     DisplayRequestSource::SETUP_TIMEOUT));
@@ -256,6 +279,44 @@ int main() {
   CHECK(rapid.current_source() == DisplayRequestSource::IDLE_TIMER);
   CHECK(!rapid.current_takeover().has_value());
 
+  // Requests continue to change while an interactive image modal is open.
+  // Automatic idle and media remain deferred, while schedule/manual sleep can
+  // still replace the modal; releasing the takeover resolves live state.
+  DisplayModeController takeover;
+  CHECK(takeover.begin_takeover(DisplayTakeoverKind::INTERACTIVE));
+  CHECK(takeover.request(DisplayRequestSource::IDLE_TIMER, DisplayMode::DIMMED));
+  CHECK(takeover.request(DisplayRequestSource::MEDIA_PLAYBACK, DisplayMode::COVER_ART));
+  CHECK(decision_is(takeover, DisplayMode::ACTIVE, std::nullopt,
+                    DisplayTakeoverKind::INTERACTIVE));
+  CHECK(takeover.request(DisplayRequestSource::SCREEN_SCHEDULE, DisplayMode::CLOCK));
+  CHECK(decision_is(takeover, DisplayMode::CLOCK,
+                    DisplayRequestSource::SCREEN_SCHEDULE));
+  CHECK(takeover.clear(DisplayRequestSource::SCREEN_SCHEDULE));
+  CHECK(decision_is(takeover, DisplayMode::ACTIVE, std::nullopt,
+                    DisplayTakeoverKind::INTERACTIVE));
+  CHECK(takeover.clear(DisplayRequestSource::MEDIA_PLAYBACK));
+  CHECK(takeover.end_takeover(DisplayTakeoverKind::INTERACTIVE));
+  CHECK(decision_is(takeover, DisplayMode::DIMMED,
+                    DisplayRequestSource::IDLE_TIMER));
+
+  // Critical alarm takeovers remain visible while schedule, presence, media,
+  // and manual requests change, then release to the current winner.
+  CHECK(takeover.begin_takeover(DisplayTakeoverKind::CRITICAL));
+  CHECK(takeover.request(DisplayRequestSource::PRESENCE_SENSOR,
+                         DisplayMode::DISPLAY_OFF));
+  CHECK(takeover.request(DisplayRequestSource::MEDIA_PLAYBACK,
+                         DisplayMode::COVER_ART));
+  CHECK(takeover.request(DisplayRequestSource::SCREEN_SCHEDULE,
+                         DisplayMode::CLOCK));
+  CHECK(takeover.request(DisplayRequestSource::MANUAL_SLEEP,
+                         DisplayMode::DISPLAY_OFF));
+  CHECK(decision_is(takeover, DisplayMode::ACTIVE, std::nullopt,
+                    DisplayTakeoverKind::CRITICAL));
+  CHECK(takeover.clear(DisplayRequestSource::MANUAL_SLEEP));
+  CHECK(takeover.end_takeover(DisplayTakeoverKind::CRITICAL));
+  CHECK(decision_is(takeover, DisplayMode::CLOCK,
+                    DisplayRequestSource::SCREEN_SCHEDULE));
+
   // Nested takeovers only finish when every owner has ended its takeover.
   CHECK(controller.begin_takeover(DisplayTakeoverKind::INTERACTIVE));
   CHECK(controller.begin_takeover(DisplayTakeoverKind::INTERACTIVE));
@@ -263,48 +324,6 @@ int main() {
   CHECK(controller.takeover_active(DisplayTakeoverKind::INTERACTIVE));
   CHECK(controller.end_takeover(DisplayTakeoverKind::INTERACTIVE));
   CHECK(!controller.end_takeover(DisplayTakeoverKind::INTERACTIVE));
-
-  LegacyDisplayState legacy;
-  CHECK(derive_legacy_display_mode(legacy).mode == DisplayMode::ACTIVE);
-  legacy.display_asleep = true;
-  legacy.clock_showing = true;
-  CHECK(derive_legacy_display_mode(legacy).mode == DisplayMode::CLOCK);
-  CHECK(derive_legacy_display_mode(legacy).stable);
-  legacy.display_off_active = true;
-  CHECK(!derive_legacy_display_mode(legacy).stable);
-  legacy = {};
-  legacy.display_asleep = true;
-  CHECK(!derive_legacy_display_mode(legacy).stable);
-  legacy.setup_screen = true;
-  CHECK(derive_legacy_display_mode(legacy).stable);
-  CHECK(derive_legacy_display_mode(legacy).mode == DisplayMode::SETUP_DIMMED);
-
-  DisplayModeShadowObserver observer;
-  legacy = {};
-  auto observation = observer.observe(legacy);
-  CHECK(observation.decision_changed);
-  CHECK(!observation.mismatch);
-  observation = observer.observe(legacy);
-  CHECK(!observation.decision_changed);
-  legacy.display_asleep = true;
-  legacy.display_off_active = true;
-  observation = observer.observe(legacy);
-  CHECK(observation.decision.target_mode == DisplayMode::DISPLAY_OFF);
-  CHECK(!observation.mismatch);
-  legacy.backlight_manual_off = true;
-  legacy.temporary_user_wake = true;
-  observation = observer.observe(legacy);
-  CHECK(observation.decision.winning_source == DisplayRequestSource::MANUAL_SLEEP);
-  legacy = {};
-  legacy.critical_takeover = true;
-  observation = observer.observe(legacy);
-  CHECK(observation.decision.winning_takeover == DisplayTakeoverKind::CRITICAL);
-  legacy.critical_takeover = false;
-  legacy.cover_art_active = true;
-  legacy.display_asleep = true;
-  observation = observer.observe(legacy);
-  CHECK(observation.decision.target_mode == DisplayMode::COVER_ART);
-  CHECK(!observation.mismatch);
 
   return EXIT_SUCCESS;
 }

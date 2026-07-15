@@ -41,6 +41,8 @@ declare global {
   var CARD_SIZE_EXTRA_TALL: any;
   var CARD_SIZE_EXTRA_WIDE: any;
   var CARD_SIZE_LARGE: any;
+  var CARD_SIZE_MAX_TALL: any;
+  var CARD_SIZE_MAX_WIDE: any;
   var CARD_SIZE_SINGLE: any;
   var CARD_SIZE_TALL: any;
   var CARD_SIZE_WIDE: any;
@@ -138,6 +140,7 @@ declare global {
   var SENSOR_CARD_METADATA: any;
   var SENSOR_LARGE_NUMBERS_OFF_VALUE: any;
   var SENSOR_LARGE_NUMBERS_OPTION: any;
+  var SENSOR_TIME_UNIT_OPTION: any;
   var SENSOR_STATE_HIGH_LABEL_OPTION: any;
   var SENSOR_STATE_INPUT_2_OPTION: any;
   var SENSOR_STATE_INPUT_OPTION: any;
@@ -318,6 +321,7 @@ declare global {
   var cardContractOptions: any;
   var cardContractPickerKey: any;
   var cardRequiresSquareSize: any;
+  var cardSupportsMaxSize: any;
   var cardContractSubpageTypeCode: any;
   var cardContractSubpageTypeFromCode: any;
   var cardIconHtml: any;
@@ -332,6 +336,7 @@ declare global {
   var cardOnPattern: any;
   var cardSensorPreviewHtml: any;
   var cardSizeClass: any;
+  var cardSizeMenuOptions: any;
   var cardSizeDefinition: any;
   var cardStateEntities: any;
   var cardTypePickerDetails: any;
@@ -745,6 +750,7 @@ declare global {
   var normalizeMediaNumberDisplayMode: any;
   var normalizeMediaOptions: any;
   var normalizeCardSizeForConfig: any;
+  var normalizeCoverArtDelay: any;
   var normalizeMediaVolumeMax: any;
   var normalizeNetworkTransport: any;
   var normalizeNtpServer: any;
@@ -759,6 +765,7 @@ declare global {
   var normalizeScreensaverAction: any;
   var normalizeScreensaverDimmedBrightness: any;
   var normalizeSensorOptions: any;
+  var normalizeSensorTimeUnit: any;
   var normalizeSubpageKind: any;
   var normalizeSubpageOptions: any;
   var normalizeSwitchConfirmationOptions: any;
@@ -973,6 +980,7 @@ declare global {
   var sensorActiveColorEnabled: any;
   var sensorCardIsLocal: any;
   var sensorLargeNumbersEnabled: any;
+  var sensorTimeUnit: any;
   var sensorLocalPreview: any;
   var sensorStateInput: any;
   var sensorStateInput2: any;
@@ -1038,6 +1046,7 @@ declare global {
   var setSelectValue: any;
   var setSensorActiveColorEnabled: any;
   var setSensorLargeNumbersEnabled: any;
+  var setSensorTimeUnit: any;
   var setSensorStateTranslation: any;
   var setSensorStateTranslations: any;
   var setSwitchConfirmationOptions: any;
@@ -1052,6 +1061,8 @@ declare global {
   var showContextMenu: any;
   var showEmptySlotMenu: any;
   var showImageCardLimitBanner: any;
+  var showCopyCardCode: any;
+  var showPasteCardCode: any;
   var showSelectionMenu: any;
   var sizeClass: any;
   var sizeColSpan: any;
