@@ -113,6 +113,8 @@ lvgl:
                       width: ${image_notif_fullscreen_size}px
                       height: ${image_notif_fullscreen_size}px
                       src: image_notification_image
+                      radius: $radius
+                      clip_corner: true
                   - obj:
                       id: image_notif_fs_caption
                       align: bottom_mid
@@ -180,6 +182,8 @@ lvgl:
                       width: ${image_notif_card_size}px
                       height: ${image_notif_card_size}px
                       src: image_notification_image
+                      radius: $radius
+                      clip_corner: true
                   - label:
                       id: image_notif_card_title
                       text: ""
