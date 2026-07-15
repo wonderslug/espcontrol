@@ -816,11 +816,12 @@ async function assertSettingsPage(page, label, options = {}) {
   await coverArtCard
     .locator("#sp-set-ss-cover-art-enable + .sp-toggle-track")
     .click();
-  assert(
+  assert.strictEqual(
     await coverArtCard
       .getByText("Keep Screen Awake During Playback", { exact: true })
       .isVisible(),
-    `${label}: keep-screen-awake option should render when cover art is enabled`,
+    false,
+    `${label}: keep-screen-awake option should remain inside collapsed advanced options`,
   );
   assert(
     await coverArtCard.locator("#sp-set-ss-cover-art-player").isVisible(),
@@ -829,6 +830,13 @@ async function assertSettingsPage(page, label, options = {}) {
   assert(
     await coverArtCard.locator("#sp-set-ss-cover-art-delay").isVisible(),
     `${label}: cover art show-after field should render when cover art is enabled`,
+  );
+  assert.deepStrictEqual(
+    await coverArtCard.locator("#sp-set-ss-cover-art-delay option").evaluateAll(
+      (options) => options.map((option) => option.value),
+    ),
+    ["3", "5", "10", "30", "60", "300"],
+    `${label}: cover art show-after options should start at three seconds`,
   );
   assert.strictEqual(
     await page.locator("#sp-set-ss-track-overlay").count(),
@@ -847,6 +855,12 @@ async function assertSettingsPage(page, label, options = {}) {
     `${label}: cover art conditions field should be hidden until advanced filtering is enabled`,
   );
   await coverArtCard.getByText("Advanced Options", { exact: true }).click();
+  assert(
+    await coverArtCard
+      .getByText("Keep Screen Awake During Playback", { exact: true })
+      .isVisible(),
+    `${label}: keep-screen-awake option should render inside advanced options`,
+  );
   assert(
     await coverArtCard
       .getByText("Hide for external source inputs", { exact: true })
@@ -1484,6 +1498,47 @@ async function assertEmptyCellSettings(page, posts, label) {
     await page.locator(".sp-settings-modal .sp-delete-btn").count(),
     0,
     `${label}: unsaved new card keeps Delete hidden after type selection`,
+  );
+  await page.locator("#sp-inp-type").selectOption({ label: "Sensor" });
+  const sensorTypeOptions = await page.locator("#sp-inp-sensor-type option").allTextContents();
+  assert.deepStrictEqual(
+    sensorTypeOptions,
+    ["Numeric", "Time", "Text", "Icon"],
+    `${label}: Home Assistant Sensor uses the Numeric, Time, Text, and Icon Type dropdown`,
+  );
+  await page.locator("#sp-inp-sensor-type").selectOption("time");
+  assert(
+    await page.locator("#sp-inp-time-unit").isVisible(),
+    `${label}: Time type shows the input unit dropdown`,
+  );
+  assert.strictEqual(
+    await page.locator("#sp-inp-time-unit").inputValue(),
+    "",
+    `${label}: Time input unit defaults to Auto`,
+  );
+  assert.strictEqual(
+    await page.locator("#sp-inp-unit").isVisible(),
+    false,
+    `${label}: Time type hides the normal unit field`,
+  );
+  await page.locator("#sp-inp-time-unit").selectOption("hours");
+  await page.locator("#sp-inp-sensor-type").selectOption("numeric");
+  await page.locator("#sp-inp-sensor-type").selectOption("time");
+  assert.strictEqual(
+    await page.locator("#sp-inp-time-unit").inputValue(),
+    "",
+    `${label}: switching away from Time clears its manual input unit`,
+  );
+  await page.getByRole("button", { name: "Local Sensor", exact: true }).click();
+  assert.strictEqual(
+    await page.locator("#sp-inp-sensor-type").count(),
+    0,
+    `${label}: Local Sensor keeps its existing configuration controls`,
+  );
+  assert(
+    await page.getByRole("button", { name: "Numeric", exact: true }).isVisible() &&
+      await page.getByRole("button", { name: "Text", exact: true }).isVisible(),
+    `${label}: Local Sensor retains its Numeric and Text mode buttons`,
   );
   await page.locator(".sp-settings-close").click();
   await page.waitForFunction(() => {

@@ -741,8 +741,9 @@ def firmware_cover_art_external_input_errors(path: Path, root: Path) -> list[str
         errors.append(f"{rel}: subscribe to the media player source attribute")
     if "ha_reset_subscription_callbacks(HA_SUBSCRIPTION_SCOPE_COVER_ART)" not in text:
         errors.append(f"{rel}: release retired cover art Home Assistant subscriptions")
-    if 'ha_get_attribute(cover_entity, std::string("source"), handle_media_source)' not in text:
-        errors.append(f"{rel}: refresh the media player source attribute")
+    resubscribe_body = yaml_script_body(text, "cover_art_resubscribe") or ""
+    if "ha_get_" in resubscribe_body:
+        errors.append(f"{rel}: avoid retained one-shot reads in the cover art subscription lifecycle")
     if ('normalized_source == "tv"' not in text or
             'normalized_source == "line-in"' not in text or
             'normalized_source == "line in"' not in text or
@@ -857,7 +858,7 @@ def firmware_cover_art_refresh_errors(path: Path, root: Path) -> list[str]:
     cached_body = yaml_script_body(text, "cover_art_use_cached_artwork")
     if cached_body and "id(cover_art_runtime).select_source(chosen);" not in cached_body:
         errors.append(f"{rel}: mark changed cached artwork URLs as stale before downloading")
-    resubscribe_body = yaml_script_body(text, "cover_art_resubscribe")
+    resubscribe_body = yaml_script_body(text, "cover_art_resubscribe") or ""
     if resubscribe_body and "if (!url.empty() && url != id(cover_art_runtime).source_url)" not in resubscribe_body:
         errors.append(f"{rel}: mark changed Home Assistant artwork attributes as stale")
 
@@ -879,8 +880,9 @@ def firmware_cover_art_refresh_errors(path: Path, root: Path) -> list[str]:
 
     if text.count("mark_artwork_refresh_needed();") < 4:
         errors.append(f"{rel}: mark title, artist, album, and source changes as artwork refresh triggers")
-    if 'std::string("media_album_name"), handle_media_album' not in text:
-        errors.append(f"{rel}: subscribe to and refresh the media_album_name attribute")
+    if ('std::string("media_album_name")' not in resubscribe_body or
+            "handle_media_album" not in resubscribe_body):
+        errors.append(f"{rel}: subscribe to the media_album_name attribute")
     if "id(cover_art_runtime).refresh_needed = true" not in text:
         errors.append(f"{rel}: set stale artwork state when track/source metadata changes")
     playback_started_body = yaml_script_body(text, "cover_art_playback_started")
@@ -1132,21 +1134,13 @@ def firmware_media_sleep_prevention_errors(
             )
             if cover_art_sleep_match and cover_art_sleep_match.group(1) != "show_cover_art_view":
                 errors.append(f"{rel}: start cover art directly after the normal screensaver timeout")
-        if (
-            "cover_art_touch_return_pending" in text
-            and "id(cover_art_delay).state <= 0.0f" not in text
-        ):
-            errors.append(f"{rel}: re-arm cover art after touch when Show After is immediate")
-        if (
-            "const bool cover_art_immediate_return" in text
-            and "id(cover_art_manual_pause_until_ms) != 0 &&" not in text
-        ):
-            errors.append(f"{rel}: gate immediate cover art return to an actual dismissal")
-        if "const bool cover_art_immediate_return" in text and (
-            "const bool cover_art_disabled_mode_delay" not in text
-            or 'id(screensaver_mode).state != "timer"' not in text
+        if "const bool cover_art_immediate_return" in text:
+            errors.append(f"{rel}: remove the retired immediate cover art return path")
+        if "const bool cover_art_disabled_mode_delay" in text and (
+            'id(screensaver_mode).state != "timer"' not in text
             or 'id(screensaver_mode).state != "sensor"' not in text
             or "show_after_seconds > 0.0f" not in text
+            or "if (show_after_seconds < 3.0f) show_after_seconds = 3.0f;" not in text
         ):
             errors.append(f"{rel}: restart positive Show After delay after touches in disabled screensaver mode")
 
@@ -1164,6 +1158,26 @@ def firmware_media_sleep_prevention_errors(
         text = display_path.read_text(encoding="utf-8")
         if "switch.turn_on: media_player_sleep_prevention_enabled" in text:
             errors.append(f"{rel}: do not turn on media sleep prevention when cover art is enabled")
+        if re.search(r"(?m)^\s+id: media_player_sleep_prevention_enabled\s*$", text):
+            sleep_prevention_index = text.find("id: media_player_sleep_prevention_enabled")
+            sleep_prevention_end = text.find("\n  - platform:", sleep_prevention_index + 1)
+            sleep_prevention_body = text[sleep_prevention_index:sleep_prevention_end]
+            if "restore_mode: RESTORE_DEFAULT_ON" not in sleep_prevention_body:
+                errors.append(f"{rel}: default media sleep prevention on")
+            migration_tokens = (
+                "id: media_player_sleep_prevention_default_on_migrated",
+                "if (!id(media_player_sleep_prevention_default_on_migrated))",
+                "id(media_player_sleep_prevention_enabled).turn_on();",
+                "id(media_player_sleep_prevention_default_on_migrated) = true;",
+            )
+            if any(token not in text for token in migration_tokens):
+                errors.append(f"{rel}: migrate media sleep prevention on exactly once")
+        if re.search(r"(?m)^\s+id: cover_art_delay\s*$", text):
+            cover_art_delay_index = text.find("id: cover_art_delay")
+            cover_art_delay_end = text.find("\n  - platform:", cover_art_delay_index + 1)
+            cover_art_delay_body = text[cover_art_delay_index:cover_art_delay_end]
+            if "min_value: 3" not in cover_art_delay_body:
+                errors.append(f"{rel}: keep the cover art Show After minimum at three seconds")
 
     if cover_art_path.exists():
         rel = cover_art_path.relative_to(root)
@@ -1259,6 +1273,8 @@ def firmware_media_control_low_heap_metadata_errors(firmware_dir: Path, root: Pa
             or f'std::string("{attr}")' not in metadata_helper
         ):
             errors.append(f"{rel}: keep {attr} subscribed for the S3 media modal")
+    if 'state->entity_id, std::string("media_artist")' in metadata_helper:
+        errors.append(f"{rel}: avoid duplicate one-shot metadata reads on every track change")
     progress_in_always_on = "media_playback_subscribe_progress(state)" in always_on
     progress_in_low_heap_excluded = "media_playback_subscribe_progress(state)" in low_heap_excluded
     for attr in ("media_duration", "media_position", "media_position_updated_at"):
@@ -2036,11 +2052,22 @@ def firmware_screen_schedule_screensaver_override_errors(backlight_path: Path, r
     if wake_body is None:
         errors.append(f"{rel}: missing screensaver_presence_wake script")
     else:
+        typed_presence_wake = (
+            "presence_can_wake_display(" in wake_body
+            and "script.execute: screensaver_wake" in wake_body
+        )
         controller_presence_wake = (
-            "script.execute: display_mode_clear_automatic" in wake_body
+            not typed_presence_wake
+            and "script.execute: display_mode_clear_automatic" in wake_body
             and "screen_schedule_night_active(" in text
             and "DisplayRequestSource::SCREEN_SCHEDULE" in text
         )
+        if typed_presence_wake and "script.execute: display_mode_clear_automatic" not in wake_body:
+            errors.append(
+                f"{rel}: clear stale automatic sleep when presence leaves the visible mode unchanged"
+            )
+        if typed_presence_wake and "id(cover_art_screensaver_active)" in wake_body:
+            errors.append(f"{rel}: leave active cover art unchanged on presence detection")
         if controller_presence_wake and (
             "target_mode_is(\n                          espcontrol::DisplayMode::COVER_ART)" not in wake_body
             or "script.execute: screensaver_wake" not in wake_body
@@ -2053,13 +2080,13 @@ def firmware_screen_schedule_screensaver_override_errors(backlight_path: Path, r
             "screen_schedule_night_active(",
             "id(screen_schedule_check).execute();",
         )
-        if not controller_presence_wake and (
+        if not typed_presence_wake and not controller_presence_wake and (
             wake_index == -1 or any(token not in pre_wake_body for token in required_tokens)
         ):
             errors.append(f"{rel}: let the night screen schedule override sensor screensaver wake")
         disabled_wake_index = pre_wake_body.rfind("if (!id(schedule_enabled).state) return true;")
         schedule_check_index = pre_wake_body.find("id(screen_schedule_check).execute();")
-        if not controller_presence_wake and (disabled_wake_index == -1 or (
+        if not typed_presence_wake and not controller_presence_wake and (disabled_wake_index == -1 or (
             schedule_check_index != -1 and disabled_wake_index < schedule_check_index
         )):
             errors.append(f"{rel}: let sensor screensaver wake when the screen schedule is disabled")
@@ -4116,7 +4143,7 @@ def run_self_test() -> int:
         "            handle_media_source,\n"
         "            HA_SUBSCRIPTION_SCOPE_COVER_ART\n"
         "          );\n"
-        "          ha_get_attribute(cover_entity, std::string(\"source\"), handle_media_source);\n",
+        "          // Live subscriptions supply both initial values and updates.\n",
         (),
     )
     expect_cover_art_stale_image_errors(
@@ -4172,7 +4199,7 @@ def run_self_test() -> int:
         "          id(cover_art_runtime).source_url;\n",
         (
             "track/source metadata changes as stale artwork",
-            "subscribe to and refresh the media_album_name attribute",
+            "subscribe to the media_album_name attribute",
         ),
     )
     expect_cover_art_refresh_errors(
@@ -4263,7 +4290,7 @@ def run_self_test() -> int:
         "            id(cover_art_runtime).refresh_needed = true;\n"
         "          }\n"
         "          ha_subscribe_attribute(cover_entity, std::string(\"media_album_name\"), handle_media_album);\n"
-        "          ha_get_attribute(cover_entity, std::string(\"media_album_name\"), handle_media_album);\n",
+        "          // Live subscriptions supply both initial values and updates.\n",
         (),
     )
     expect_cover_art_playback_grace_errors(
@@ -4460,9 +4487,8 @@ def run_self_test() -> int:
         "      - if:\n"
         "          condition:\n"
         "            lambda: |-\n"
-        "              const bool cover_art_immediate_return =\n"
-        "                id(cover_art_manual_pause_until_ms) != 0 &&\n"
-        "                id(cover_art_delay).state <= 0.0f;\n"
+        "              float show_after_seconds = id(cover_art_delay).state;\n"
+        "              if (show_after_seconds < 3.0f) show_after_seconds = 3.0f;\n"
         "              const bool cover_art_disabled_mode_delay =\n"
         "                id(screensaver_mode).state != \"timer\" &&\n"
         "                id(screensaver_mode).state != \"sensor\" &&\n"
@@ -5399,6 +5425,27 @@ def run_self_test() -> int:
         "night schedule overrides timer and sensor screensaver",
         valid_schedule_screensaver_override,
         (),
+        valid_schedule_sleep_order,
+    )
+    typed_presence_wake = valid_schedule_screensaver_override.replace(
+        "            - script.execute: screensaver_wake\n",
+        "            - lambda: 'return espcontrol::presence_can_wake_display(transition);'\n"
+        "            - script.execute: screensaver_wake\n"
+        "            - script.execute: display_mode_clear_automatic\n",
+        1,
+    )
+    expect_screen_schedule_screensaver_override_errors(
+        "typed presence wake clears hidden automatic sleep",
+        typed_presence_wake,
+        (),
+        valid_schedule_sleep_order,
+    )
+    expect_screen_schedule_screensaver_override_errors(
+        "typed presence wake leaves hidden automatic sleep stale",
+        typed_presence_wake.replace(
+            "            - script.execute: display_mode_clear_automatic\n", "", 1
+        ),
+        ("clear stale automatic sleep",),
         valid_schedule_sleep_order,
     )
     migrated_schedule_reconcile = (
