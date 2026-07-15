@@ -71,6 +71,14 @@ static P4JpegWorkspace &p4_jpeg_workspace() {
   return workspace;
 }
 
+static void p4_release_jpeg_workspace() {
+  P4JpegWorkspace &workspace = p4_jpeg_workspace();
+  free(workspace.input);
+  free(workspace.output);
+  heap_caps_free(workspace.scaled);
+  workspace = {};
+}
+
 static bool p4_ensure_jpeg_buffer(uint8_t *&buffer, size_t &capacity, size_t required,
                                   jpeg_dec_buffer_alloc_direction_t direction) {
   if (buffer != nullptr && capacity >= required) return true;
@@ -200,14 +208,19 @@ int HOT JpegDecoder::decode(uint8_t *buffer, size_t size) {
 int JpegDecoder::decode_hardware_(uint8_t *buffer, size_t size) {
   if (!p4_jpeg_hardware_target_supported(
         this->image_->image_type() == image::ImageType::IMAGE_TYPE_RGB565)) {
+    p4_release_jpeg_workspace();
     return 0;
   }
   jpeg_decoder_handle_t decoder = p4_jpeg_decoder();
-  if (decoder == nullptr) return 0;
+  if (decoder == nullptr) {
+    p4_release_jpeg_workspace();
+    return 0;
+  }
 
   jpeg_decode_picture_info_t info{};
   if (jpeg_decoder_get_info(buffer, size, &info) != ESP_OK || info.width == 0 || info.height == 0 ||
       info.sample_method == JPEG_DOWN_SAMPLING_GRAY) {
+    p4_release_jpeg_workspace();
     return 0;
   }
 
@@ -223,6 +236,7 @@ int JpegDecoder::decode_hardware_(uint8_t *buffer, size_t size) {
       !p4_ensure_jpeg_buffer(workspace.output, workspace.output_capacity, requested_output_size,
                              JPEG_DEC_ALLOC_OUTPUT_BUFFER)) {
     ESP_LOGW(TAG, "ESP32-P4 JPEG workspace allocation failed; using software decoder");
+    p4_release_jpeg_workspace();
     return 0;
   }
   memcpy(workspace.input, buffer, size);
@@ -242,6 +256,7 @@ int JpegDecoder::decode_hardware_(uint8_t *buffer, size_t size) {
                                        workspace.output, workspace.output_capacity, &output_size);
   if (err != ESP_OK || output_size < requested_output_size) {
     ESP_LOGW(TAG, "ESP32-P4 JPEG hardware rejected image (error %d); using software decoder", err);
+    p4_release_jpeg_workspace();
     return 0;
   }
 
