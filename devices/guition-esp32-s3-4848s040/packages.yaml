@@ -44,7 +44,10 @@ substitutions:
   screen_schedule_clock_default_brightness: "10"
   cover_art_size: "480"
   cover_art_decode_size: "320"
-  image_notif_fullscreen_size: "${cover_art_decode_size}"
+  # Decoupled from cover_art_decode_size (320): image notifications get a larger
+  # 400x400 letterbox on the 480x480 screen. ~0.32 MB RGB565 (was ~0.20 MB) —
+  # above cover art's proven 320 ceiling, so watch the free-heap sensor on-device.
+  image_notif_fullscreen_size: "400"
   image_notif_card_size: "300"
   cover_art_x: "0"
   cover_art_y: "0"
