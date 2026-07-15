@@ -107,14 +107,26 @@ lvgl:
                 clickable: false
                 hidden: true
                 widgets:
-                  - image:
-                      id: image_notif_fs_image
+                  # LVGL 9 clips an image only via a parent container, not on the
+                  # image itself — so the rounded frame owns radius + clip_corner.
+                  - obj:
+                      id: image_notif_fs_frame
                       align: center
                       width: ${image_notif_fullscreen_size}px
                       height: ${image_notif_fullscreen_size}px
-                      src: image_notification_image
+                      bg_opa: 0%
+                      border_width: 0
+                      pad_all: 0
                       radius: $radius
                       clip_corner: true
+                      scrollable: false
+                      widgets:
+                        - image:
+                            id: image_notif_fs_image
+                            align: center
+                            width: ${image_notif_fullscreen_size}px
+                            height: ${image_notif_fullscreen_size}px
+                            src: image_notification_image
                   - obj:
                       id: image_notif_fs_caption
                       align: bottom_mid
@@ -177,13 +189,23 @@ lvgl:
                   flex_align_cross: center
                   pad_row: 12
                 widgets:
-                  - image:
-                      id: image_notif_card_image
+                  - obj:
+                      id: image_notif_card_frame
                       width: ${image_notif_card_size}px
                       height: ${image_notif_card_size}px
-                      src: image_notification_image
+                      bg_opa: 0%
+                      border_width: 0
+                      pad_all: 0
                       radius: $radius
                       clip_corner: true
+                      scrollable: false
+                      widgets:
+                        - image:
+                            id: image_notif_card_image
+                            align: center
+                            width: ${image_notif_card_size}px
+                            height: ${image_notif_card_size}px
+                            src: image_notification_image
                   - label:
                       id: image_notif_card_title
                       text: ""
