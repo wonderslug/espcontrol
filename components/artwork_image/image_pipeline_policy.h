@@ -61,6 +61,17 @@ constexpr bool image_pipeline_should_cancel_modal_cleanup(bool has_separate_moda
   return has_separate_modal_image && !shared_modal_in_use;
 }
 
+// A newly opened card should preempt modal-quality work left by a different
+// card that is still inside its delayed cleanup window. Matching the shared
+// image buffer prevents unrelated artwork downloads from being cancelled.
+constexpr bool image_pipeline_should_preempt_stale_modal(bool switching_context,
+                                                          bool previous_context_active,
+                                                          bool previous_cleanup_pending,
+                                                          bool shares_modal_image) {
+  return switching_context && previous_context_active && previous_cleanup_pending &&
+         shares_modal_image;
+}
+
 struct P4CoverScalePlan {
   bool valid{false};
   uint32_t crop_width{0};

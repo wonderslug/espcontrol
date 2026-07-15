@@ -9,6 +9,7 @@ using esphome::artwork_image::image_pipeline_should_requeue_interrupted_tile;
 using esphome::artwork_image::image_pipeline_modal_can_open;
 using esphome::artwork_image::image_pipeline_modal_cache_matches;
 using esphome::artwork_image::image_pipeline_should_cancel_modal_cleanup;
+using esphome::artwork_image::image_pipeline_should_preempt_stale_modal;
 using esphome::artwork_image::p4_cover_scale_plan;
 using esphome::artwork_image::p4_jpeg_hardware_target_supported;
 
@@ -56,6 +57,14 @@ int main() {
   assert(image_pipeline_should_cancel_modal_cleanup(true, false));
   assert(!image_pipeline_should_cancel_modal_cleanup(true, true));
   assert(!image_pipeline_should_cancel_modal_cleanup(false, false));
+
+  // Switching cards inside the delayed cleanup window should cancel the old
+  // request only when both cards use the same modal-quality image buffer.
+  assert(image_pipeline_should_preempt_stale_modal(true, true, true, true));
+  assert(!image_pipeline_should_preempt_stale_modal(false, true, true, true));
+  assert(!image_pipeline_should_preempt_stale_modal(true, false, true, true));
+  assert(!image_pipeline_should_preempt_stale_modal(true, true, false, true));
+  assert(!image_pipeline_should_preempt_stale_modal(true, true, true, false));
 
   // PPA stores scale in sixteenth-step units. The old arbitrary ratio was
   // truncated (for example 0.672 to 0.625), leaving noisy right/bottom strips.

@@ -640,6 +640,22 @@ inline bool image_card_has_separate_modal_image(ImageCardCtx *ctx) {
   return ctx && ctx->modal_image && ctx->modal_image != ctx->image;
 }
 
+inline void image_card_cancel_stale_modal_download(ImageCardCtx *ctx) {
+  if (!image_card_has_separate_modal_image(ctx)) return;
+  ImageCardCtx *contexts = image_card_contexts();
+  for (int i = 0; i < IMAGE_CARD_MAX_CONTEXTS; i++) {
+    ImageCardCtx *previous = &contexts[i];
+    if (!esphome::artwork_image::image_pipeline_should_preempt_stale_modal(
+          previous != ctx, previous->active, previous->modal_cleanup_timer != nullptr,
+          previous->modal_image == ctx->modal_image)) {
+      continue;
+    }
+    ctx->modal_image->cancel_update();
+    image_card_log_diagnostics(ctx, "stale-modal-download-cancelled");
+    return;
+  }
+}
+
 inline bool image_card_modal_has_preview(ImageCardCtx *ctx);
 
 inline void image_card_show_modal_download_failure(ImageCardCtx *ctx) {
@@ -1729,6 +1745,7 @@ inline void image_card_open_modal(ImageCardCtx *ctx) {
     ctx->modal_cleanup_timer = nullptr;
     image_card_finish_modal_cleanup(ctx);
   }
+  image_card_cancel_stale_modal_download(ctx);
   ctx->next_download_retry_ms = 0;
   image_card_prioritize_modal_download(ctx);
 
