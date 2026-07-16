@@ -35,6 +35,7 @@ int main() {
   const auto fan_control = card_runtime_context("fan_control");
   const auto climate = card_runtime_context("climate");
   const auto climate_control = card_runtime_context("climate_control");
+  const auto alarm = card_runtime_context("alarm");
   const auto clock = card_runtime_context("clock");
   const auto timezone = card_runtime_context("timezone");
   const auto calendar = card_runtime_context("calendar");
@@ -122,7 +123,9 @@ int main() {
       climate.runtime.driver != espcontrol::card_runtime::CardDriverId::CLIMATE ||
       climate_control.runtime.driver !=
         espcontrol::card_runtime::CardDriverId::CLIMATE ||
-      climate.legacy_dispatch || climate_control.legacy_dispatch) {
+      climate.legacy_dispatch || climate_control.legacy_dispatch ||
+      alarm.runtime.driver != espcontrol::card_runtime::CardDriverId::ALARM ||
+      alarm.legacy_dispatch) {
     return EXIT_FAILURE;
   }
   struct TestConfig {

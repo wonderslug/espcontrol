@@ -136,6 +136,10 @@ inline AlarmActionCtx *grid_delete_alarm_action_with_owner(
     lv_obj_t *owner, AlarmActionCtx *ctx);
 inline AlarmActionCtx *grid_track_alarm_action_runtime(
     lv_obj_t *owner, AlarmActionCtx *ctx);
+inline AlarmCardCtx *grid_delete_alarm_card_with_owner(
+    lv_obj_t *owner, AlarmCardCtx *ctx);
+inline AlarmCardCtx *grid_track_alarm_card_runtime(
+    lv_obj_t *owner, AlarmCardCtx *ctx);
 inline FanCardCtx *grid_delete_fan_card_with_owner(
     lv_obj_t *owner, FanCardCtx *ctx);
 inline FanCardCtx *grid_track_fan_card_runtime(
@@ -209,6 +213,7 @@ inline void apply_wide_large_date_time_card_layout(const BtnSlot &s,
 #include "button_grid_light_control_driver.h"
 #include "button_grid_fan_control_driver.h"
 #include "button_grid_climate_control_driver.h"
+#include "button_grid_alarm_driver.h"
 
 inline void apply_card_label_line_clamp(lv_obj_t *label, const GridConfig &cfg,
                                         int row_span = 1) {
@@ -408,6 +413,7 @@ inline void setup_card_visual(BtnSlot &s, const ParsedCfg &p,
   espcontrol::cards::light_control_driver_cleanup(s, p, context);
   espcontrol::cards::fan_control_driver_cleanup(s, p, context);
   espcontrol::cards::climate_control_driver_cleanup(s, p, context);
+  espcontrol::cards::alarm_driver_cleanup(s, p, context);
   reset_card_slot_dynamic_children(s);
   apply_button_colors(s.btn, palette.has_on, palette.on_val,
     palette.has_off, palette.off_val);
@@ -453,6 +459,11 @@ inline void setup_card_visual(BtnSlot &s, const ParsedCfg &p,
         s, p, context, display)) {
     espcontrol::cards::climate_control_driver_attach_interaction(s, p, context);
     espcontrol::cards::climate_control_driver_refresh_layout(s, p, context);
+    return;
+  }
+  if (espcontrol::cards::alarm_driver_setup_visual(s, p, context)) {
+    espcontrol::cards::alarm_driver_attach_interaction(s, p, context);
+    espcontrol::cards::alarm_driver_refresh_layout(s, p, context);
     return;
   }
   if (espcontrol::cards::sensor_driver_setup_visual(
@@ -514,10 +525,6 @@ inline void setup_card_visual(BtnSlot &s, const ParsedCfg &p,
         s, p, context, cfg, display)) {
     espcontrol::cards::navigation_driver_attach_interaction(s, p, context);
     espcontrol::cards::navigation_driver_refresh_layout(s, p, context, cfg);
-    return;
-  }
-  if (family == espcontrol::cards::Family::ALARM) {
-    setup_alarm_card(s, p);
     return;
   }
   if (family == espcontrol::cards::Family::COVER && cover_modal_mode(p.sensor)) {
@@ -995,6 +1002,22 @@ inline void grid_delete_transient_status_label_runtime_ptr(void *ptr) {
 inline void grid_delete_alarm_card_runtime_ptr(void *ptr) {
   AlarmCardCtx *ctx = static_cast<AlarmCardCtx *>(ptr);
   if (ctx != nullptr) {
+    AlarmControlModalUi &control_ui = alarm_control_modal_ui();
+    if (control_ui.active == ctx) alarm_control_hide_modal();
+    AlarmPinModalUi &pin_ui = alarm_pin_modal_ui();
+    if (pin_ui.active != nullptr && pin_ui.active->card == ctx) {
+      alarm_pin_hide_modal();
+    }
+    AlarmDeferredAction &deferred = alarm_deferred_action();
+    if (deferred.action.card == ctx) {
+      if (deferred.timer != nullptr) {
+        lv_timer_del(deferred.timer);
+        deferred.timer = nullptr;
+      }
+      deferred.action = AlarmActionCtx();
+      deferred.code.clear();
+      deferred.submit_pin = false;
+    }
     alarm_release_arming_takeover(ctx);
     if (ctx->arm_delay_timer != nullptr) {
       lv_timer_del(ctx->arm_delay_timer);
@@ -1006,6 +1029,7 @@ inline void grid_delete_alarm_card_runtime_ptr(void *ptr) {
     }
     grid_delete_transient_status_label(ctx->status_label);
     ctx->status_label = nullptr;
+    ctx->magic = 0;
     delete ctx;
   }
 }
@@ -1300,6 +1324,10 @@ inline void grid_phase2(
         palette, display, s);
     if (espcontrol::cards::climate_control_driver_bind_main(
           s, p, context, climate_control_environment)) continue;
+    auto alarm_environment = espcontrol::cards::alarm_driver_environment(
+      palette, display, s, cfg, main_page_obj, NS, COLS);
+    if (espcontrol::cards::alarm_driver_bind_main(
+          s, p, context, alarm_environment)) continue;
     if (bind_basic_sensor_card(s, p, context, palette)) continue;
     espcontrol::cards::ToggleDriverState toggle_state;
     toggle_state.has_sensor = &has_sensor[idx - 1];
@@ -1324,31 +1352,6 @@ inline void grid_phase2(
     navigation_state.icon_on = &icon_on_cp[idx - 1];
     if (espcontrol::cards::navigation_driver_bind_main(
           s, p, context, navigation_state)) continue;
-    if (family == espcontrol::cards::Family::ALARM) {
-      if (!p.entity.empty()) {
-        AlarmCardCtx *ctx = create_alarm_card_context(
-          s, p, main_page_obj, NS, COLS,
-          has_on ? on_val : DEFAULT_SLIDER_COLOR,
-          off_val,
-          sensor_val,
-          display_icon_font(display),
-          display_media_title_font_or(display, lv_obj_get_style_text_font(s.text_lbl, LV_PART_MAIN)),
-          display_sensor_font(display),
-          display_optional_media_title_font(display),
-          lv_obj_get_style_text_font(s.text_lbl, LV_PART_MAIN),
-          lv_obj_get_style_text_color(s.text_lbl, LV_PART_MAIN),
-          display_main_width_percent(display),
-          false,
-          cfg.begin_display_takeover,
-          cfg.end_display_takeover);
-        grid_track_alarm_card_runtime(s.btn, ctx);
-        lv_obj_set_user_data(s.btn, ctx);
-        subscribe_alarm_state(ctx);
-        if (p.label.empty() && !ctx->show_status_label)
-          subscribe_friendly_name(ctx->status_label, p.entity);
-      }
-      continue;
-    }
     if (family == espcontrol::cards::Family::TODO) {
       if (!p.entity.empty()) {
         TodoCardCtx *ctx = create_todo_card_context(
@@ -1685,6 +1688,13 @@ inline void grid_phase2(
           palette, display, sub_slot);
       if (espcontrol::cards::climate_control_driver_bind_subpage(
             sub_slot, sb_cfg, context, climate_control_environment)) continue;
+      auto alarm_environment = espcontrol::cards::alarm_driver_environment(
+        palette, display, sub_slot, cfg, sub_scr, NS, COLS);
+      alarm_environment.parent_config = &p;
+      alarm_environment.add_parent_indicator =
+        [&](const std::string &entity_id) { add_parent_indicator(entity_id); };
+      if (espcontrol::cards::alarm_driver_bind_subpage(
+            sub_slot, sb_cfg, context, alarm_environment)) continue;
       if (bind_basic_sensor_card(sub_slot, sb_cfg, context, palette)) continue;
       espcontrol::cards::BasicActionSubpageEnvironment action_environment;
       action_environment.grid_config = &cfg;
@@ -1773,40 +1783,6 @@ inline void grid_phase2(
             CoverControlCtx *ctx = (CoverControlCtx *)lv_obj_get_user_data(target);
             if (ctx) cover_control_open_modal(ctx);
           }, LV_EVENT_CLICKED, nullptr);
-        }
-        continue;
-      }
-      if (family == espcontrol::cards::Family::ALARM) {
-        ParsedCfg alarm_cfg = sb_cfg;
-        if (alarm_cfg.entity.empty()) alarm_cfg.entity = p.entity;
-        if (alarm_cfg.options.empty()) alarm_cfg.options = p.options;
-        if (!alarm_cfg.entity.empty()) {
-          AlarmCardCtx *ctx = create_alarm_card_context(
-            sub_slot, alarm_cfg, sub_scr, NS, COLS,
-            palette.has_on ? palette.on_val : DEFAULT_SLIDER_COLOR,
-            palette.off_val,
-            palette.sensor_val,
-            display_icon_font(display),
-            display_media_title_font_or(display, lv_obj_get_style_text_font(sub_slot.text_lbl, LV_PART_MAIN)),
-            display_sensor_font(display),
-            display_optional_media_title_font(display),
-            lv_obj_get_style_text_font(sub_slot.text_lbl, LV_PART_MAIN),
-            lv_obj_get_style_text_color(sub_slot.text_lbl, LV_PART_MAIN),
-            display_main_width_percent(display),
-            false,
-            cfg.begin_display_takeover,
-            cfg.end_display_takeover);
-          grid_delete_alarm_card_with_owner(sb_btn, ctx);
-          ctx->grid_page = sub_scr;
-          lv_obj_set_user_data(sb_btn, ctx);
-          subscribe_alarm_state(ctx);
-          if (alarm_cfg.label.empty() && !ctx->show_status_label)
-            subscribe_friendly_name(ctx->status_label, alarm_cfg.entity);
-          add_parent_indicator(alarm_cfg.entity);
-          lv_obj_add_event_cb(sb_btn, [](lv_event_t *e) {
-            AlarmCardCtx *ctx = (AlarmCardCtx *)lv_event_get_user_data(e);
-            if (ctx) alarm_card_open_page(ctx);
-          }, LV_EVENT_CLICKED, ctx);
         }
         continue;
       }

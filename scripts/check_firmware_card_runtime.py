@@ -59,6 +59,7 @@ IMAGE_DRIVER_HEADER = "button_grid_image_driver.h"
 LIGHT_CONTROL_DRIVER_HEADER = "button_grid_light_control_driver.h"
 FAN_CONTROL_DRIVER_HEADER = "button_grid_fan_control_driver.h"
 CLIMATE_CONTROL_DRIVER_HEADER = "button_grid_climate_control_driver.h"
+ALARM_DRIVER_HEADER = "button_grid_alarm_driver.h"
 CARDS_HEADER = "button_grid_cards.h"
 
 
@@ -181,6 +182,9 @@ def check_root(root: Path) -> list[str]:
             or "climate_control_driver_setup_visual( s, p, context, display)" not in compact_grid
             or "climate_control_driver_bind_main( s, p, context, climate_control_environment)" not in compact_grid
             or "climate_control_driver_bind_subpage( sub_slot, sb_cfg, context, climate_control_environment)" not in compact_grid
+            or "alarm_driver_setup_visual(s, p, context)" not in compact_grid
+            or "alarm_driver_bind_main( s, p, context, alarm_environment)" not in compact_grid
+            or "alarm_driver_bind_subpage( sub_slot, sb_cfg, context, alarm_environment)" not in compact_grid
             or "bind_basic_sensor_card(s, p, context, palette)" not in compact_grid
             or "bind_basic_sensor_card(sub_slot, sb_cfg, context, palette)" not in compact_grid
         ):
@@ -227,6 +231,7 @@ def check_root(root: Path) -> list[str]:
             'p.type == "light_control"', 'sb_cfg.type == "light_control"',
             'p.type == "fan_control"', 'sb_cfg.type == "fan_control"',
             'family == espcontrol::cards::Family::CLIMATE',
+            'family == espcontrol::cards::Family::ALARM',
         ):
             if direct_branch in text:
                 failures.append(
@@ -276,6 +281,7 @@ def check_root(root: Path) -> list[str]:
             or "light_control_driver_handle_main_click(" not in click_body
             or "fan_control_driver_handle_main_click(" not in click_body
             or "climate_control_driver_handle_main_click(" not in click_body
+            or "alarm_driver_handle_main_click(" not in click_body
         ):
             failures.append(
                 f"components/espcontrol/{ACTION_HEADER}: route passive checks through the shared card context"
@@ -293,6 +299,7 @@ def check_root(root: Path) -> list[str]:
                 'p.type == "light_control"',
                 'p.type == "fan_control"',
                 'climate_card_type(p.type)',
+                'p.type == "alarm"',
             ):
                 if direct_branch in click_body:
                     failures.append(
@@ -671,6 +678,36 @@ def check_root(root: Path) -> list[str]:
         failures.append(
             f"components/espcontrol/{CLIMATE_CONTROL_DRIVER_HEADER}: missing shared climate-control driver"
         )
+    alarm_driver_header = (
+        root / "components" / "espcontrol" / ALARM_DRIVER_HEADER
+    )
+    if alarm_driver_header.exists():
+        text = alarm_driver_header.read_text(encoding="utf-8")
+        required = (
+            "alarm_driver_setup_visual",
+            "alarm_driver_bind_main",
+            "alarm_driver_bind_subpage",
+            "alarm_driver_attach_interaction",
+            "alarm_driver_refresh_layout",
+            "alarm_driver_cleanup",
+            "alarm_driver_handle_main_click",
+            "alarm_driver_effective_config",
+            "create_alarm_card_context",
+            "subscribe_alarm_state",
+            "alarm_card_open_page",
+            "grid_track_alarm_card_runtime",
+            "grid_delete_alarm_card_with_owner",
+            '"alarm"',
+        )
+        for needle in required:
+            if needle not in text:
+                failures.append(
+                    f"components/espcontrol/{ALARM_DRIVER_HEADER}: missing shared alarm lifecycle guard {needle}"
+                )
+    elif grid_header.exists():
+        failures.append(
+            f"components/espcontrol/{ALARM_DRIVER_HEADER}: missing shared alarm driver"
+        )
     cards_header = root / "components" / "espcontrol" / CARDS_HEADER
     if cards_header.exists():
         text = cards_header.read_text(encoding="utf-8")
@@ -899,6 +936,15 @@ def run_self_test() -> None:
                 )
             },
             ("missing shared climate-control lifecycle guard",),
+        ),
+        (
+            {
+                "button_grid_alarm_driver.h": (
+                    "inline bool alarm_driver_setup_visual() {}\n"
+                    "inline bool alarm_driver_bind_main() {}\n"
+                )
+            },
+            ("missing shared alarm lifecycle guard",),
         ),
         (
             {

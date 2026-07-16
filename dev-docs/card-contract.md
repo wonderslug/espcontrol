@@ -130,8 +130,13 @@ modal implementation. Climate and Climate Control compatibility cards use the
 shared `CLIMATE` lifecycle boundary for main-grid and subpage visual setup,
 runtime binding, modal click dispatch, timer cancellation, reference cleanup,
 and allocation cleanup while retaining their specialised temperature, HVAC
-mode, preset, fan, swing, Home Assistant, and modal implementation. Alarm,
-Cover modal, and Media remain on the existing `Family` dispatch until their
+mode, preset, fan, swing, Home Assistant, and modal implementation. Alarm cards
+use the shared `ALARM` lifecycle boundary for main-grid and subpage visual
+setup, inherited subpage configuration, runtime binding, modal click dispatch,
+PIN and control modal dismissal, timer cancellation, display takeover release,
+and allocation cleanup while retaining their specialised PIN entry, arming
+countdown, critical display takeover, Home Assistant, and modal implementation.
+Cover modal and Media remain on the existing `Family` dispatch until their
 reviewed migration PRs switch them one family at a time.
 
 The pre-driver-migration runtime baseline is authored in

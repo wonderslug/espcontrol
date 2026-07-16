@@ -103,6 +103,7 @@ inline bool driver_uses_legacy_dispatch(
     case Driver::LIGHT_CONTROL:
     case Driver::FAN_CONTROL:
     case Driver::CLIMATE:
+    case Driver::ALARM:
       return false;
     default: return true;
   }

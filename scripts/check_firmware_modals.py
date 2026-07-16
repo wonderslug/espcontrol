@@ -896,6 +896,49 @@ def firmware_climate_modal_context_lifecycle_errors(root: Path) -> list[str]:
     return errors
 
 
+def firmware_alarm_modal_context_lifecycle_errors(root: Path) -> list[str]:
+    grid_path = root / "components" / "espcontrol" / "button_grid_grid.h"
+    errors: list[str] = []
+
+    if not grid_path.exists():
+        return [
+            "components/espcontrol/button_grid_grid.h: close alarm modals, deferred actions, timers, and display takeover before deleting their card context"
+        ]
+
+    grid_text = grid_path.read_text(encoding="utf-8")
+    cleanup_requirements = (
+        "alarm_control_modal_ui();",
+        "control_ui.active == ctx",
+        "alarm_control_hide_modal();",
+        "alarm_pin_modal_ui();",
+        "pin_ui.active->card == ctx",
+        "alarm_pin_hide_modal();",
+        "alarm_deferred_action();",
+        "deferred.action.card == ctx",
+        "lv_timer_del(deferred.timer);",
+        "alarm_release_arming_takeover(ctx);",
+        "lv_timer_del(ctx->arm_delay_timer);",
+        "lv_timer_del(ctx->pending_action_timer);",
+        "grid_delete_transient_status_label(ctx->status_label);",
+    )
+    if any(requirement not in grid_text for requirement in cleanup_requirements):
+        errors.append(
+            "components/espcontrol/button_grid_grid.h: close alarm modals, deferred actions, timers, and display takeover before deleting their card context"
+        )
+
+    if (
+        "grid_delete_alarm_card_runtime_ptr" not in grid_text
+        or "grid_track_alarm_card_runtime" not in grid_text
+        or "grid_delete_alarm_card_with_owner" not in grid_text
+        or grid_text.count("grid_delete_alarm_card_runtime_ptr(") < 4
+    ):
+        errors.append(
+            "components/espcontrol/button_grid_grid.h: use alarm-aware main-grid, subpage, and alarm-action cleanup"
+        )
+
+    return errors
+
+
 def run_scan() -> int:
     errors = firmware_modal_errors(FIRMWARE_DIR, ROOT)
     errors.extend(firmware_modal_sleep_takeover_errors(ROOT))
@@ -904,6 +947,7 @@ def run_scan() -> int:
     errors.extend(firmware_climate_option_selection_errors(ROOT))
     errors.extend(firmware_fan_modal_context_lifecycle_errors(ROOT))
     errors.extend(firmware_climate_modal_context_lifecycle_errors(ROOT))
+    errors.extend(firmware_alarm_modal_context_lifecycle_errors(ROOT))
     errors.extend(firmware_light_control_brightness_errors(ROOT))
     errors.extend(firmware_light_control_tab_errors(ROOT))
     errors.extend(firmware_cover_control_tab_errors(ROOT))
@@ -1330,6 +1374,28 @@ def expect_climate_modal_context_lifecycle_errors(
             assert not errors, f"{name}: expected no errors, got {errors!r}"
 
 
+def expect_alarm_modal_context_lifecycle_errors(
+    name: str,
+    grid_text: str,
+    expected: tuple[str, ...],
+) -> None:
+    with TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        firmware_dir = root / "components" / "espcontrol"
+        firmware_dir.mkdir(parents=True)
+        (firmware_dir / "button_grid_grid.h").write_text(
+            grid_text, encoding="utf-8"
+        )
+
+        errors = firmware_alarm_modal_context_lifecycle_errors(root)
+        for item in expected:
+            assert any(item in error for error in errors), (
+                f"{name}: missing {item!r} in {errors!r}"
+            )
+        if not expected:
+            assert not errors, f"{name}: expected no errors, got {errors!r}"
+
+
 def run_self_test() -> int:
     expect_errors(
         "forbidden click allocation",
@@ -1427,6 +1493,48 @@ def run_self_test() -> int:
             "  delete_climate_control_context(ctx);\n", "", 1
         ),
         ("use climate-aware main-grid and subpage cleanup",),
+    )
+    valid_alarm_cleanup = (
+        "inline void grid_delete_alarm_card_runtime_ptr(void *ptr);\n"
+        "inline AlarmCardCtx *grid_delete_alarm_card_with_owner();\n"
+        "inline AlarmCardCtx *grid_track_alarm_card_runtime();\n"
+        "inline void grid_delete_alarm_card_runtime_ptr(void *ptr) {\n"
+        "  AlarmControlModalUi &control_ui = alarm_control_modal_ui();\n"
+        "  if (control_ui.active == ctx) alarm_control_hide_modal();\n"
+        "  AlarmPinModalUi &pin_ui = alarm_pin_modal_ui();\n"
+        "  if (pin_ui.active->card == ctx) alarm_pin_hide_modal();\n"
+        "  AlarmDeferredAction &deferred = alarm_deferred_action();\n"
+        "  if (deferred.action.card == ctx) lv_timer_del(deferred.timer);\n"
+        "  alarm_release_arming_takeover(ctx);\n"
+        "  lv_timer_del(ctx->arm_delay_timer);\n"
+        "  lv_timer_del(ctx->pending_action_timer);\n"
+        "  grid_delete_transient_status_label(ctx->status_label);\n"
+        "}\n"
+        "inline void delete_alarm_action() {\n"
+        "  grid_delete_alarm_card_runtime_ptr(ctx);\n"
+        "}\n"
+        "inline void delete_alarm_subpage() {\n"
+        "  grid_delete_alarm_card_runtime_ptr(ctx);\n"
+        "}\n"
+    )
+    expect_alarm_modal_context_lifecycle_errors(
+        "alarm modal context cleanup",
+        valid_alarm_cleanup,
+        (),
+    )
+    expect_alarm_modal_context_lifecycle_errors(
+        "alarm PIN modal remains active",
+        valid_alarm_cleanup.replace(
+            "  if (pin_ui.active->card == ctx) alarm_pin_hide_modal();\n", ""
+        ),
+        ("close alarm modals, deferred actions, timers, and display takeover",),
+    )
+    expect_alarm_modal_context_lifecycle_errors(
+        "alarm subpage uses generic cleanup",
+        valid_alarm_cleanup.replace(
+            "  grid_delete_alarm_card_runtime_ptr(ctx);\n", "", 1
+        ),
+        ("use alarm-aware main-grid, subpage, and alarm-action cleanup",),
     )
     expect_sleep_takeover_errors(
         "missing display takeover close",
