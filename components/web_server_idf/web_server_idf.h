@@ -200,6 +200,9 @@ class AsyncWebServerRequest {
   optional<std::string> find_query_value_(const char *name) const;
   std::vector<AsyncWebParameter *> params_;
   std::string post_query_;
+#ifdef USE_WEBSERVER_AUTH_DIGEST
+  mutable bool digest_nonce_stale_{false};
+#endif
   AsyncWebServerRequest(httpd_req_t *req) : req_(req) {}
   AsyncWebServerRequest(httpd_req_t *req, std::string post_query) : req_(req), post_query_(std::move(post_query)) {}
   void init_response_(AsyncWebServerResponse *rsp, int code, const char *content_type);

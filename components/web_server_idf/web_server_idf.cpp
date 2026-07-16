@@ -1,5 +1,6 @@
 #ifdef USE_ESP32
 
+#include <array>
 #include <cstdarg>
 #include <memory>
 #include <cstring>
@@ -412,6 +413,164 @@ void AsyncWebServerRequest::init_response_(AsyncWebServerResponse *rsp, int code
 #ifdef USE_WEBSERVER_AUTH_DIGEST
 namespace {
 
+static constexpr const char *DIGEST_REALM = "Login Required";
+static constexpr const char *DIGEST_QOP = "auth";
+static constexpr size_t DIGEST_VALUE_LENGTH = 32;
+static constexpr size_t DIGEST_CNONCE_MAX_LENGTH = 64;
+static constexpr size_t DIGEST_NONCE_SLOTS = 8;
+static constexpr size_t DIGEST_CNONCE_SLOTS = 4;
+static constexpr uint32_t DIGEST_NONCE_LIFETIME_MS = 5 * 60 * 1000;
+
+struct DigestCnonceState {
+  std::array<char, DIGEST_CNONCE_MAX_LENGTH + 1> value{};
+  uint32_t last_nonce_count{};
+  uint64_t used_nonce_counts{};
+};
+
+struct DigestNonceState {
+  std::array<char, DIGEST_VALUE_LENGTH + 1> nonce{};
+  std::array<char, DIGEST_VALUE_LENGTH + 1> opaque{};
+  uint32_t issued_at{};
+  std::array<DigestCnonceState, DIGEST_CNONCE_SLOTS> cnonces{};
+};
+
+// Retain a small bounded set of challenges so simultaneous browser requests
+// can authenticate without allowing captured Authorization headers to replay.
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
+std::array<DigestNonceState, DIGEST_NONCE_SLOTS> digest_nonce_states;
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
+size_t next_digest_nonce_slot = 0;
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
+portMUX_TYPE digest_auth_lock = portMUX_INITIALIZER_UNLOCKED;
+
+bool digest_ref_equals(StringRef value, const char *expected) {
+  const size_t expected_length = strlen(expected);
+  return value.size() == expected_length && memcmp(value.c_str(), expected, expected_length) == 0;
+}
+
+bool digest_ref_equals_buffer(StringRef value, const char *expected, size_t expected_length) {
+  return value.size() == expected_length && memcmp(value.c_str(), expected, expected_length) == 0;
+}
+
+bool parse_nonce_count(StringRef value, uint32_t *nonce_count) {
+  if (value.size() != 8)
+    return false;
+
+  uint32_t result = 0;
+  for (size_t i = 0; i < value.size(); i++) {
+    const char ch = value.c_str()[i];
+    uint8_t digit;
+    if (ch >= '0' && ch <= '9') {
+      digit = static_cast<uint8_t>(ch - '0');
+    } else if (ch >= 'a' && ch <= 'f') {
+      digit = static_cast<uint8_t>(ch - 'a' + 10);
+    } else if (ch >= 'A' && ch <= 'F') {
+      digit = static_cast<uint8_t>(ch - 'A' + 10);
+    } else {
+      return false;
+    }
+    result = (result << 4) | digit;
+  }
+  if (result == 0)
+    return false;
+  *nonce_count = result;
+  return true;
+}
+
+bool digest_nonce_expired(const DigestNonceState &state, uint32_t now) {
+  return state.nonce[0] == '\0' || static_cast<uint32_t>(now - state.issued_at) > DIGEST_NONCE_LIFETIME_MS;
+}
+
+bool digest_challenge_is_valid(StringRef nonce, StringRef opaque) {
+  const uint32_t now = millis();
+  bool valid = false;
+  portENTER_CRITICAL(&digest_auth_lock);
+  for (const auto &state : digest_nonce_states) {
+    if (!digest_nonce_expired(state, now) &&
+        digest_ref_equals_buffer(nonce, state.nonce.data(), DIGEST_VALUE_LENGTH) &&
+        digest_ref_equals_buffer(opaque, state.opaque.data(), DIGEST_VALUE_LENGTH)) {
+      valid = true;
+      break;
+    }
+  }
+  portEXIT_CRITICAL(&digest_auth_lock);
+  return valid;
+}
+
+bool accept_nonce_count(DigestCnonceState *state, uint32_t nonce_count) {
+  if (nonce_count > state->last_nonce_count) {
+    const uint32_t advance = nonce_count - state->last_nonce_count;
+    state->used_nonce_counts = advance >= 64 ? 1 : (state->used_nonce_counts << advance) | 1;
+    state->last_nonce_count = nonce_count;
+    return true;
+  }
+
+  // Permit parallel requests to arrive slightly out of order, but never accept
+  // the same count twice or a count outside the bounded replay window.
+  const uint32_t distance = state->last_nonce_count - nonce_count;
+  if (distance >= 64)
+    return false;
+  const uint64_t count_mask = uint64_t{1} << distance;
+  if ((state->used_nonce_counts & count_mask) != 0)
+    return false;
+  state->used_nonce_counts |= count_mask;
+  return true;
+}
+
+bool accept_digest_nonce_count(StringRef nonce, StringRef opaque, StringRef cnonce, uint32_t nonce_count) {
+  if (cnonce.size() == 0 || cnonce.size() > DIGEST_CNONCE_MAX_LENGTH)
+    return false;
+
+  const uint32_t now = millis();
+  bool accepted = false;
+  portENTER_CRITICAL(&digest_auth_lock);
+  for (auto &state : digest_nonce_states) {
+    if (digest_nonce_expired(state, now) ||
+        !digest_ref_equals_buffer(nonce, state.nonce.data(), DIGEST_VALUE_LENGTH) ||
+        !digest_ref_equals_buffer(opaque, state.opaque.data(), DIGEST_VALUE_LENGTH)) {
+      continue;
+    }
+
+    DigestCnonceState *free_state = nullptr;
+    bool found_cnonce = false;
+    for (auto &cnonce_state : state.cnonces) {
+      if (cnonce_state.value[0] == '\0') {
+        if (free_state == nullptr)
+          free_state = &cnonce_state;
+        continue;
+      }
+      if (!digest_ref_equals_buffer(cnonce, cnonce_state.value.data(), strlen(cnonce_state.value.data())))
+        continue;
+      found_cnonce = true;
+      accepted = accept_nonce_count(&cnonce_state, nonce_count);
+      break;
+    }
+
+    if (!found_cnonce && free_state != nullptr) {
+      memcpy(free_state->value.data(), cnonce.c_str(), cnonce.size());
+      free_state->value[cnonce.size()] = '\0';
+      free_state->last_nonce_count = nonce_count;
+      free_state->used_nonce_counts = 1;
+      accepted = true;
+    }
+    break;
+  }
+  portEXIT_CRITICAL(&digest_auth_lock);
+  return accepted;
+}
+
+void retain_digest_challenge(const char *nonce, const char *opaque) {
+  const uint32_t now = millis();
+  portENTER_CRITICAL(&digest_auth_lock);
+  auto &state = digest_nonce_states[next_digest_nonce_slot];
+  state = DigestNonceState{};
+  memcpy(state.nonce.data(), nonce, DIGEST_VALUE_LENGTH + 1);
+  memcpy(state.opaque.data(), opaque, DIGEST_VALUE_LENGTH + 1);
+  state.issued_at = now;
+  next_digest_nonce_slot = (next_digest_nonce_slot + 1) % DIGEST_NONCE_SLOTS;
+  portEXIT_CRITICAL(&digest_auth_lock);
+}
+
 void bytes_to_hex(const uint8_t *data, size_t len, char *out) {
   static const char HEX[] = "0123456789abcdef";
   for (size_t i = 0; i < len; i++) {
@@ -462,12 +621,15 @@ StringRef digest_param(StringRef params, const char *key) {
   return StringRef();
 }
 
-bool check_digest_auth(const char *username, const char *password, const std::string &header, const char *method) {
+enum class DigestAuthResult : uint8_t { FAILED, STALE, AUTHENTICATED };
+
+DigestAuthResult check_digest_auth(const char *username, const char *password, const std::string &header,
+                                   const char *method, const char *request_uri) {
   const size_t prefix_len = sizeof("Digest ") - 1;
   StringRef params(header.c_str() + prefix_len, header.size() - prefix_len);
 
   if (digest_param(params, "username") != username)
-    return false;
+    return DigestAuthResult::FAILED;
 
   StringRef realm = digest_param(params, "realm");
   StringRef nonce = digest_param(params, "nonce");
@@ -475,9 +637,18 @@ bool check_digest_auth(const char *username, const char *password, const std::st
   StringRef qop = digest_param(params, "qop");
   StringRef nc = digest_param(params, "nc");
   StringRef cnonce = digest_param(params, "cnonce");
+  StringRef opaque = digest_param(params, "opaque");
+  StringRef algorithm = digest_param(params, "algorithm");
   StringRef response = digest_param(params, "response");
-  if (response.size() != 32)
-    return false;
+  uint32_t nonce_count;
+  if (!digest_ref_equals(realm, DIGEST_REALM) || !digest_ref_equals(qop, DIGEST_QOP) ||
+      !digest_ref_equals(uri, request_uri) || (algorithm.size() != 0 && !digest_ref_equals(algorithm, "MD5")) ||
+      response.size() != DIGEST_VALUE_LENGTH || cnonce.size() == 0 || cnonce.size() > DIGEST_CNONCE_MAX_LENGTH ||
+      !parse_nonce_count(nc, &nonce_count)) {
+    return DigestAuthResult::FAILED;
+  }
+  if (!digest_challenge_is_valid(nonce, opaque))
+    return DigestAuthResult::STALE;
 
   md5_context_t ctx;
   uint8_t digest[16];
@@ -486,7 +657,7 @@ bool check_digest_auth(const char *username, const char *password, const std::st
   esp_rom_md5_init(&ctx);
   esp_rom_md5_update(&ctx, username, strlen(username));
   esp_rom_md5_update(&ctx, ":", 1);
-  esp_rom_md5_update(&ctx, realm.c_str(), realm.size());
+  esp_rom_md5_update(&ctx, DIGEST_REALM, strlen(DIGEST_REALM));
   esp_rom_md5_update(&ctx, ":", 1);
   esp_rom_md5_update(&ctx, password, strlen(password));
   esp_rom_md5_final(digest, &ctx);
@@ -496,7 +667,7 @@ bool check_digest_auth(const char *username, const char *password, const std::st
   esp_rom_md5_init(&ctx);
   esp_rom_md5_update(&ctx, method, strlen(method));
   esp_rom_md5_update(&ctx, ":", 1);
-  esp_rom_md5_update(&ctx, uri.c_str(), uri.size());
+  esp_rom_md5_update(&ctx, request_uri, strlen(request_uri));
   esp_rom_md5_final(digest, &ctx);
   bytes_to_hex(digest, sizeof(digest), ha2);
 
@@ -510,7 +681,7 @@ bool check_digest_auth(const char *username, const char *password, const std::st
   esp_rom_md5_update(&ctx, ":", 1);
   esp_rom_md5_update(&ctx, cnonce.c_str(), cnonce.size());
   esp_rom_md5_update(&ctx, ":", 1);
-  esp_rom_md5_update(&ctx, qop.c_str(), qop.size());
+  esp_rom_md5_update(&ctx, DIGEST_QOP, strlen(DIGEST_QOP));
   esp_rom_md5_update(&ctx, ":", 1);
   esp_rom_md5_update(&ctx, ha2, 32);
   esp_rom_md5_final(digest, &ctx);
@@ -519,7 +690,11 @@ bool check_digest_auth(const char *username, const char *password, const std::st
   uint8_t result = 0;
   for (size_t i = 0; i < 32; i++)
     result |= static_cast<uint8_t>(expected[i] ^ response[i]);
-  return result == 0;
+  if (result != 0)
+    return DigestAuthResult::FAILED;
+  if (!accept_digest_nonce_count(nonce, opaque, cnonce, nonce_count))
+    return DigestAuthResult::STALE;
+  return DigestAuthResult::AUTHENTICATED;
 }
 
 }  // namespace
@@ -542,7 +717,10 @@ bool AsyncWebServerRequest::authenticate(const char *username, const char *passw
     ESP_LOGW(TAG, "Only Digest authorization supported");
     return false;
   }
-  return check_digest_auth(username, password, auth.value(), http_method_str(this->method()));
+  const auto result =
+      check_digest_auth(username, password, auth.value(), http_method_str(this->method()), this->req_->uri);
+  this->digest_nonce_stale_ = result == DigestAuthResult::STALE;
+  return result == DigestAuthResult::AUTHENTICATED;
 #else
   const auto auth_prefix_len = sizeof("Basic ") - 1;
   if (strncmp("Basic ", auth_str, auth_prefix_len) != 0) {
@@ -604,13 +782,15 @@ void AsyncWebServerRequest::requestAuthentication() const {
   uint8_t random_bytes[16];
   char nonce[33];
   char opaque[33];
-  char header[160];
+  char header[192];
   esp_fill_random(random_bytes, sizeof(random_bytes));
   bytes_to_hex(random_bytes, sizeof(random_bytes), nonce);
   esp_fill_random(random_bytes, sizeof(random_bytes));
   bytes_to_hex(random_bytes, sizeof(random_bytes), opaque);
-  snprintf(header, sizeof(header), R"(Digest realm="Login Required", qop="auth", nonce="%s", opaque="%s")", nonce,
-           opaque);
+  retain_digest_challenge(nonce, opaque);
+  snprintf(header, sizeof(header),
+           R"(Digest realm="Login Required", qop="auth", algorithm=MD5, nonce="%s", opaque="%s"%s)", nonce,
+           opaque, this->digest_nonce_stale_ ? ", stale=true" : "");
   httpd_resp_set_hdr(*this, "WWW-Authenticate", header);
 #else
   httpd_resp_set_hdr(*this, "WWW-Authenticate", "Basic realm=\"Login Required\"");
