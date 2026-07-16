@@ -1350,10 +1350,20 @@ inline void image_card_handle_picture(ImageCardCtx *ctx, esphome::StringRef pict
 inline void image_card_handle_media_artwork_picture(ImageCardCtx *ctx,
                                                     esphome::StringRef picture,
                                                     bool local);
+inline void image_card_request_picture(ImageCardCtx *ctx);
 inline void image_card_request_media_artwork(ImageCardCtx *ctx);
 inline bool image_card_context_current(ImageCardCtx *ctx,
                                        const std::string &entity_id,
                                        uint32_t generation);
+
+inline void image_card_request_current_picture(ImageCardCtx *ctx) {
+  if (!ctx) return;
+  if (ctx->media_artwork) {
+    image_card_request_media_artwork(ctx);
+  } else {
+    image_card_request_picture(ctx);
+  }
+}
 
 inline void image_card_schedule_picture_retry(ImageCardCtx *ctx, uint32_t delay_ms) {
   if (!ctx || !ctx->active) return;
@@ -2047,7 +2057,7 @@ inline void refresh_image_cards() {
       image_card_set_loading_state(ctx, "Loading", true);
     }
     ctx->next_picture_retry_ms = 0;
-    image_card_request_picture(ctx);
+    image_card_request_current_picture(ctx);
   }
 }
 
@@ -2060,7 +2070,7 @@ inline void image_card_refresh_due() {
     if (ctx->next_picture_retry_ms != 0 &&
         (int32_t)(now - ctx->next_picture_retry_ms) >= 0) {
       ctx->next_picture_retry_ms = 0;
-      image_card_request_picture(ctx);
+      image_card_request_current_picture(ctx);
     }
     if (ctx->next_download_retry_ms != 0 &&
         (int32_t)(now - ctx->next_download_retry_ms) >= 0) {
