@@ -48,6 +48,9 @@ IMAGE_HEADER = "button_grid_image.h"
 STATUS_ENTITY_HEADER = "button_grid_status_entity_driver.h"
 DATE_TIME_HEADER = "button_grid_date_time_driver.h"
 DATE_TIME_CARDS_HEADER = "button_grid_datetime_cards.h"
+SENSOR_HEADER = "button_grid_sensor_driver.h"
+WEATHER_HEADER = "button_grid_weather_driver.h"
+CARDS_HEADER = "button_grid_cards.h"
 
 
 def service_mapping_line_allowed(line: str) -> bool:
@@ -138,6 +141,10 @@ def check_root(root: Path) -> list[str]:
             or "status_entity_driver_bind_data( s, p, context, palette)" not in compact_grid
             or "date_time_driver_setup_visual( s, p, context, palette)" not in compact_grid
             or "date_time_driver_bind_data(s, p, context)" not in compact_grid
+            or "sensor_driver_setup_visual( s, p, context, palette)" not in compact_grid
+            or "sensor_driver_bind_data( s, p, context, palette)" not in compact_grid
+            or "weather_driver_setup_visual( s, p, context, palette, display)" not in compact_grid
+            or "weather_driver_bind_data(s, p, context)" not in compact_grid
             or "bind_basic_sensor_card(s, p, context, palette)" not in compact_grid
             or "bind_basic_sensor_card(sub_slot, sb_cfg, context, palette)" not in compact_grid
         ):
@@ -147,6 +154,12 @@ def check_root(root: Path) -> list[str]:
         for direct_branch in (
             'p.type == "door_window"', 'p.type == "presence"',
             'p.type == "clock"', 'p.type == "timezone"',
+            'p.type == "calendar"', 'p.type == "sensor"',
+            'p.type == "local_sensor"', 'p.type == "text_sensor"',
+            'p.type == "weather"', 'p.type == "weather_forecast"',
+            'sb_cfg.type == "calendar"', 'sb_cfg.type == "sensor"',
+            'sb_cfg.type == "local_sensor"', 'sb_cfg.type == "text_sensor"',
+            'sb_cfg.type == "weather"', 'sb_cfg.type == "weather_forecast"',
         ):
             if direct_branch in text:
                 failures.append(
@@ -219,8 +232,11 @@ def check_root(root: Path) -> list[str]:
             "date_time_driver_attach_interaction",
             "date_time_driver_refresh_layout",
             "date_time_driver_cleanup",
+            "context.runtime.type == Type::CALENDAR",
             "context.runtime.type == Type::CLOCK",
             "context.runtime.type == Type::TIMEZONE",
+            "register_calendar_card",
+            "subscribe_calendar_date_source",
             "register_timezone_card",
         )
         for needle in required:
@@ -235,10 +251,69 @@ def check_root(root: Path) -> list[str]:
     date_time_cards_header = root / "components" / "espcontrol" / DATE_TIME_CARDS_HEADER
     if date_time_cards_header.exists():
         text = date_time_cards_header.read_text(encoding="utf-8")
-        for legacy_setup in ("setup_clock_card", "setup_timezone_card"):
+        for legacy_setup in ("setup_calendar_card", "setup_clock_card", "setup_timezone_card"):
             if legacy_setup in text:
                 failures.append(
                     f"components/espcontrol/{DATE_TIME_CARDS_HEADER}: keep {legacy_setup} inside the shared date-time driver"
+                )
+    sensor_header = root / "components" / "espcontrol" / SENSOR_HEADER
+    if sensor_header.exists():
+        text = sensor_header.read_text(encoding="utf-8")
+        required = (
+            "sensor_driver_setup_visual",
+            "sensor_driver_bind_data",
+            "sensor_driver_attach_interaction",
+            "sensor_driver_refresh_layout",
+            "sensor_driver_cleanup",
+            "sensor_driver_register_local_value",
+            "subscribe_sensor_text_card_value",
+            "subscribe_sensor_icon_state",
+            "subscribe_time_sensor_value",
+            "subscribe_sensor_value",
+        )
+        for needle in required:
+            if needle not in text:
+                failures.append(
+                    f"components/espcontrol/{SENSOR_HEADER}: missing shared sensor lifecycle guard {needle}"
+                )
+    elif grid_header.exists():
+        failures.append(
+            f"components/espcontrol/{SENSOR_HEADER}: missing shared sensor driver"
+        )
+    weather_header = root / "components" / "espcontrol" / WEATHER_HEADER
+    if weather_header.exists():
+        text = weather_header.read_text(encoding="utf-8")
+        required = (
+            "weather_driver_setup_visual",
+            "weather_driver_bind_data",
+            "weather_driver_attach_interaction",
+            "weather_driver_refresh_layout",
+            "weather_driver_cleanup",
+            "register_weather_forecast_card",
+            "subscribe_weather_state",
+        )
+        for needle in required:
+            if needle not in text:
+                failures.append(
+                    f"components/espcontrol/{WEATHER_HEADER}: missing shared weather lifecycle guard {needle}"
+                )
+    elif grid_header.exists():
+        failures.append(
+            f"components/espcontrol/{WEATHER_HEADER}: missing shared weather driver"
+        )
+    cards_header = root / "components" / "espcontrol" / CARDS_HEADER
+    if cards_header.exists():
+        text = cards_header.read_text(encoding="utf-8")
+        for legacy_setup in (
+            "setup_sensor_card",
+            "setup_text_sensor_card",
+            "setup_local_sensor_card",
+            "setup_weather_card",
+            "setup_weather_forecast_card",
+        ):
+            if legacy_setup in text:
+                failures.append(
+                    f"components/espcontrol/{CARDS_HEADER}: keep {legacy_setup} inside its shared information driver"
                 )
     return failures
 
@@ -355,6 +430,24 @@ def run_self_test() -> None:
                 )
             },
             ("missing shared date-time lifecycle guard",),
+        ),
+        (
+            {
+                "button_grid_sensor_driver.h": (
+                    "inline bool sensor_driver_setup_visual() {}\n"
+                    "inline bool sensor_driver_bind_data() {}\n"
+                )
+            },
+            ("missing shared sensor lifecycle guard",),
+        ),
+        (
+            {
+                "button_grid_weather_driver.h": (
+                    "inline bool weather_driver_setup_visual() {}\n"
+                    "inline bool weather_driver_bind_data() {}\n"
+                )
+            },
+            ("missing shared weather lifecycle guard",),
         ),
         (
             {

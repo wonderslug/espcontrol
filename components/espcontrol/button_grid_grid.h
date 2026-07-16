@@ -126,6 +126,12 @@ struct CardPalette {
   uint32_t sensor_val = TERTIARY_GREY;
 };
 
+template<typename T>
+inline T *grid_track_runtime_allocation(lv_obj_t *owner, T *ptr);
+
+template<typename T>
+inline T *grid_delete_with_owner(lv_obj_t *owner, T *ptr);
+
 #include "button_grid_status_entity_driver.h"
 
 inline lv_coord_t large_sensor_unit_offset_px(const lv_font_t *large_font, int percent) {
@@ -165,6 +171,8 @@ inline void apply_wide_large_date_time_card_layout(const BtnSlot &s,
 }
 
 #include "button_grid_date_time_driver.h"
+#include "button_grid_sensor_driver.h"
+#include "button_grid_weather_driver.h"
 
 inline void apply_card_label_line_clamp(lv_obj_t *label, const GridConfig &cfg,
                                         int row_span = 1) {
@@ -352,6 +360,8 @@ inline void setup_card_visual(BtnSlot &s, const ParsedCfg &p,
   }
   espcontrol::cards::status_entity_driver_cleanup(s, p, context);
   espcontrol::cards::date_time_driver_cleanup(s, p, context);
+  espcontrol::cards::sensor_driver_cleanup(s, p, context);
+  espcontrol::cards::weather_driver_cleanup(s, p, context);
   reset_card_slot_dynamic_children(s);
   apply_button_colors(s.btn, palette.has_on, palette.on_val,
     palette.has_off, palette.off_val);
@@ -387,24 +397,11 @@ inline void setup_card_visual(BtnSlot &s, const ParsedCfg &p,
     return;
   }
 
-  if (sensor_card_local_sensor(p)) {
-    if (p.entity.empty()) return;
-    setup_local_sensor_card(s, p, palette.has_sensor_color, palette.sensor_val);
-    return;
-  }
-  if (is_text_sensor_card(p)) {
-    setup_text_sensor_card(s, p, palette.has_sensor_color, palette.sensor_val);
-    return;
-  }
-  if (family == espcontrol::cards::Family::SENSOR) {
-    if (p.sensor.empty()) return;
-    setup_sensor_card(s, p, palette.has_sensor_color, palette.sensor_val);
-    if (large_number_square_card_layout(row_span, col_span) &&
-        card_large_numbers_active_for_layout(p, row_span, col_span) &&
-        display_large_sensor_font(display)) {
-      apply_large_sensor_number_style(
-        s, display_large_sensor_font(display), display_large_sensor_unit_offset_percent(display));
-    }
+  if (espcontrol::cards::sensor_driver_setup_visual(
+        s, p, context, palette)) {
+    espcontrol::cards::sensor_driver_attach_interaction(s, p, context);
+    espcontrol::cards::sensor_driver_refresh_layout(
+      s, p, context, display, row_span, col_span);
     return;
   }
   if (espcontrol::cards::status_entity_driver_setup_visual(
@@ -421,33 +418,11 @@ inline void setup_card_visual(BtnSlot &s, const ParsedCfg &p,
       s, p, context, display, row_span, col_span);
     return;
   }
-  if (p.type == "calendar") {
-    setup_calendar_card(s, p, palette.has_sensor_color, palette.sensor_val);
-    if (large_number_square_card_layout(row_span, col_span) &&
-        card_large_numbers_active_for_layout(p, row_span, col_span) &&
-        display_large_sensor_font(display)) {
-      apply_large_sensor_number_style(
-        s, display_large_sensor_font(display), display_large_sensor_unit_offset_percent(display));
-      if (wide_large_date_time_card_layout(row_span, col_span)) {
-        apply_wide_large_date_time_card_layout(
-          s, calendar_card_shows_time(p) ? LV_ALIGN_LEFT_MID : LV_ALIGN_CENTER);
-      }
-    }
-    return;
-  }
-  if (weather_card_shows_forecast(p)) {
-    setup_weather_forecast_card(s, p, palette.has_sensor_color, palette.sensor_val,
-      display_main_width_percent(display));
-    if (large_number_square_card_layout(row_span, col_span) &&
-        card_large_numbers_active_for_layout(p, row_span, col_span) &&
-        display_large_sensor_font(display)) {
-      apply_large_sensor_number_style(
-        s, display_large_sensor_font(display), display_large_sensor_unit_offset_percent(display));
-    }
-    return;
-  }
-  if (family == espcontrol::cards::Family::WEATHER) {
-    setup_weather_card(s, palette.has_sensor_color, palette.sensor_val);
+  if (espcontrol::cards::weather_driver_setup_visual(
+        s, p, context, palette, display)) {
+    espcontrol::cards::weather_driver_attach_interaction(s, p, context);
+    espcontrol::cards::weather_driver_refresh_layout(
+      s, p, context, display, row_span, col_span);
     return;
   }
   if (p.type == "garage") {
@@ -504,11 +479,6 @@ inline void setup_card_visual(BtnSlot &s, const ParsedCfg &p,
   if (family == espcontrol::cards::Family::ACTION &&
       (p.type == "local" || action_card_local_action(p))) {
     setup_local_action_card(s, p);
-    return;
-  }
-  if (family == espcontrol::cards::Family::LOCAL_SENSOR || sensor_card_local_sensor(p)) {
-    if (p.entity.empty()) return;
-    setup_local_sensor_card(s, p, palette.has_sensor_color, palette.sensor_val);
     return;
   }
   if (family == espcontrol::cards::Family::ACTION) {
@@ -579,63 +549,15 @@ inline void setup_card_visual(BtnSlot &s, const ParsedCfg &p,
   setup_toggle_visual(s, p);
 }
 
-template<typename T>
-inline T *grid_track_runtime_allocation(lv_obj_t *owner, T *ptr);
-
-template<typename T>
-inline T *grid_delete_with_owner(lv_obj_t *owner, T *ptr);
-
 inline bool bind_basic_sensor_card(
     BtnSlot &s, const ParsedCfg &p,
     const espcontrol::cards::Context &context, const CardPalette &palette) {
   if (espcontrol::cards::status_entity_driver_bind_data(
         s, p, context, palette)) return true;
   if (espcontrol::cards::date_time_driver_bind_data(s, p, context)) return true;
-  if (sensor_card_local_sensor(p)) return false;
-  if (is_text_sensor_card(p)) {
-    if (!p.sensor.empty())
-      subscribe_sensor_text_card_value(s.text_lbl, p, s.btn,
-        sensor_active_color_enabled(p), palette.on_val, palette.sensor_val);
-    return true;
-  }
-  if (p.type == "sensor") {
-    if (!p.sensor.empty()) {
-      if (p.precision == "icon") {
-        subscribe_sensor_icon_state(s.btn, s.icon_lbl, p);
-      } else if (p.precision == "time") {
-        // Dynamic subpage slots are deleted with their LVGL owner on rebuild.
-        TimeSensorCtx *ctx = s.config == nullptr
-          ? grid_delete_with_owner(s.btn, new TimeSensorCtx())
-          : grid_track_runtime_allocation(s.btn, new TimeSensorCtx());
-        ctx->sensor_lbl = s.sensor_lbl;
-        ctx->unit_lbl = s.unit_lbl;
-        subscribe_time_sensor_value(ctx, p.sensor, cfg_option_value(p.options, SENSOR_TIME_UNIT_OPTION));
-      } else {
-        subscribe_sensor_value(s.sensor_lbl, p.sensor, parse_precision(p.precision),
-          s.unit_lbl, p.unit, s.btn,
-          sensor_active_color_enabled(p), palette.on_val, palette.sensor_val);
-      }
-      if (p.label.empty())
-        subscribe_friendly_name(s.text_lbl, p.sensor);
-    }
-    return true;
-  }
-  return false;
-}
-
-inline bool bind_passive_card_sources(BtnSlot &s, const ParsedCfg &p) {
-  if (p.type == "calendar") {
-    subscribe_calendar_date_source(p.entity);
-    return true;
-  }
-  if (weather_card_shows_forecast(p)) {
-    return true;
-  }
-  if (p.type == "weather") {
-    if (!p.entity.empty())
-      subscribe_weather_state(s.icon_lbl, s.text_lbl, p.entity);
-    return true;
-  }
+  if (espcontrol::cards::sensor_driver_bind_data(
+        s, p, context, palette)) return true;
+  if (espcontrol::cards::weather_driver_bind_data(s, p, context)) return true;
   return false;
 }
 
@@ -1320,9 +1242,7 @@ inline void grid_phase2(
     navigation_register_home_target(idx, pos, p.label, scfg, s.btn);
     if (family == espcontrol::cards::Family::PUSH) continue;
     if (bind_image_card(s, p, cfg)) continue;
-    if (family == espcontrol::cards::Family::LOCAL_SENSOR || sensor_card_local_sensor(p)) continue;
     if (bind_basic_sensor_card(s, p, context, palette)) continue;
-    if (bind_passive_card_sources(s, p)) continue;
     if (p.type == "garage") {
       if (!garage_command_mode(p.sensor) || garage_card_show_status(p)) {
         TransientStatusLabel *status_label = nullptr;
@@ -2002,9 +1922,7 @@ inline void grid_phase2(
         continue;
       }
       if (bind_image_card(sub_slot, sb_cfg, cfg, true)) continue;
-      if (family == espcontrol::cards::Family::LOCAL_SENSOR || sensor_card_local_sensor(sb_cfg)) continue;
       if (bind_basic_sensor_card(sub_slot, sb_cfg, context, palette)) continue;
-      if (bind_passive_card_sources(sub_slot, sb_cfg)) continue;
       if (sb_cfg.type == "cover" && cover_modal_mode(sb_cfg.sensor)) {
         if (!sb_cfg.entity.empty()) {
           CoverControlCtx *ctx = create_cover_control_context(

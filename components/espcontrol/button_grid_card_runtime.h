@@ -73,11 +73,12 @@ inline Family family_for_runtime_type(espcontrol::card_runtime::CardTypeId type)
 inline bool driver_uses_legacy_dispatch(
     const espcontrol::card_runtime::CardRuntimeSpec &runtime) {
   using Driver = espcontrol::card_runtime::CardDriverId;
-  using Type = espcontrol::card_runtime::CardTypeId;
   switch (runtime.driver) {
     case Driver::STATUS_ENTITY: return false;
     case Driver::DATE_TIME:
-      return runtime.type != Type::CLOCK && runtime.type != Type::TIMEZONE;
+    case Driver::SENSOR:
+    case Driver::WEATHER:
+      return false;
     default: return true;
   }
 }
@@ -111,6 +112,7 @@ inline Context context_for(const std::string &type, const std::string &mode,
     context.runtime.driver = CardDriverId::SENSOR;
     context.runtime.capabilities = static_cast<uint16_t>(
         CAPABILITY_INFORMATION_ONLY | CAPABILITY_SUBSCRIPTIONS | CAPABILITY_SUBPAGE);
+    context.legacy_dispatch = false;
   } else if (!context.known && type == "todo") {
     context.family = Family::TODO;
     context.known = true;

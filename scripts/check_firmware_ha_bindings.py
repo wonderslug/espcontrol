@@ -473,26 +473,46 @@ def firmware_action_card_script_fields_errors(firmware_dir: Path, root: Path) ->
 
 
 def firmware_local_sensor_binding_order_errors(firmware_dir: Path, root: Path) -> list[str]:
-    path = firmware_dir / "button_grid_grid.h"
-    if not path.exists():
+    grid_path = firmware_dir / "button_grid_grid.h"
+    driver_path = firmware_dir / "button_grid_sensor_driver.h"
+    if not grid_path.exists():
         return []
-    rel = path.relative_to(root)
-    text = path.read_text(encoding="utf-8")
+    grid_rel = grid_path.relative_to(root)
+    grid_text = grid_path.read_text(encoding="utf-8")
     errors: list[str] = []
 
-    if "if (sensor_card_local_sensor(p)) return false;" not in text:
-        errors.append(f"{rel}: keep local sensor subtypes out of bind_basic_sensor_card")
+    if not driver_path.exists():
+        errors.append(f"{grid_rel}: bind local sensor subtypes through the shared sensor driver")
+        return errors
 
-    for match in re.finditer(r"if\s*\(\s*bind_basic_sensor_card\s*\(", text):
+    driver_rel = driver_path.relative_to(root)
+    driver_text = driver_path.read_text(encoding="utf-8")
+    bind_match = re.search(
+        r"inline\s+bool\s+sensor_driver_bind_data\s*\([^)]*\)\s*\{(?P<body>.*?)\n\}",
+        driver_text,
+        re.DOTALL,
+    )
+    if bind_match is None:
+        errors.append(f"{driver_rel}: keep local sensor binding in sensor_driver_bind_data")
+    else:
+        bind_body = bind_match.group("body")
+        local_start = bind_body.find("if (sensor_driver_is_local(config, context))")
+        ha_text_start = bind_body.find("if (is_text_sensor_card(config))")
+        ha_sensor_start = bind_body.find("if (!config.sensor.empty())")
+        if local_start < 0 or "sensor_driver_register_local_value(slot, config)" not in bind_body:
+            errors.append(f"{driver_rel}: bind local sensor values through the local registry")
+        elif any(start >= 0 and local_start > start for start in (ha_text_start, ha_sensor_start)):
+            errors.append(f"{driver_rel}: bind local sensor values before Home Assistant sensor subscriptions")
+
+    if "sensor_driver_bind_data(" not in grid_text:
+        errors.append(f"{grid_rel}: bind sensor cards through the shared sensor driver")
+
+    for match in re.finditer(r"if\s*\(\s*bind_basic_sensor_card\s*\(", grid_text):
         bind_start = match.start()
-        image_start = text.rfind("if (bind_image_card", 0, bind_start)
-        line_no = text.count("\n", 0, bind_start) + 1
+        image_start = grid_text.rfind("if (bind_image_card", 0, bind_start)
+        line_no = grid_text.count("\n", 0, bind_start) + 1
         if image_start < 0:
-            errors.append(f"{rel}:{line_no}: bind image cards before basic sensor cards")
-            continue
-        pre_bind_window = text[image_start:bind_start]
-        if "sensor_card_local_sensor" not in pre_bind_window:
-            errors.append(f"{rel}:{line_no}: skip local sensor subtypes before Home Assistant sensor binding")
+            errors.append(f"{grid_rel}:{line_no}: bind image cards before basic sensor cards")
 
     return errors
 
@@ -2576,12 +2596,15 @@ def expect_action_card_script_fields_errors(name: str, text: str, expected: tupl
             assert not errors, f"{name}: expected no errors, got {errors!r}"
 
 
-def expect_local_sensor_binding_order_errors(name: str, text: str, expected: tuple[str, ...]) -> None:
+def expect_local_sensor_binding_order_errors(
+    name: str, files: dict[str, str], expected: tuple[str, ...]
+) -> None:
     with TemporaryDirectory() as tmp:
         root = Path(tmp)
         firmware_dir = root / "components" / "espcontrol"
         firmware_dir.mkdir(parents=True)
-        (firmware_dir / "button_grid_grid.h").write_text(text, encoding="utf-8")
+        for filename, text in files.items():
+            (firmware_dir / filename).write_text(text, encoding="utf-8")
 
         errors = firmware_local_sensor_binding_order_errors(firmware_dir, root)
         for item in expected:
@@ -3844,26 +3867,39 @@ def run_self_test() -> int:
         (),
     )
     expect_local_sensor_binding_order_errors(
-        "local sensor subtype reaches HA binding",
-        "inline bool bind_basic_sensor_card(BtnSlot &s, const ParsedCfg &p, const Context &context, const CardPalette &palette) {\n"
-        "  if (p.type == \"sensor\") return true;\n"
-        "}\n"
-        "if (bind_image_card(s, p, cfg)) continue;\n"
-        "if (bind_basic_sensor_card(s, p, context, palette)) continue;\n",
-        ("keep local sensor subtypes out of bind_basic_sensor_card", "skip local sensor subtypes"),
+        "local sensor subtype reaches HA subscription first",
+        {
+            "button_grid_grid.h":
+                "if (bind_image_card(s, p, cfg)) continue;\n"
+                "if (sensor_driver_bind_data(s, p, context, palette)) return true;\n"
+                "if (bind_basic_sensor_card(s, p, context, palette)) continue;\n",
+            "button_grid_sensor_driver.h":
+                "inline bool sensor_driver_bind_data(BtnSlot &slot, const ParsedCfg &config, const Context &context) {\n"
+                "  if (!config.sensor.empty()) subscribe_sensor_value();\n"
+                "  if (sensor_driver_is_local(config, context)) {\n"
+                "    sensor_driver_register_local_value(slot, config);\n"
+                "    return true;\n"
+                "  }\n"
+                "}\n",
+        },
+        ("bind local sensor values before Home Assistant sensor subscriptions",),
     )
     expect_local_sensor_binding_order_errors(
-        "local sensor subtype skipped before HA binding",
-        "inline bool bind_basic_sensor_card(BtnSlot &s, const ParsedCfg &p, const Context &context, const CardPalette &palette) {\n"
-        "  if (sensor_card_local_sensor(p)) return false;\n"
-        "  if (p.type == \"sensor\") return true;\n"
-        "}\n"
-        "if (bind_image_card(s, p, cfg)) continue;\n"
-        "if (p.type == \"local_sensor\" || sensor_card_local_sensor(p)) continue;\n"
-        "if (bind_basic_sensor_card(s, p, context, palette)) continue;\n"
-        "if (bind_image_card(sub_slot, sb_cfg, cfg, true)) continue;\n"
-        "if (sb_cfg.type == \"local_sensor\" || sensor_card_local_sensor(sb_cfg)) continue;\n"
-        "if (bind_basic_sensor_card(sub_slot, sb_cfg, context, palette)) continue;\n",
+        "local sensor subtype binds through shared driver",
+        {
+            "button_grid_grid.h":
+                "if (bind_image_card(s, p, cfg)) continue;\n"
+                "if (sensor_driver_bind_data(s, p, context, palette)) return true;\n"
+                "if (bind_basic_sensor_card(s, p, context, palette)) continue;\n",
+            "button_grid_sensor_driver.h":
+                "inline bool sensor_driver_bind_data(BtnSlot &slot, const ParsedCfg &config, const Context &context) {\n"
+                "  if (sensor_driver_is_local(config, context)) {\n"
+                "    sensor_driver_register_local_value(slot, config);\n"
+                "    return true;\n"
+                "  }\n"
+                "  if (!config.sensor.empty()) subscribe_sensor_value();\n"
+                "}\n",
+        },
         (),
     )
     expect_time_reconnect_errors(

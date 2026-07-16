@@ -92,10 +92,14 @@ The generated web `CARD_RUNTIME_SPECS` registry is attached to matching
 in `button_grid_contract_generated.h`. Door/Window and Presence cards now use
 the shared handwritten `STATUS_ENTITY` lifecycle driver for main-grid and
 subpage visual setup, data binding, passive interaction, layout refresh, and
-cleanup. Clock and Timezone use the shared handwritten `DATE_TIME` lifecycle
-driver for the same stages and share one local-time update registry across the
-main grid and subpages. Calendar deliberately remains on the existing fallback
-until the informational-card migration. Other families remain on the existing
+cleanup. Calendar, Clock, and Timezone use the shared handwritten `DATE_TIME`
+lifecycle driver for the same stages; Calendar keeps its Home Assistant date
+subscription, while Clock and Timezone share one local-time update registry.
+Sensor and its `local_sensor`/`text_sensor` compatibility forms use the shared
+`SENSOR` driver, including numeric, text, icon, duration, and local ESPHome data
+binding. Weather and forecast compatibility use the shared `WEATHER` driver
+while retaining the specialised forecast request registry. All of these paths
+are shared by the main grid and subpages. Other families remain on the existing
 `Family` dispatch until their reviewed migration PR switches them one family at
 a time.
 

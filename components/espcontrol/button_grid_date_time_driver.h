@@ -1,16 +1,16 @@
 #pragma once
 
-// Shared lifecycle driver for the local "clock" and "timezone" runtime types.
-// Calendar intentionally remains on the legacy DATE_TIME path until the
-// informational-entity migration, even though it shares the generated driver
-// identifier and some formatting helpers.
+// Shared lifecycle driver for Calendar, Clock, and World Clock runtime types.
+// Calendar binds to Home Assistant's date source; the local-time variants use
+// the central timezone update registry.
 
 namespace espcontrol::cards {
 
 inline bool date_time_driver_matches(const Context &context) {
   using Type = card_runtime::CardTypeId;
   if (context.runtime.driver != card_runtime::CardDriverId::DATE_TIME) return false;
-  return context.runtime.type == Type::CLOCK ||
+  return context.runtime.type == Type::CALENDAR ||
+         context.runtime.type == Type::CLOCK ||
          context.runtime.type == Type::TIMEZONE;
 }
 
@@ -27,10 +27,17 @@ inline bool date_time_driver_setup_visual(
   }
   lv_obj_add_flag(slot.icon_lbl, LV_OBJ_FLAG_HIDDEN);
   lv_obj_clear_flag(slot.sensor_container, LV_OBJ_FLAG_HIDDEN);
-  lv_label_set_text(slot.sensor_lbl, "--:--");
+  const bool calendar =
+    context.runtime.type == card_runtime::CardTypeId::CALENDAR;
+  lv_label_set_text(slot.sensor_lbl, calendar ? "--" : "--:--");
   lv_label_set_text(slot.unit_lbl, "");
 
-  if (context.runtime.type == card_runtime::CardTypeId::TIMEZONE) {
+  if (calendar) {
+    lv_label_set_text(slot.text_lbl, espcontrol_i18n("Date"));
+    register_calendar_card(
+      slot.sensor_lbl, slot.unit_lbl, slot.text_lbl,
+      calendar_card_shows_time(config));
+  } else if (context.runtime.type == card_runtime::CardTypeId::TIMEZONE) {
     const std::string label = config.label.empty()
       ? timezone_city_label(config.entity)
       : config.label;
@@ -55,9 +62,13 @@ inline bool date_time_driver_attach_interaction(
 }
 
 inline bool date_time_driver_bind_data(
-    BtnSlot &, const ParsedCfg &, const Context &context) {
-  // Both local-time cards are registered during visual setup and receive
-  // updates from update_timezone_cards(). They do not own an HA subscription.
+    BtnSlot &, const ParsedCfg &config, const Context &context) {
+  if (!date_time_driver_matches(context)) return false;
+  if (context.runtime.type == card_runtime::CardTypeId::CALENDAR) {
+    subscribe_calendar_date_source(config.entity);
+  }
+  // Local-time cards are registered during visual setup and receive updates
+  // from update_timezone_cards(). They do not own an HA subscription.
   return date_time_driver_matches(context);
 }
 
@@ -74,6 +85,22 @@ inline bool date_time_driver_refresh_layout(
     BtnSlot &slot, const ParsedCfg &config, const Context &context,
     const DisplayProfile &display, int row_span, int col_span) {
   if (!date_time_driver_matches(context)) return false;
+  if (context.runtime.type == card_runtime::CardTypeId::CALENDAR) {
+    if (large_number_square_card_layout(row_span, col_span) &&
+        card_large_numbers_active_for_layout(config, row_span, col_span) &&
+        display_large_sensor_font(display)) {
+      apply_large_sensor_number_style(
+        slot, display_large_sensor_font(display),
+        display_large_sensor_unit_offset_percent(display));
+      if (wide_large_date_time_card_layout(row_span, col_span)) {
+        apply_wide_large_date_time_card_layout(
+          slot, calendar_card_shows_time(config)
+            ? LV_ALIGN_LEFT_MID
+            : LV_ALIGN_CENTER);
+      }
+    }
+    return true;
+  }
   const bool large_layout =
     date_time_driver_large_layout(context, row_span, col_span);
   const bool large_numbers = card_large_numbers_supported(config) &&
@@ -98,8 +125,8 @@ inline bool date_time_driver_refresh_layout(
 
 inline bool date_time_driver_cleanup(
     BtnSlot &, const ParsedCfg &, const Context &context) {
-  // The central timezone registry is reset before each grid rebuild. The
-  // explicit lifecycle stage documents that these cards own no allocations.
+  // The central calendar/timezone registries are reset before each grid
+  // rebuild. These cards own no dynamic allocations.
   return date_time_driver_matches(context);
 }
 

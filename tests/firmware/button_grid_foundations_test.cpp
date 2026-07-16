@@ -34,12 +34,25 @@ int main() {
   const auto clock = card_runtime_context("clock");
   const auto timezone = card_runtime_context("timezone");
   const auto calendar = card_runtime_context("calendar");
+  const auto sensor = card_runtime_context("sensor");
+  const auto local_sensor = card_runtime_context("local_sensor");
+  const auto legacy_text_sensor = card_runtime_context("text_sensor");
+  const auto weather = card_runtime_context("weather");
+  const auto weather_forecast = card_runtime_context("weather_forecast");
   if (!card_runtime_information_only(door) || !card_runtime_passive(door) ||
       door.legacy_dispatch || presence.legacy_dispatch ||
       clock.runtime.driver != espcontrol::card_runtime::CardDriverId::DATE_TIME ||
       timezone.runtime.driver != espcontrol::card_runtime::CardDriverId::DATE_TIME ||
-      clock.legacy_dispatch || timezone.legacy_dispatch ||
-      !calendar.legacy_dispatch ||
+      calendar.runtime.driver != espcontrol::card_runtime::CardDriverId::DATE_TIME ||
+      clock.legacy_dispatch || timezone.legacy_dispatch || calendar.legacy_dispatch ||
+      sensor.runtime.driver != espcontrol::card_runtime::CardDriverId::SENSOR ||
+      local_sensor.runtime.driver != espcontrol::card_runtime::CardDriverId::SENSOR ||
+      legacy_text_sensor.runtime.driver != espcontrol::card_runtime::CardDriverId::SENSOR ||
+      sensor.legacy_dispatch || local_sensor.legacy_dispatch ||
+      legacy_text_sensor.legacy_dispatch ||
+      weather.runtime.driver != espcontrol::card_runtime::CardDriverId::WEATHER ||
+      weather_forecast.runtime.driver != espcontrol::card_runtime::CardDriverId::WEATHER ||
+      weather.legacy_dispatch || weather_forecast.legacy_dispatch ||
       !card_runtime_information_only(image) || card_runtime_passive(image) ||
       !image.legacy_dispatch) {
     return EXIT_FAILURE;
