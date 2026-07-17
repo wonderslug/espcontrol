@@ -1012,6 +1012,7 @@
             "clock_bar_item_gap": "\"78\"",
             "clock_bar_visual_gap": "\"10\"",
             "clock_font_size": "\"160\"",
+            "clock_ampm_font_size": "\"55\"",
             "clock_cx": "\"640\"",
             "clock_cy": "\"400\"",
             "screen_saver_clock_min_brightness": "\"1\"",
@@ -1211,6 +1212,7 @@
             "clock_bar_item_gap": "\"78\"",
             "clock_bar_visual_gap": "\"10\"",
             "clock_font_size": "\"200\"",
+            "clock_ampm_font_size": "\"55\"",
             "clock_cx": "\"640\"",
             "clock_cy": "\"400\"",
             "screen_saver_clock_min_brightness": "\"1\"",
@@ -1409,6 +1411,7 @@
             "clock_bar_item_gap": "\"78\"",
             "clock_bar_visual_gap": "\"10\"",
             "clock_font_size": "\"200\"",
+            "clock_ampm_font_size": "\"55\"",
             "clock_cx": "\"640\"",
             "clock_cy": "\"400\"",
             "screen_saver_clock_min_brightness": "\"1\"",
@@ -8897,6 +8900,11 @@
         "mdi": "lan"
       },
       {
+        "name": "Laptop",
+        "codepoint": "F0322",
+        "mdi": "laptop"
+      },
+      {
         "name": "Lawnmower",
         "codepoint": "F11F7",
         "mdi": "robot-mower"
@@ -9685,6 +9693,11 @@
         "name": "Vanity Light",
         "codepoint": "F11E1",
         "mdi": "vanity-light"
+      },
+      {
+        "name": "Video Off",
+        "codepoint": "F0BDB",
+        "mdi": "video-off-outline"
       },
       {
         "name": "View Headline",
