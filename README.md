@@ -1,3 +1,7 @@
+> **This is a personal fork of [jtenniswood/espcontrol](https://github.com/jtenniswood/espcontrol) maintained by [@wonderslug](https://github.com/wonderslug).** It tracks upstream and adds features for personal use. See [Using This Fork](#using-this-fork) if you want to run it yourself, and [Added Features](#added-features) for what's different from upstream.
+
+---
+
 ![EspControl on a 7-inch touchscreen: home screen with temperature, clock, and control tiles](docs/public/images/home_screen_hero.jpg)
 
 # EspControl
@@ -8,7 +12,65 @@ EspControl lets you put the Home Assistant controls you use every day onto a ded
 
 You do not need to write code, edit YAML, or build your own ESPHome setup. Install the firmware from a web browser, connect the screen to WiFi, add it to Home Assistant, then choose what appears on the display from the screen's built-in setup page.
 
-**Documentation and install guide:** [jtenniswood.github.io/espcontrol](https://jtenniswood.github.io/espcontrol/)
+**Upstream documentation and install guide:** [jtenniswood.github.io/espcontrol](https://jtenniswood.github.io/espcontrol/)
+
+## Using This Fork
+
+There are no pre-built binaries for this fork — you build from this repo. Everything else about installation and use is identical to the upstream project — the same supported hardware, the same ESPHome/Home Assistant setup flow.
+
+**Option 1 — ESPHome Dashboard (recommended)**
+
+Add a new ESPHome device using one of the device YAML files in the [`devices/`](devices/) directory of this repo. Point the `external_components` source at `github://wonderslug/espcontrol` to pull in the components from this fork.
+
+**Option 2 — Local build**
+
+Clone this repo and compile with ESPHome directly. The `builds/` directory has ready-to-use build definitions that reference local component paths.
+
+---
+
+## Added Features
+
+Features in this fork that are not in upstream [jtenniswood/espcontrol](https://github.com/jtenniswood/espcontrol):
+
+### HA-driven notification popups
+
+Home Assistant can push a message to the screen using two new ESPHome API actions:
+
+- `esphome.<device>_send_notification` — persistent, stays on screen until tapped
+- `esphome.<device>_send_expiring_notification` — auto-dismisses after N seconds
+
+Both accept `message`, `title`, and `message_id`. Arriving notifications wake the screensaver. On dismiss the device fires `esphome.notification_acknowledged` or `esphome.notification_expired` for HA automation correlation.
+
+### HA-driven image notifications
+
+Home Assistant can push an image to the screen — for example a doorbell camera
+snapshot — using two new ESPHome API actions:
+
+- `esphome.<device>_send_image_notification` — persistent, stays until tapped
+- `esphome.<device>_send_expiring_image_notification` — auto-dismisses after `timeout` seconds
+
+Both accept `image_url` (required; a relative HA path such as
+`/api/camera_proxy/camera.front_door`, or any `http(s)` image URL), plus optional
+`title`, `message`, `image_sizing` (`cover` — the default, crops to fill — or `fit`,
+shows the whole image with accent-tinted letterbox bars), and `message_id`. The device
+downloads and decodes the image (JPEG/PNG), capping the requested source resolution and
+checking free heap before starting the download — on ESP32-P4 panels the download runs
+on a background task with hardware JPEG decode; Home Assistant does all the sourcing.
+Arriving notifications wake the screensaver. If the image can't be fetched or decoded,
+or memory is too tight to safely attempt it, the panel falls back to a text notification
+so the alert still gets through. On dismiss the device fires
+`esphome.notification_acknowledged` or `esphome.notification_expired`, carrying
+`device_name` and `message_id`, for HA correlation.
+
+### Fully-local web UI (no CDN dependencies)
+
+All web UI assets — the device JavaScript bundle, MDI icon font, Inter and Roboto fonts — are embedded in flash at compile time. The setup page loads instantly from the device with no external network requests. This also means the panel's configuration UI remains accessible when your internet is down.
+
+### Additional icons
+
+New icons in the icon picker: **Laptop**, **Microphone Off**, and **Video Off**.
+
+---
 
 ## What It Unlocks
 
@@ -90,10 +152,14 @@ See the [screen guides](https://jtenniswood.github.io/espcontrol/getting-started
 
 ## Project Links
 
-- [Documentation](https://jtenniswood.github.io/espcontrol/)
-- [Install guide](https://jtenniswood.github.io/espcontrol/getting-started/install)
-- [FAQ](https://jtenniswood.github.io/espcontrol/reference/faq)
-- [Report a bug or request a feature](https://github.com/jtenniswood/espcontrol/issues)
+**This fork:**
+- [Fork repository](https://github.com/wonderslug/espcontrol)
+
+**Upstream:**
+- [Upstream documentation](https://jtenniswood.github.io/espcontrol/)
+- [Upstream install guide](https://jtenniswood.github.io/espcontrol/getting-started/install)
+- [Upstream FAQ](https://jtenniswood.github.io/espcontrol/reference/faq)
+- [Report a bug or request a feature (upstream)](https://github.com/jtenniswood/espcontrol/issues)
 
 ## Contributor Checks
 
