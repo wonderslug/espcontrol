@@ -30,8 +30,13 @@ function overlayPlugin(overlays) {
   };
 }
 
-async function bundleApp(devices, embeddedMdiStyles, testHooks, overlays) {
-  const defaultDeviceId = testHooks ? Object.keys(devices)[0] : "";
+async function bundleApp(devices, embeddedMdiStyles, testHooks, overlays, defaultDeviceId) {
+  const resolvedDefaultDeviceId =
+    defaultDeviceId !== undefined
+      ? defaultDeviceId
+      : testHooks
+        ? Object.keys(devices)[0]
+        : "";
   const timezoneOptions = Object.values(devices)[0].timezoneOptions;
   const profiles = Object.fromEntries(
     Object.entries(devices).map(([slug, config]) => {
@@ -50,10 +55,10 @@ async function bundleApp(devices, embeddedMdiStyles, testHooks, overlays) {
   const result = await esbuild.build({
     bundle: true,
     define: {
-      __ESPCONTROL_DEFAULT_DEVICE_ID__: JSON.stringify(defaultDeviceId),
+      __ESPCONTROL_DEFAULT_DEVICE_ID__: JSON.stringify(resolvedDefaultDeviceId),
       __ESPCONTROL_DEVICE_PROFILES__: JSON.stringify(profiles),
       __ESPCONTROL_TIMEZONE_OPTIONS__: JSON.stringify(timezoneOptions),
-      __ESPCONTROL_EMBEDDED_MDI_STYLES__: JSON.stringify(embeddedMdiStyles),
+      __ESPCONTROL_EMBEDDED_MDI_STYLES__: JSON.stringify(embeddedMdiStyles ?? null),
       __ESPCONTROL_TEST_HOOKS_ENABLED__: testHooks ? "true" : "false",
     },
     entryPoints: [ENTRY],
@@ -88,8 +93,8 @@ function embeddedFallback(bundle) {
 
 async function main() {
   const request = JSON.parse(fs.readFileSync(0, "utf8"));
-  if (!request.outputDir || !request.devices || !request.embeddedMdiStyles)
-    throw new Error("Expected outputDir, devices, and embeddedMdiStyles");
+  if (!request.outputDir || !request.devices)
+    throw new Error("Expected outputDir and devices");
   const outputPath = path.join(request.outputDir, "app.js");
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   const app = protectedApp(
@@ -98,6 +103,7 @@ async function main() {
       request.embeddedMdiStyles,
       !!request.testHooks,
       request.overlays,
+      request.defaultDeviceId,
     ),
   );
   fs.writeFileSync(outputPath, app);
