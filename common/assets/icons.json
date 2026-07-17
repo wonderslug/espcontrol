@@ -754,6 +754,11 @@
       "mdi": "lan"
     },
     {
+      "name": "Laptop",
+      "codepoint": "F0322",
+      "mdi": "laptop"
+    },
+    {
       "name": "Lawnmower",
       "codepoint": "F11F7",
       "mdi": "robot-mower"
@@ -1452,6 +1457,11 @@
       "name": "Vacuum Outline",
       "codepoint": "F19A2",
       "mdi": "vacuum-outline"
+    },
+    {
+      "name": "Video Off",
+      "codepoint": "F0BDB",
+      "mdi": "video-off-outline"
     },
     {
       "name": "View Headline",
