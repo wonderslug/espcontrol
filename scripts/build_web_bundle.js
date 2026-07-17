@@ -30,8 +30,13 @@ function overlayPlugin(overlays) {
   };
 }
 
-async function bundleApp(devices, testHooks, overlays) {
-  const defaultDeviceId = testHooks ? Object.keys(devices)[0] : "";
+async function bundleApp(devices, testHooks, overlays, defaultDeviceId) {
+  const resolvedDefaultDeviceId =
+    defaultDeviceId !== undefined
+      ? defaultDeviceId
+      : testHooks
+        ? Object.keys(devices)[0]
+        : "";
   const timezoneOptions = Object.values(devices)[0].timezoneOptions;
   const profiles = Object.fromEntries(
     Object.entries(devices).map(([slug, config]) => {
@@ -50,7 +55,7 @@ async function bundleApp(devices, testHooks, overlays) {
   const result = await esbuild.build({
     bundle: true,
     define: {
-      __ESPCONTROL_DEFAULT_DEVICE_ID__: JSON.stringify(defaultDeviceId),
+      __ESPCONTROL_DEFAULT_DEVICE_ID__: JSON.stringify(resolvedDefaultDeviceId),
       __ESPCONTROL_DEVICE_PROFILES__: JSON.stringify(profiles),
       __ESPCONTROL_TIMEZONE_OPTIONS__: JSON.stringify(timezoneOptions),
       __ESPCONTROL_TEST_HOOKS_ENABLED__: testHooks ? "true" : "false",
@@ -81,7 +86,12 @@ async function main() {
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   fs.writeFileSync(
     outputPath,
-    await bundleApp(request.devices, !!request.testHooks, request.overlays),
+    await bundleApp(
+      request.devices,
+      !!request.testHooks,
+      request.overlays,
+      request.defaultDeviceId,
+    ),
   );
   for (const slug of Object.keys(request.devices)) {
     const legacyPath = path.join(request.outputDir, slug, "www.js");

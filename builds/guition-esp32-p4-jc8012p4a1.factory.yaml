@@ -1,17 +1,15 @@
 # =============================================================================
 # FACTORY BUILD - Guition ESP32-P4 JC8012P4A1 (10.1" landscape)
 # =============================================================================
-# Factory image variant: bundles www.js inline (js_include) instead of loading
-# from GitHub CDN, so the web UI works on first boot before WiFi is configured.
+# Factory image: web UI assets (www.js + fonts/icons) are fully embedded in
+# flash by the web_server_idf component, so the web UI works on first boot.
 # firmware_version is overridden by the release workflow at build time.
 # dashboard_import enables one-click adoption in ESPHome Dashboard.
 # =============================================================================
 
 substitutions:
-  cover_art_placeholder_file: "../common/assets/cover_art_placeholder.svg"
   firmware_version: "0.0.0"
   espcontrol_component_url: "file:///config"
-  mdi_font_file: "/config/common/assets/fonts/materialdesignicons-webfont-7.4.47.ttf"
   espcontrol_component_ref: "HEAD"
 
 packages:
@@ -24,9 +22,3 @@ esphome:
 
 dashboard_import:
   package_import_url: github://wonderslug/espcontrol/devices/guition-esp32-p4-jc8012p4a1/esphome.yaml@main
-
-web_server:
-  port: 80
-  version: 3
-  js_url: ""
-  js_include: "../docs/public/webserver/www.js"
