@@ -25,3 +25,6 @@ wifi-secrets*.yaml
 
 # Temporary local ESPHome entry points used when flashing PR builds.
 devices/*/dev-pr*.yaml
+
+# Superpowers SDD scratch (ledger, not tracked)
+.superpowers/
