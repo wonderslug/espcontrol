@@ -722,6 +722,19 @@ inline void clock_bar_enable_settings_access(lv_obj_t *button) {
   clock_bar_raise_settings_button(button);
 }
 
+// When the clock bar shows 12-hour time the fork appends an " am"/" pm" suffix
+// to the time label (see common/addon/time.yaml), so the fixed time box has to
+// be wider than the 24-hour "HH:MM" form to avoid clipping the suffix. The
+// display layer sets this via set_clock_bar_time_use_12h() before laying out.
+inline bool &clock_bar_time_use_12h() {
+  static bool value = false;
+  return value;
+}
+
+inline void set_clock_bar_time_use_12h(bool use_12h) {
+  clock_bar_time_use_12h() = use_12h;
+}
+
 inline void apply_clock_bar_fixed_layout(lv_obj_t *temperature_label,
                                          lv_obj_t *display_time,
                                          lv_obj_t *network_status_button,
@@ -744,6 +757,21 @@ inline void apply_clock_bar_fixed_layout(lv_obj_t *temperature_label,
   const int title_width =
       (clock_bar_current_screen_width(480) - time_width) / 2 - left_x - 8;
   left_state.title_width = title_width > 0 ? title_width : temperature_width;
+
+  // In 12-hour mode the time label carries an " am"/" pm" suffix; measure the
+  // worst-case "00:00 pm" string from the label's own font so the box fits the
+  // suffix across per-device font sizes, staying constant as the time changes.
+  if (display_time && clock_bar_time_use_12h()) {
+    const lv_font_t *font = lv_obj_get_style_text_font(display_time, LV_PART_MAIN);
+    if (font) {
+      lv_point_t size;
+      lv_text_get_size(&size, "00:00 pm", font, 0, 0, LV_COORD_MAX,
+                       LV_TEXT_FLAG_NONE);
+      int measured = size.x + 8;  // padding so glyph edges are not clipped
+      if (measured > time_width) time_width = measured;
+    }
+  }
+
   clock_bar_prepare_text_label(
       temperature_label, temperature_width, LV_TEXT_ALIGN_LEFT);
   clock_bar_update_left_text_width(temperature_label);

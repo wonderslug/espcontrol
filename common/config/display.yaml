@@ -165,6 +165,7 @@ script:
                                       clock_bar_network_box));
           }
 
+          set_clock_bar_time_use_12h(id(clock_format_12h));
           apply_clock_bar_fixed_layout(
               id(temperatures),
               id(display_time),
