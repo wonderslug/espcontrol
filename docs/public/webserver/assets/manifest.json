@@ -1,0 +1,124 @@
+{
+  "assets": [
+    {
+      "url": "/assets/mdi.woff2",
+      "file": "mdi.woff2",
+      "content_type": "font/woff2",
+      "gzip": false
+    },
+    {
+      "url": "/assets/mdi.css",
+      "file": "mdi.css",
+      "content_type": "text/css",
+      "gzip": true
+    },
+    {
+      "url": "/assets/inter_0.woff2",
+      "file": "inter_0.woff2",
+      "content_type": "font/woff2",
+      "gzip": false
+    },
+    {
+      "url": "/assets/inter_1.woff2",
+      "file": "inter_1.woff2",
+      "content_type": "font/woff2",
+      "gzip": false
+    },
+    {
+      "url": "/assets/inter_2.woff2",
+      "file": "inter_2.woff2",
+      "content_type": "font/woff2",
+      "gzip": false
+    },
+    {
+      "url": "/assets/inter_3.woff2",
+      "file": "inter_3.woff2",
+      "content_type": "font/woff2",
+      "gzip": false
+    },
+    {
+      "url": "/assets/inter_4.woff2",
+      "file": "inter_4.woff2",
+      "content_type": "font/woff2",
+      "gzip": false
+    },
+    {
+      "url": "/assets/inter_5.woff2",
+      "file": "inter_5.woff2",
+      "content_type": "font/woff2",
+      "gzip": false
+    },
+    {
+      "url": "/assets/inter_6.woff2",
+      "file": "inter_6.woff2",
+      "content_type": "font/woff2",
+      "gzip": false
+    },
+    {
+      "url": "/assets/roboto_0.woff2",
+      "file": "roboto_0.woff2",
+      "content_type": "font/woff2",
+      "gzip": false
+    },
+    {
+      "url": "/assets/roboto_1.woff2",
+      "file": "roboto_1.woff2",
+      "content_type": "font/woff2",
+      "gzip": false
+    },
+    {
+      "url": "/assets/roboto_2.woff2",
+      "file": "roboto_2.woff2",
+      "content_type": "font/woff2",
+      "gzip": false
+    },
+    {
+      "url": "/assets/roboto_3.woff2",
+      "file": "roboto_3.woff2",
+      "content_type": "font/woff2",
+      "gzip": false
+    },
+    {
+      "url": "/assets/roboto_4.woff2",
+      "file": "roboto_4.woff2",
+      "content_type": "font/woff2",
+      "gzip": false
+    },
+    {
+      "url": "/assets/roboto_5.woff2",
+      "file": "roboto_5.woff2",
+      "content_type": "font/woff2",
+      "gzip": false
+    },
+    {
+      "url": "/assets/roboto_6.woff2",
+      "file": "roboto_6.woff2",
+      "content_type": "font/woff2",
+      "gzip": false
+    },
+    {
+      "url": "/assets/roboto_7.woff2",
+      "file": "roboto_7.woff2",
+      "content_type": "font/woff2",
+      "gzip": false
+    },
+    {
+      "url": "/assets/roboto_8.woff2",
+      "file": "roboto_8.woff2",
+      "content_type": "font/woff2",
+      "gzip": false
+    },
+    {
+      "url": "/assets/fonts.css",
+      "file": "fonts.css",
+      "content_type": "text/css",
+      "gzip": true
+    },
+    {
+      "url": "/assets/bmac.png",
+      "file": "bmac.png",
+      "content_type": "image/png",
+      "gzip": false
+    }
+  ]
+}
