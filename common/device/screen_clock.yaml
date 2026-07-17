@@ -33,6 +33,12 @@ font:
     bpp: 2
     glyphs: "0123456789:"
 
+  - file: "gfonts://Roboto@Thin"
+    id: clock_screensaver_ampm_font
+    size: ${clock_ampm_font_size}
+    bpp: 4
+    glyphs: "AMP "
+
 lvgl:
   top_layer:
     widgets:
@@ -57,6 +63,12 @@ lvgl:
                 text_font: font_clock_display
                 text_color: 0xFFFFFF
                 text: "00:00"
+            - label:
+                id: am_pm_label
+                text_font: clock_screensaver_ampm_font
+                text_color: 0xFFFFFF
+                text: "AM"
+                hidden: true
       - obj:
           id: clock_image_overlay
           x: 0
