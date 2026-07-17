@@ -461,6 +461,10 @@ inline void setup_card_visual(BtnSlot &s, const ParsedCfg &p,
   if (s.icon_lbl) lv_obj_align(s.icon_lbl, LV_ALIGN_TOP_LEFT, 0, 0);
   if (s.sensor_container) lv_obj_align(s.sensor_container, LV_ALIGN_TOP_LEFT, 0, 0);
   if (s.text_lbl) lv_obj_align(s.text_lbl, LV_ALIGN_BOTTOM_LEFT, 0, 0);
+  // A previous unsupported or information-only config may have disabled this
+  // persistent button. Restore the default before the current driver applies
+  // its own interaction policy.
+  lv_obj_add_flag(s.btn, LV_OBJ_FLAG_CLICKABLE);
   set_subpage_chevron_visible(
     s, family == espcontrol::cards::Family::SUBPAGE && cfg.subpage_chevrons_enabled,
     cfg.subpage_chevron_x, cfg.subpage_chevron_y,

@@ -159,6 +159,15 @@ def check_root(root: Path) -> list[str]:
     if grid_header.exists():
         text = grid_header.read_text(encoding="utf-8")
         compact_grid = re.sub(r"\s+", " ", text)
+        visual_setup = function_body(text, "setup_card_visual")
+        if visual_setup is not None:
+            clickable_reset = "lv_obj_add_flag(s.btn, LV_OBJ_FLAG_CLICKABLE);"
+            reset_index = visual_setup.find(clickable_reset)
+            driver_index = visual_setup.find("if (espcontrol::cards::")
+            if reset_index < 0 or driver_index < 0 or reset_index > driver_index:
+                failures.append(
+                    f"components/espcontrol/{GRID_HEADER}: restore persistent button clickability before visual driver dispatch"
+                )
         if (
             "card_runtime_context(p)" not in text
             or "card_runtime_information_only(context)" not in text
@@ -938,6 +947,16 @@ def run_self_test() -> None:
         (
             {"button_grid_grid.h": 'if (parent_subpage_kind == "climate") {}\n'},
             ("route mower subpage parent indicators through mower active-state handling",),
+        ),
+        (
+            {
+                "button_grid_grid.h": (
+                    "inline void setup_card_visual() {\n"
+                    "  if (espcontrol::cards::image_driver_setup_visual()) return;\n"
+                    "}\n"
+                )
+            },
+            ("restore persistent button clickability before visual driver dispatch",),
         ),
         (
             {
