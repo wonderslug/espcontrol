@@ -27,6 +27,6 @@ packages:
   # an empty placeholder so WiFi is not added alongside Ethernet.
   network_credentials: !include device/starter_network${starter_network_package_suffix}.yaml
   setup:
-    url: https://github.com/jtenniswood/espcontrol/
+    url: https://github.com/wonderslug/espcontrol/
     file: devices/guition-esp32-p4-jc1060p470/packages.yaml
     refresh: 1s
