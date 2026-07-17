@@ -129,6 +129,7 @@ inline AlarmCardCtx *alarm_driver_bind_data(
       environment.text_color, environment.width_compensation_percent,
       false, environment.begin_display_takeover,
       environment.end_display_takeover));
+  alarm_delay_audio_register_context(alarm);
   alarm->audio_hooks = environment.alarm_delay_audio;
   if (context.surface == Surface::SUBPAGE) {
     alarm->grid_page = environment.grid_page;

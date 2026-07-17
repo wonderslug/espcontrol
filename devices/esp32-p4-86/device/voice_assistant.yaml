@@ -489,7 +489,8 @@ script:
             - homeassistant.event:
                 event: esphome.alarm_delay_announcement
                 data:
-                  device: ${device_slug}
+                  device: ${name}
+                  model: ${device_slug}
                   delay_type: !lambda |-
                     return entry_delay ? std::string("entry") : std::string("exit");
                   message: !lambda |-
@@ -1287,6 +1288,8 @@ switch:
     optimistic: true
     web_server:
       sorting_group_id: sg_display
+    on_turn_on:
+      - lambda: alarm_delay_audio_refresh_contexts();
     on_turn_off:
       - lambda: alarm_delay_audio_stop();
 

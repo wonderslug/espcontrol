@@ -128,6 +128,7 @@ inline AlarmDeferredAction &alarm_deferred_action() {
 }
 
 inline int alarm_remaining_delay_seconds(AlarmCardCtx *ctx);
+inline bool alarm_card_context_valid(AlarmCardCtx *ctx);
 
 struct AlarmDelayAudioCoordinator {
   AlarmCardCtx *source = nullptr;
@@ -143,6 +144,25 @@ struct AlarmDelayAudioCoordinator {
 inline AlarmDelayAudioCoordinator &alarm_delay_audio_coordinator() {
   static AlarmDelayAudioCoordinator coordinator;
   return coordinator;
+}
+
+inline std::vector<AlarmCardCtx *> &alarm_delay_audio_contexts() {
+  static std::vector<AlarmCardCtx *> contexts;
+  return contexts;
+}
+
+inline void alarm_delay_audio_register_context(AlarmCardCtx *ctx) {
+  if (!ctx) return;
+  std::vector<AlarmCardCtx *> &contexts = alarm_delay_audio_contexts();
+  if (std::find(contexts.begin(), contexts.end(), ctx) == contexts.end()) {
+    contexts.push_back(ctx);
+  }
+}
+
+inline void alarm_delay_audio_unregister_context(AlarmCardCtx *ctx) {
+  std::vector<AlarmCardCtx *> &contexts = alarm_delay_audio_contexts();
+  contexts.erase(std::remove(contexts.begin(), contexts.end(), ctx), contexts.end());
+  if (contexts.empty()) std::vector<AlarmCardCtx *>().swap(contexts);
 }
 
 inline int alarm_delay_audio_remaining_seconds(
@@ -245,6 +265,12 @@ inline void alarm_delay_audio_update(AlarmCardCtx *ctx) {
       lv_timer_reset(coordinator.timer);
     }
     lv_timer_resume(coordinator.timer);
+  }
+}
+
+inline void alarm_delay_audio_refresh_contexts() {
+  for (AlarmCardCtx *ctx : alarm_delay_audio_contexts()) {
+    if (alarm_card_context_valid(ctx)) alarm_delay_audio_update(ctx);
   }
 }
 

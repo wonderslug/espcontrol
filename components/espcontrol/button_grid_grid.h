@@ -1044,6 +1044,7 @@ inline void grid_delete_alarm_card_runtime_ptr(void *ptr) {
     if (alarm_delay_audio_coordinator().source == ctx) {
       alarm_delay_audio_stop();
     }
+    alarm_delay_audio_unregister_context(ctx);
     AlarmControlModalUi &control_ui = alarm_control_modal_ui();
     if (control_ui.active == ctx) alarm_control_hide_modal();
     AlarmPinModalUi &pin_ui = alarm_pin_modal_ui();
