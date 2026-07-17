@@ -1300,6 +1300,20 @@ script:
                                                    time.hour, time.minute, use_12h);
                   lv_label_set_text(id(clock_label), buf);
                   position_clock_screensaver_label(id(clock_screensaver), id(clock_label), time.minute);
+                  if (!use_12h) {
+                    lv_obj_add_flag(id(am_pm_label), LV_OBJ_FLAG_HIDDEN);
+                  } else {
+                    lv_label_set_text(id(am_pm_label), time.hour < 12 ? "AM" : "PM");
+                    lv_obj_clear_flag(id(am_pm_label), LV_OBJ_FLAG_HIDDEN);
+                    lv_obj_update_layout(id(am_pm_label));
+                    lv_coord_t lw = lv_obj_get_width(id(clock_label));
+                    lv_coord_t lh = lv_obj_get_height(id(clock_label));
+                    lv_coord_t pw = lv_obj_get_width(id(am_pm_label));
+                    lv_coord_t ph = lv_obj_get_height(id(am_pm_label));
+                    lv_coord_t lx = lv_obj_get_x(id(clock_label));
+                    lv_coord_t ly = lv_obj_get_y(id(clock_label));
+                    lv_obj_set_pos(id(am_pm_label), lx + lw - pw, ly + lh - ph);
+                  }
                 }
             - script.execute: clock_bar_hide
             - script.wait: clock_bar_hide
@@ -1444,3 +1458,17 @@ interval:
                                            time.hour, time.minute, use_12h);
           lv_label_set_text(id(clock_label), buf);
           position_clock_screensaver_label(id(clock_screensaver), id(clock_label), time.minute);
+          if (!use_12h) {
+            lv_obj_add_flag(id(am_pm_label), LV_OBJ_FLAG_HIDDEN);
+          } else {
+            lv_label_set_text(id(am_pm_label), time.hour < 12 ? "AM" : "PM");
+            lv_obj_clear_flag(id(am_pm_label), LV_OBJ_FLAG_HIDDEN);
+            lv_obj_update_layout(id(am_pm_label));
+            lv_coord_t lw = lv_obj_get_width(id(clock_label));
+            lv_coord_t lh = lv_obj_get_height(id(clock_label));
+            lv_coord_t pw = lv_obj_get_width(id(am_pm_label));
+            lv_coord_t ph = lv_obj_get_height(id(am_pm_label));
+            lv_coord_t lx = lv_obj_get_x(id(clock_label));
+            lv_coord_t ly = lv_obj_get_y(id(clock_label));
+            lv_obj_set_pos(id(am_pm_label), lx + lw - pw, ly + lh - ph);
+          }

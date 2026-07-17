@@ -465,13 +465,18 @@ script:
       - lvgl.label.update:
           id: display_time
           text: !lambda |-
-            static char time_buf[8];
+            static char time_buf[12];
             auto now = panel_time_or_fallback(id(panel_time).now(),
                                               id(homeassistant_time).now());
             if (!now.is_valid()) return "--:--";
             bool use_12h = id(clock_format_12h);
             format_clock_time_without_suffix(time_buf, sizeof(time_buf),
                                              now.hour, now.minute, use_12h);
+            if (use_12h) {
+              size_t len = strlen(time_buf);
+              snprintf(time_buf + len, sizeof(time_buf) - len,
+                       " %s", now.hour < 12 ? "am" : "pm");
+            }
             return time_buf;
       - lambda: |-
           auto now = panel_time_or_fallback(id(panel_time).now(),
