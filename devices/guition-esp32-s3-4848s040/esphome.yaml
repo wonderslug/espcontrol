@@ -29,6 +29,6 @@ packages:
     file: common/addon/api_encryption_dynamic.yaml
     refresh: 1s
   setup:
-    url: https://github.com/jtenniswood/espcontrol/
+    url: https://github.com/wonderslug/espcontrol/
     file: devices/guition-esp32-s3-4848s040/packages.yaml
     refresh: 1s
