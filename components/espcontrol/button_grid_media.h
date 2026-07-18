@@ -52,6 +52,8 @@ struct MediaControlCtx {
   bool top_shows_volume = false;
   bool dragging_progress = false;
   bool dragging_volume = false;
+  espcontrol::media::VolumeControlMode volume_control_mode =
+    espcontrol::media::VolumeControlMode::ABSOLUTE;
 };
 
 struct MediaControlModalUi {
@@ -456,6 +458,7 @@ struct MediaPlaybackState {
   bool progress_subscribed = false;
   uint32_t progress_subscription_scope = 0;
   bool volume_subscribed = false;
+  bool volume_capabilities_subscribed = false;
   bool content_subscribed = false;
   bool friendly_name_subscribed = false;
   uint32_t generation = 0;
@@ -480,6 +483,10 @@ struct MediaPlaybackState {
   uint32_t position_updated_at_ms = 0;
   bool volume_known = false;
   int volume_pct = 0;
+  bool volume_supported_features_known = false;
+  int volume_supported_features = 0;
+  espcontrol::media::VolumeControlMode volume_control_mode =
+    espcontrol::media::VolumeControlMode::ABSOLUTE;
   bool has_current_content_id = false;
   bool has_current_content_type = false;
   lv_timer_t *progress_timer = nullptr;
@@ -603,6 +610,7 @@ inline void media_playback_reset_state(MediaPlaybackState *state,
   state->progress_subscribed = false;
   state->progress_subscription_scope = 0;
   state->volume_subscribed = false;
+  state->volume_capabilities_subscribed = false;
   state->content_subscribed = false;
   state->friendly_name_subscribed = false;
   state->generation = ha_subscription_generation();
@@ -627,6 +635,9 @@ inline void media_playback_reset_state(MediaPlaybackState *state,
   state->position_updated_at_ms = 0;
   state->volume_known = false;
   state->volume_pct = 0;
+  state->volume_supported_features_known = false;
+  state->volume_supported_features = 0;
+  state->volume_control_mode = espcontrol::media::VolumeControlMode::ABSOLUTE;
   state->has_current_content_id = false;
   state->has_current_content_type = false;
   std::vector<SliderCtx *>().swap(state->sliders);
@@ -851,6 +862,15 @@ inline void media_playback_apply_state_to_volume(MediaPlaybackState *state,
                                                  MediaVolumeCtx *ctx) {
   if (!state || !ctx) return;
   ctx->available = state->available;
+  const auto previous_volume_control_mode = ctx->volume_control_mode;
+  ctx->volume_control_mode = state->volume_control_mode;
+  if (previous_volume_control_mode != ctx->volume_control_mode &&
+      ctx->volume_control_mode !=
+        espcontrol::media::VolumeControlMode::ABSOLUTE) {
+    ctx->pending_pct = -1;
+    ctx->pending_until_ms = 0;
+  }
+  media_volume_refresh_controls(ctx);
   if (!ctx->available) media_volume_hide_modal();
   if (!state->volume_known) {
     if (ctx->pct_lbl) lv_label_set_text(ctx->pct_lbl, "--");
@@ -858,7 +878,10 @@ inline void media_playback_apply_state_to_volume(MediaPlaybackState *state,
     return;
   }
 
-  int pct = media_volume_clamp_user_percent(ctx, state->volume_pct);
+  const auto mode = media_volume_effective_control_mode(ctx);
+  int pct = mode == espcontrol::media::VolumeControlMode::ABSOLUTE
+    ? media_volume_clamp_user_percent(ctx, state->volume_pct)
+    : media_clamp_percent(state->volume_pct);
   if (media_volume_pending_active(ctx)) {
     if (pct != ctx->pending_pct) {
       media_volume_set_modal_value(ctx, ctx->pending_pct);
@@ -895,6 +918,15 @@ inline void media_playback_apply_state_to_control(MediaPlaybackState *state,
   ctx->artist = state->artist;
   ctx->friendly_name = state->friendly_name;
   ctx->duration = state->duration;
+  const auto previous_volume_control_mode = ctx->volume_control_mode;
+  ctx->volume_control_mode = state->volume_control_mode;
+  if (previous_volume_control_mode != ctx->volume_control_mode &&
+      ctx->volume_control_mode !=
+        espcontrol::media::VolumeControlMode::ABSOLUTE) {
+    ctx->pending_pct = -1;
+    ctx->pending_until_ms = 0;
+    ctx->dragging_volume = false;
+  }
 
   if (state->has_position) {
     bool copy_position = true;
@@ -927,7 +959,10 @@ inline void media_playback_apply_state_to_control(MediaPlaybackState *state,
   }
 
   if (state->volume_known) {
-    int pct = media_control_clamp_volume(ctx, state->volume_pct);
+    int pct = ctx->volume_control_mode ==
+        espcontrol::media::VolumeControlMode::ABSOLUTE
+      ? media_control_clamp_volume(ctx, state->volume_pct)
+      : media_clamp_percent(state->volume_pct);
     if (media_control_volume_pending_active(ctx)) {
       if (pct != ctx->pending_pct) {
         media_control_refresh_volume(ctx);
@@ -1273,6 +1308,29 @@ inline void media_playback_subscribe_volume(MediaPlaybackState *state) {
         if (!parse_float_ref(val, level)) return;
         state->volume_known = true;
         state->volume_pct = media_clamp_percent((int)(level * 100.0f + 0.5f));
+        media_playback_apply_volume_consumers(state);
+      })
+  );
+
+  if (state->volume_capabilities_subscribed) return;
+  state->volume_capabilities_subscribed = true;
+  ha_subscribe_attribute(
+    entity_id, std::string("supported_features"),
+    std::function<void(esphome::StringRef)>(
+      [state, generation](esphome::StringRef val) {
+        if (!media_playback_generation_valid(state, generation)) return;
+        std::string value = normalized_state_text(val);
+        char *end = nullptr;
+        long features = std::strtol(value.c_str(), &end, 10);
+        state->volume_supported_features_known =
+          !value.empty() && value != "none" && value != "null" &&
+          value != "unknown" && value != "unavailable" &&
+          end != value.c_str();
+        state->volume_supported_features = state->volume_supported_features_known
+          ? static_cast<int>(features) : 0;
+        state->volume_control_mode = espcontrol::media::volume_control_mode(
+          state->volume_supported_features_known,
+          state->volume_supported_features);
         media_playback_apply_volume_consumers(state);
       })
   );
@@ -1911,10 +1969,37 @@ inline void media_control_refresh_progress(MediaControlCtx *ctx) {
   ui.progress_refresh_pending = false;
 }
 
+inline void media_control_refresh_volume_controls(MediaControlCtx *ctx) {
+  MediaControlModalUi &ui = media_control_modal_ui();
+  if (!ctx || ui.active != ctx) return;
+  const bool arc_interactive = espcontrol::media::volume_arc_interactive(
+    ctx->volume_control_mode);
+  if (ui.volume_arc) {
+    if (arc_interactive) lv_obj_add_flag(ui.volume_arc, LV_OBJ_FLAG_CLICKABLE);
+    else lv_obj_clear_flag(ui.volume_arc, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_style_bg_opa(
+      ui.volume_arc,
+      arc_interactive ? LV_OPA_COVER : LV_OPA_TRANSP,
+      LV_PART_KNOB);
+  }
+  media_volume_set_button_enabled(
+    ui.volume_minus_btn,
+    espcontrol::media::volume_decrease_enabled(
+      ctx->volume_control_mode, ctx->current_pct));
+  media_volume_set_button_enabled(
+    ui.volume_plus_btn,
+    espcontrol::media::volume_increase_enabled(
+      ctx->volume_control_mode, ctx->current_pct,
+      media_control_volume_max_pct(ctx)));
+}
+
 inline void media_control_refresh_volume(MediaControlCtx *ctx) {
   MediaControlModalUi &ui = media_control_modal_ui();
   if (!ctx || ui.active != ctx) return;
-  int pct = media_control_clamp_volume(ctx, ctx->current_pct);
+  const bool absolute = ctx->volume_control_mode ==
+    espcontrol::media::VolumeControlMode::ABSOLUTE;
+  int pct = absolute ? media_control_clamp_volume(ctx, ctx->current_pct)
+                     : media_clamp_percent(ctx->current_pct);
   if (ui.volume_pct_lbl) {
     char buf[8];
     snprintf(buf, sizeof(buf), "%d", pct);
@@ -1922,10 +2007,12 @@ inline void media_control_refresh_volume(MediaControlCtx *ctx) {
   }
   if (ui.volume_arc && !ctx->dragging_volume) {
     ui.updating_volume = true;
-    lv_arc_set_range(ui.volume_arc, 0, media_control_volume_max_pct(ctx));
+    lv_arc_set_range(
+      ui.volume_arc, 0, absolute ? media_control_volume_max_pct(ctx) : 100);
     lv_arc_set_value(ui.volume_arc, pct);
     ui.updating_volume = false;
   }
+  media_control_refresh_volume_controls(ctx);
 }
 
 inline void media_control_refresh_modal(MediaControlCtx *ctx) {
@@ -1942,13 +2029,25 @@ inline void media_control_refresh_modal(MediaControlCtx *ctx) {
 
 inline void media_control_set_volume_value(MediaControlCtx *ctx, int pct) {
   if (!ctx) return;
-  ctx->current_pct = media_control_clamp_volume(ctx, pct);
+  ctx->current_pct = ctx->volume_control_mode ==
+      espcontrol::media::VolumeControlMode::ABSOLUTE
+    ? media_control_clamp_volume(ctx, pct) : media_clamp_percent(pct);
   media_control_refresh_volume(ctx);
 }
 
 inline void media_control_apply_volume_percent(MediaControlCtx *ctx, int pct,
                                                bool from_user, bool send_action) {
   if (!ctx || !ctx->available) return;
+  const int current_pct = media_clamp_percent(ctx->current_pct);
+  const auto command = espcontrol::media::volume_command(
+    ctx->volume_control_mode, current_pct, pct,
+    media_control_volume_max_pct(ctx));
+  if (ctx->volume_control_mode !=
+      espcontrol::media::VolumeControlMode::ABSOLUTE) {
+    if (send_action) send_media_volume_command(ctx->entity_id, command);
+    media_control_refresh_volume_controls(ctx);
+    return;
+  }
   pct = media_control_clamp_volume(ctx, pct);
   ctx->current_pct = pct;
   if (from_user) {
@@ -1958,7 +2057,7 @@ inline void media_control_apply_volume_percent(MediaControlCtx *ctx, int pct,
   }
   media_control_refresh_volume(ctx);
   media_control_refresh_parent_card(ctx);
-  if (send_action) send_media_volume_action(ctx->entity_id, pct);
+  if (send_action) send_media_volume_command(ctx->entity_id, command);
 }
 
 inline void media_control_style_tab(lv_obj_t *btn, bool active) {
@@ -2203,8 +2302,14 @@ inline void media_control_create_volume_tab_content(MediaControlCtx *ctx) {
   ui.volume_arc = lv_arc_create(ui.content_box);
   if (!ui.volume_arc) return;
   lv_arc_set_bg_angles(ui.volume_arc, 135, 45);
-  lv_arc_set_range(ui.volume_arc, 0, media_control_volume_max_pct(ctx));
-  lv_arc_set_value(ui.volume_arc, media_control_clamp_volume(ctx, ctx->current_pct));
+  const bool absolute = ctx->volume_control_mode ==
+    espcontrol::media::VolumeControlMode::ABSOLUTE;
+  lv_arc_set_range(
+    ui.volume_arc, 0, absolute ? media_control_volume_max_pct(ctx) : 100);
+  lv_arc_set_value(
+    ui.volume_arc,
+    absolute ? media_control_clamp_volume(ctx, ctx->current_pct)
+             : media_clamp_percent(ctx->current_pct));
   lv_obj_set_style_bg_opa(ui.volume_arc, LV_OPA_TRANSP, LV_PART_MAIN);
   lv_obj_set_style_border_width(ui.volume_arc, 0, LV_PART_MAIN);
   lv_obj_set_style_arc_color(ui.volume_arc, lv_color_hex(DARK_TRACK_BACKGROUND), LV_PART_MAIN);
@@ -2218,6 +2323,8 @@ inline void media_control_create_volume_tab_content(MediaControlCtx *ctx) {
   lv_obj_add_event_cb(ui.volume_arc, [](lv_event_t *e) {
     MediaControlModalUi &ui = media_control_modal_ui();
     if (!ui.active || ui.updating_volume) return;
+    if (!espcontrol::media::volume_arc_interactive(
+          ui.active->volume_control_mode)) return;
     ui.active->dragging_volume = true;
     lv_obj_t *arc = static_cast<lv_obj_t *>(lv_event_get_target(e));
     media_control_apply_volume_percent(ui.active, lv_arc_get_value(arc), true, true);
@@ -2271,6 +2378,7 @@ inline void media_control_create_volume_tab_content(MediaControlCtx *ctx) {
       media_control_apply_volume_percent(ui.active, ui.active->current_pct + 1, true, true);
     }, LV_EVENT_CLICKED, nullptr);
   }
+  media_control_refresh_volume_controls(ctx);
 }
 
 inline void media_control_clear_tab_content() {
