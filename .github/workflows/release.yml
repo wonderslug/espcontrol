@@ -24,6 +24,11 @@ jobs:
     if: github.event_name == 'release' || inputs.release_tag != ''
     runs-on: self-hosted
     steps:
+      - name: Prepare self-hosted workspace
+        run: |
+          rm -rf "${GITHUB_WORKSPACE:?}/"* "${GITHUB_WORKSPACE:?}/".[!.]* "${GITHUB_WORKSPACE:?}/"..?* 2>/dev/null ||
+            sudo rm -rf "${GITHUB_WORKSPACE:?}/"* "${GITHUB_WORKSPACE:?}/".[!.]* "${GITHUB_WORKSPACE:?}/"..?*
+
       - uses: actions/checkout@v7.0.0
         with:
           fetch-depth: 0
@@ -223,7 +228,7 @@ jobs:
 
           BUILD_DIR=$(dirname "${FIRMWARE_FACTORY}")
           cp "${BUILD_DIR}/firmware.factory.bin" output/${{ matrix.slug }}.factory.bin
-          cp "${BUILD_DIR}/firmware.bin" output/${{ matrix.slug }}.ota.bin
+          cp "${BUILD_DIR}/firmware.ota.bin" output/${{ matrix.slug }}.ota.bin
 
           VERSION="${{ inputs.release_tag || github.event.release.tag_name || github.ref_name }}"
           python3 espcontrol-${{ matrix.slug }}/scripts/firmware_release.py manifest \

@@ -45,6 +45,7 @@ declare global {
   var CARD_SIZE_LARGE: any;
   var CARD_SIZE_MAX_TALL: any;
   var CARD_SIZE_MAX_WIDE: any;
+  var CARD_SIZE_PORTRAIT_LARGE: any;
   var CARD_SIZE_SINGLE: any;
   var CARD_SIZE_TALL: any;
   var CARD_SIZE_WIDE: any;
@@ -109,6 +110,7 @@ declare global {
   var MAX_CLOCK_BAR_TEMPERATURES: any;
   var MEDIA_CARD_METADATA: any;
   var MEDIA_COVER_ART_ACTION_OPTION: any;
+  var MEDIA_COVER_ART_DETAILS_OPTION: any;
   var MEDIA_COVER_ART_OPTION: any;
   var MEDIA_LABEL_DISPLAY_OPTION: any;
   var MEDIA_NUMBER_DISPLAY_OPTION: any;
@@ -287,6 +289,8 @@ declare global {
   var buttonConfigHasLegacySliderDirection: any;
   var buttonConfigNeedsMigration: any;
   var buttonTypeDisabledForDevice: any;
+  var buttonConfigDisabledForDevice: any;
+  var clipboardEntriesFromCardTransfer: any;
   var buttonTypeInfoOnlyVisible: any;
   var buttonTypePickerDetails: any;
   var buttonTypePickerKeys: any;
@@ -323,6 +327,7 @@ declare global {
   var cardContractPickerKey: any;
   var cardRequiresSquareSize: any;
   var cardSupportsMaxSize: any;
+  var cardSupportsPortraitLargeSize: any;
   var cardContractSubpageTypeCode: any;
   var cardContractSubpageTypeFromCode: any;
   var cardIconHtml: any;
@@ -514,7 +519,6 @@ declare global {
   var firmwareInstallRefreshUntil: any;
   var firmwareUpdateAvailable: any;
   var firmwareUpdateControlsVisible: any;
-  var firmwareUpToDateStatusAvailable: any;
   var firmwareVersionFromMetadata: any;
   var firmwareVersionLabel: any;
   var firmwareVersionMatches: any;
@@ -590,6 +594,7 @@ declare global {
   var isBackOrderToken: any;
   var isBrightnessSliderType: any;
   var isC6FirmwareCheckButtonEvent: any;
+  var isC6FirmwareAutoUpdateEvent: any;
   var isC6FirmwareCurrentEvent: any;
   var isC6FirmwareInstallButtonEvent: any;
   var isC6FirmwareLatestEvent: any;
@@ -657,6 +662,7 @@ declare global {
   var mdiIcon: any;
   var mediaBehaviorSpec: any;
   var mediaCoverArtAction: any;
+  var mediaCoverArtDetailsEnabled: any;
   var mediaDefaultMode: any;
   var mediaEditorMode: any;
   var mediaEditorValidMode: any;
@@ -822,6 +828,7 @@ declare global {
   var postBrightnessDuskTime: any;
   var postButtonPress: any;
   var postC6FirmwareUpdateCheck: any;
+  var postC6FirmwareAutoUpdate: any;
   var postC6FirmwareUpdateInstall: any;
   var postClockBar: any;
   var postClockBarTemperatureEntities: any;
@@ -1035,6 +1042,7 @@ declare global {
   var setLightControlType: any;
   var setMediaLabelDisplayMode: any;
   var setMediaCoverArtAction: any;
+  var setMediaCoverArtDetailsEnabled: any;
   var setMediaNumberDisplayMode: any;
   var setMediaPlaylistContentId: any;
   var setMediaPlaylistContentType: any;
@@ -1118,6 +1126,7 @@ declare global {
   var syncConfigLockUi: any;
   var syncCoverArtScreensaverUi: any;
   var syncFirmwareUpdateUi: any;
+  var syncFirmwareCardBadge: any;
   var syncFirmwareVersionSelect: any;
   var syncIdleUi: any;
   var syncInput: any;

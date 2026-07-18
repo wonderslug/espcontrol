@@ -23,11 +23,18 @@ export function installC6FirmwareUiModule(): GlobalDescriptors {
         if (els.c6FirmwareBadge) {
             els.c6FirmwareBadge.classList.toggle("sp-hidden", !c6FirmwareUpdateKnownAvailable());
         }
+        syncFirmwareCardBadge();
         if (els.c6FirmwareCurrent) {
             els.c6FirmwareCurrent.textContent = displayC6FirmwareVersion(state.c6FirmwareCurrentVersion);
         }
         if (els.c6FirmwareLatest) {
             els.c6FirmwareLatest.textContent = displayC6FirmwareVersion(state.c6FirmwareLatestVersion);
+        }
+        if (els.c6FirmwareAutoUpdateRow) {
+            els.c6FirmwareAutoUpdateRow.style.display = show && state.c6FirmwareAutoUpdateSupported ? "" : "none";
+        }
+        if (els.c6FirmwareAutoUpdate) {
+            els.c6FirmwareAutoUpdate.checked = state.c6FirmwareAutoUpdate;
         }
         if (els.c6FirmwareStatus) {
             var cls: any = "sp-fw-status";

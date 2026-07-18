@@ -42,10 +42,6 @@ export function installSettingsSystemSectionModule(): GlobalDescriptors {
         var fwActions: any = document.createElement("div");
         fwActions.className = "sp-fw-actions sp-fw-actions-full";
         els.fwActions = fwActions;
-        var fwInlineStatus: any = document.createElement("span");
-        fwInlineStatus.className = "sp-fw-inline-status";
-        fwActions.appendChild(fwInlineStatus);
-        els.fwInlineStatus = fwInlineStatus;
         var fwCheckBtn: any = createActionButton("sp-fw-btn", "Check for Update");
         fwCheckBtn.addEventListener("click", function (this: any) {
             if (!firmwareUpdateControlsVisible())
@@ -173,6 +169,19 @@ export function installSettingsSystemSectionModule(): GlobalDescriptors {
         c6LatestRow.appendChild(c6LatestValue);
         wifiFirmwareBody.appendChild(c6LatestRow);
         els.c6FirmwareLatest = c6LatestValue;
+        var c6AutoUpdateToggle: any = toggleRow("Auto Update", "sp-set-c6-auto-update", state.c6FirmwareAutoUpdate);
+        c6AutoUpdateToggle.input.addEventListener("change", function (this: any) {
+            if (!state.c6FirmwareAutoUpdateSupported) {
+                syncC6FirmwareUi();
+                return;
+            }
+            state.c6FirmwareAutoUpdate = this.checked;
+            postC6FirmwareAutoUpdate(state.c6FirmwareAutoUpdate);
+            syncC6FirmwareUi();
+        });
+        wifiFirmwareBody.appendChild(c6AutoUpdateToggle.row);
+        els.c6FirmwareAutoUpdateRow = c6AutoUpdateToggle.row;
+        els.c6FirmwareAutoUpdate = c6AutoUpdateToggle.input;
         var c6Actions: any = document.createElement("div");
         c6Actions.className = "sp-fw-actions sp-fw-actions-full";
         var c6UpdateBtn: any = createActionButton("sp-fw-btn", "Check for Update");
@@ -246,7 +255,10 @@ export function installSettingsSystemSectionModule(): GlobalDescriptors {
         els.fwPreviousPanel = previousFirmwarePanel;
         firmwareSubpanels.appendChild(previousFirmwarePanel);
         fwBody.appendChild(firmwareSubpanels);
-        var firmwareCard: any = makeCollapsibleCard("Firmware", fwBody, true);
+        var firmwareCardBadge: any = statusBadge("Firmware update available", "Update available");
+        firmwareCardBadge.className = "sp-card-badge sp-hidden";
+        els.firmwareCardBadge = firmwareCardBadge;
+        var firmwareCard: any = makeCollapsibleCard("Firmware", fwBody, true, firmwareCardBadge);
         syncFirmwareVersionSelect();
         syncFirmwareUpdateUi();
         syncC6FirmwareUi();
