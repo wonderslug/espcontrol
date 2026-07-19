@@ -748,8 +748,13 @@ inline void refresh_media_card_layout(BtnSlot &s, const ParsedCfg &p,
       }
       ctx->artist_below_title = large;
       ctx->artist_gap = pad > 1 ? pad / 2 : 0;
-      lv_obj_clear_flag(ctx->title_lbl, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_clear_flag(ctx->artist_lbl, LV_OBJ_FLAG_HIDDEN);
+      if (ctx->show_track_details || ctx->external_source_fallback) {
+        lv_obj_clear_flag(ctx->title_lbl, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_clear_flag(ctx->artist_lbl, LV_OBJ_FLAG_HIDDEN);
+      } else {
+        lv_obj_add_flag(ctx->title_lbl, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(ctx->artist_lbl, LV_OBJ_FLAG_HIDDEN);
+      }
       display_apply_main_width(ctx->title_lbl, display);
       display_apply_main_width(ctx->artist_lbl, display);
       setup_media_now_playing_layout(

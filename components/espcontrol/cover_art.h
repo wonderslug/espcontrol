@@ -39,6 +39,12 @@ inline bool external_media_source(const std::string &source) {
          normalized == "line in" || normalized.rfind("hdmi", 0) == 0;
 }
 
+inline bool media_entity_state_usable(const std::string &state) {
+  const std::string normalized = normalized_media_source(state);
+  return !normalized.empty() && normalized != "off" &&
+         normalized != "unknown" && normalized != "unavailable";
+}
+
 inline bool use_secondary_media_entity(bool primary_external,
                                        bool secondary_configured,
                                        bool secondary_available,

@@ -1128,6 +1128,9 @@ script:
       - lvgl.label.update:
           id: cover_art_title_label
           text: !lambda |-
+            if (id(cover_art_external_input_active) && !id(cover_art_media_source).empty()) {
+              return id(cover_art_media_source);
+            }
             if (id(cover_art_title).empty()) return std::string("—");
             return id(cover_art_title);
       - if:
@@ -1143,6 +1146,16 @@ script:
           else:
             - lvgl.widget.hide: cover_art_artist_label
       - lambda: |-
+          if (id(cover_art_external_input_active)) {
+            id(cover_art_media_duration) = 0.0f;
+            id(cover_art_media_position) = 0.0f;
+            id(cover_art_last_progress_percent) = -1;
+            lv_bar_set_value(id(cover_art_progress_bar), 0, LV_ANIM_OFF);
+            lv_label_set_text(id(cover_art_time_label), "0:00  /  0:00");
+            lv_obj_add_flag(id(cover_art_time_label), LV_OBJ_FLAG_HIDDEN);
+            lv_obj_add_flag(id(cover_art_progress_bar), LV_OBJ_FLAG_HIDDEN);
+            return;
+          }
           #ifdef ESPCONTROL_LOW_HEAP_COVER_ART
           media_playback_prepare_cover_art_progress(
             id(cover_art_active_media_player_entity),
@@ -1172,6 +1185,16 @@ script:
           then:
             - script.stop: cover_art_refresh_progress
       - lambda: |-
+          if (id(cover_art_external_input_active)) {
+            id(cover_art_media_duration) = 0.0f;
+            id(cover_art_media_position) = 0.0f;
+            id(cover_art_last_progress_percent) = -1;
+            lv_bar_set_value(id(cover_art_progress_bar), 0, LV_ANIM_OFF);
+            lv_label_set_text(id(cover_art_time_label), "0:00  /  0:00");
+            lv_obj_add_flag(id(cover_art_time_label), LV_OBJ_FLAG_HIDDEN);
+            lv_obj_add_flag(id(cover_art_progress_bar), LV_OBJ_FLAG_HIDDEN);
+            return;
+          }
           float duration = id(cover_art_media_duration);
           float position = id(cover_art_media_position);
           auto now = id(panel_time).now();
@@ -1288,6 +1311,7 @@ script:
             - if:
                 condition:
                   lambda: |-
+                    if (id(cover_art_external_input_active)) return false;
                     #ifdef ESPCONTROL_LOW_HEAP_COVER_ART
                     media_playback_prepare_cover_art_progress(
                       id(cover_art_active_media_player_entity),
@@ -1634,6 +1658,17 @@ script:
                id(cover_art_external_input_active))) {
             return;
           }
+          if (id(cover_art_external_input_active)) {
+            id(cover_art_runtime).clear_image();
+            id(cover_art_pending_remote_url).clear();
+            id(cover_art_pending_local_url).clear();
+            id(cover_art_artwork_pending_count) = 0;
+            id(cover_art_downloaded_image)->cancel_update();
+            id(cover_art_downloaded_image)->release();
+            lv_obj_add_flag(id(cover_art_image_widget), LV_OBJ_FLAG_HIDDEN);
+            id(cover_art_show_black_screen).execute();
+            return;
+          }
           const std::string cover_entity = id(cover_art_active_media_player_entity);
           if (cover_entity.empty()) return;
           ++id(cover_art_request_id);
@@ -1869,9 +1904,11 @@ script:
                     if (subscription_generation != id(cover_art_subscription_generation) ||
                         secondary_entity != id(cover_art_secondary_media_player_entity).state) return;
                     std::string next = string_ref_limited(state, HA_SHORT_STATE_MAX_LEN);
-                    const bool available = next != "unknown" && next != "unavailable";
+                    const bool known = next != "unknown" && next != "unavailable";
+                    const bool available = known &&
+                      espcontrol::cover_art::media_entity_state_usable(next);
                     id(cover_art_secondary_available) = available;
-                    if (!available) id(cover_art_secondary_content_mask) = 0;
+                    if (!known) id(cover_art_secondary_content_mask) = 0;
                     reconcile_entity_route();
                   }),
                 HA_SUBSCRIPTION_SCOPE_COVER_ART

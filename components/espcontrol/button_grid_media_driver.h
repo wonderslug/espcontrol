@@ -224,25 +224,35 @@ inline void media_driver_bind_cover_art_route(
       !now_playing->secondary_entity.empty(),
       secondary_state && secondary_state->available,
       media_playback_has_current_content(secondary_state));
+    const bool external_source_fallback =
+      primary_state && primary_state->external_source && !use_secondary;
     const std::string next_entity = use_secondary
       ? now_playing->secondary_entity : now_playing->primary_entity;
-    if (next_entity.empty() || next_entity == now_playing->active_entity) return;
+    const bool entity_changed = next_entity != now_playing->active_entity;
+    const bool presentation_changed =
+      external_source_fallback != now_playing->external_source_fallback;
+    if (next_entity.empty() || (!entity_changed && !presentation_changed)) return;
 
     ESP_LOGI("media_card", "Cover art entity switched from %s to %s",
              now_playing->active_entity.empty() ? "<none>" : now_playing->active_entity.c_str(),
              next_entity.c_str());
     now_playing->active_entity = next_entity;
+    now_playing->external_source_fallback = external_source_fallback;
 
     if (now_playing->cover_art) {
       ImageCardCtx *art = now_playing->cover_art;
       image_card_clear_media_artwork(art);
-      art->entity_id = next_entity;
       art->access_token.clear();
-      subscribe_image_card_access_token(art, next_entity);
-      image_card_request_media_artwork(art);
+      if (external_source_fallback) {
+        art->entity_id.clear();
+      } else {
+        art->entity_id = next_entity;
+        subscribe_image_card_access_token(art, next_entity);
+        image_card_request_media_artwork(art);
+      }
     }
 
-    if (now_playing->progress_slider) {
+    if (entity_changed && now_playing->progress_slider) {
       SliderCtx *slider = static_cast<SliderCtx *>(
         lv_obj_get_user_data(now_playing->progress_slider));
       if (slider) {
@@ -254,7 +264,7 @@ inline void media_driver_bind_cover_art_route(
       }
     }
 
-    if (control) {
+    if (entity_changed && control) {
       media_playback_detach_control(control);
       control->entity_id = next_entity;
       subscribe_media_control_state(control);

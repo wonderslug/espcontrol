@@ -17,6 +17,10 @@ int main() {
   assert(external_media_source("HDMI"));
   assert(external_media_source("hdmi 1"));
   assert(!external_media_source("Spotify"));
+  assert(media_entity_state_usable("playing"));
+  assert(media_entity_state_usable("paused"));
+  assert(!media_entity_state_usable("off"));
+  assert(!media_entity_state_usable(" unavailable "));
   assert(!use_secondary_media_entity(false, true, true, true));
   assert(!use_secondary_media_entity(true, false, true, true));
   assert(!use_secondary_media_entity(true, true, false, true));
