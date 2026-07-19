@@ -157,13 +157,36 @@ bool partial_header_write_preserves_previous() {
   const std::vector<uint8_t> first = bytes("stable-value");
   const std::vector<uint8_t> second = bytes("replacement");
   if (!store.commit(first.data(), first.size()).ok()) return false;
-  backend.fail_writes_after(second.size() + 5);
+  backend.fail_writes_after(sizeof(uint32_t) + second.size() + 5);
   const CommitResult failed = store.commit(second.data(), second.size());
   backend.clear_write_failure();
   std::vector<uint8_t> output(first.size());
   const LoadResult loaded = store.load(output.data(), output.size());
   return failed.status == StoreStatus::WRITE_FAILED &&
          loaded.generation == 1 && payload_equals(output, first, loaded);
+}
+
+bool torn_metadata_cannot_promote_stale_checksum() {
+  MemoryBackend backend(128);
+  ConfigurationStore store(backend);
+  const std::vector<uint8_t> stale = bytes("shared-prefix");
+  const std::vector<uint8_t> current = bytes("current-value");
+  const std::vector<uint8_t> replacement = bytes("shared-prefix-with-new-tail");
+  if (!store.commit(stale.data(), stale.size()).ok()) return false;
+  if (!store.commit(current.data(), current.size()).ok()) return false;
+
+  // Stop after the new generation is written but before payload size and
+  // checksum metadata. Without a final validity-marker write, slot zero can
+  // look like generation three while retaining generation one's checksum.
+  backend.fail_writes_after(sizeof(uint32_t) + replacement.size() + 8);
+  const CommitResult failed =
+      store.commit(replacement.data(), replacement.size());
+  backend.clear_write_failure();
+
+  std::vector<uint8_t> output(current.size());
+  const LoadResult loaded = store.load(output.data(), output.size());
+  return failed.status == StoreStatus::WRITE_FAILED && loaded.slot == 1 &&
+         loaded.generation == 2 && payload_equals(output, current, loaded);
 }
 
 bool size_and_argument_errors_are_explicit() {
@@ -207,6 +230,7 @@ int main() {
       newest_generation_wins() && corrupt_newest_falls_back() &&
       partial_payload_write_preserves_previous() &&
       partial_header_write_preserves_previous() &&
+      torn_metadata_cannot_promote_stale_checksum() &&
       size_and_argument_errors_are_explicit() &&
       io_and_sync_errors_are_explicit();
   return passed ? EXIT_SUCCESS : EXIT_FAILURE;

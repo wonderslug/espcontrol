@@ -21,10 +21,13 @@ Use `ConfigurationStore` as the storage boundary for the future configuration
 service. It stores an opaque payload in two fixed-capacity slots. Each slot has
 a versioned header containing a generation, payload length, and CRC32 checksum.
 
-A commit writes and syncs the payload before publishing and syncing its header.
-The other valid slot is not modified. Reads validate both slots and select the
-newest valid generation; if the newest slot is incomplete or corrupt, the
-previous valid generation is returned.
+A commit invalidates the target first, then writes and syncs its payload and
+header metadata. The envelope magic is written and synced separately as the
+final publication marker, so a torn metadata write cannot combine a new
+generation with stale size or checksum bytes. The other valid slot is not
+modified. Reads validate both slots and select the newest valid generation; if
+the newest slot is incomplete or corrupt, the previous valid generation is
+returned.
 
 The core store depends only on a narrow `StorageBackend`. The later ESPHome
 adapter will own flash preferences or partition access. Document parsing,

@@ -203,6 +203,20 @@ CommitResult ConfigurationStore::commit(const uint8_t *payload,
     next_generation = second.generation + 1;
   }
 
+  // Keep the target unpublished until both its payload and metadata are
+  // durable. A torn metadata write cannot accidentally promote stale size or
+  // checksum bytes because the magic marker is restored in a final write.
+  std::array<uint8_t, sizeof(uint32_t)> invalid_magic{};
+  if (!backend_.write(target_slot, MAGIC_OFFSET, invalid_magic.data(),
+                      invalid_magic.size())) {
+    return {StoreStatus::WRITE_FAILED, next_generation, payload_size,
+            target_slot};
+  }
+  if (!backend_.sync()) {
+    return {StoreStatus::SYNC_FAILED, next_generation, payload_size,
+            target_slot};
+  }
+
   if (payload_size > 0 &&
       !backend_.write(target_slot, CONFIGURATION_ENVELOPE_HEADER_SIZE,
                       payload, payload_size)) {
@@ -225,7 +239,19 @@ CommitResult ConfigurationStore::commit(const uint8_t *payload,
             static_cast<uint32_t>(payload_size));
   write_u32(header.data() + CHECKSUM_OFFSET, checksum(payload, payload_size));
 
-  if (!backend_.write(target_slot, 0, header.data(), header.size())) {
+  if (!backend_.write(target_slot, VERSION_OFFSET,
+                      header.data() + VERSION_OFFSET,
+                      header.size() - VERSION_OFFSET)) {
+    return {StoreStatus::WRITE_FAILED, next_generation, payload_size,
+            target_slot};
+  }
+  if (!backend_.sync()) {
+    return {StoreStatus::SYNC_FAILED, next_generation, payload_size,
+            target_slot};
+  }
+
+  if (!backend_.write(target_slot, MAGIC_OFFSET, header.data() + MAGIC_OFFSET,
+                      invalid_magic.size())) {
     return {StoreStatus::WRITE_FAILED, next_generation, payload_size,
             target_slot};
   }
