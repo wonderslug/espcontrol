@@ -310,9 +310,20 @@ def run_gh(arguments: list[str]) -> str:
 
 def load_release_from_github(repo: str, tag: str, gh_runner=run_gh) -> dict:
     try:
-        return json.loads(gh_runner(["api", f"repos/{repo}/releases/tags/{tag}"]))
+        release = json.loads(
+            gh_runner([
+                "release", "view", tag,
+                "--repo", repo,
+                "--json", "tagName,isDraft,assets",
+            ])
+        )
     except json.JSONDecodeError as exc:
         raise FirmwareReleaseError(f"Could not load draft release {tag}: {exc}") from exc
+    return {
+        "tag_name": release.get("tagName"),
+        "draft": release.get("isDraft"),
+        "assets": release.get("assets", []),
+    }
 
 
 def assert_draft_release(release: dict, tag: str) -> None:

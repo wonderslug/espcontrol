@@ -79,8 +79,8 @@ class FakeGitHub:
 
     def __call__(self, arguments: list[str]) -> str:
         self.calls.append(arguments)
-        if arguments[0] == "api":
-            return json.dumps({"tag_name": self.tag, "draft": self.draft, "assets": self.assets})
+        if arguments[:2] == ["release", "view"]:
+            return json.dumps({"tagName": self.tag, "isDraft": self.draft, "assets": self.assets})
         if arguments[:2] == ["release", "upload"]:
             end = arguments.index("--clobber")
             files = [Path(value) for value in arguments[3:end]]
@@ -329,11 +329,11 @@ def test_draft_release_publishes_only_after_remote_asset_verification() -> None:
         )
         assert github.draft is False
         assert [call[:2] for call in github.calls] == [
-            ["api", f"repos/owner/repo/releases/tags/{VERSION}"],
+            ["release", "view"],
             ["release", "upload"],
-            ["api", f"repos/owner/repo/releases/tags/{VERSION}"],
+            ["release", "view"],
             ["release", "edit"],
-            ["api", f"repos/owner/repo/releases/tags/{VERSION}"],
+            ["release", "view"],
         ]
 
 
