@@ -2,6 +2,8 @@
 
 // Internal implementation detail for button_grid.h. Include button_grid.h from device YAML.
 
+#include "cover_art.h"
+
 enum class MediaControlTab : uint8_t {
   CONTROLS = 0,
   PROGRESS = 1,
@@ -146,10 +148,7 @@ inline void media_set_metadata_text(lv_obj_t *label, esphome::StringRef value,
 }
 
 inline bool media_external_source_input(std::string source) {
-  for (char &ch : source) {
-    ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
-  }
-  return source == "tv" || source == "line-in" || source == "line in";
+  return espcontrol::cover_art::external_media_source(source);
 }
 
 inline void media_apply_now_playing_artist_text(MediaNowPlayingCtx *ctx) {
@@ -473,6 +472,7 @@ struct MediaPlaybackState {
   std::string state_text = "unknown";
   std::string title;
   std::string artist;
+  std::string source;
   std::string friendly_name;
   std::string current_content_id;
   std::string current_content_type;
@@ -497,6 +497,7 @@ struct MediaPlaybackState {
     espcontrol::media::VolumeControlMode::ABSOLUTE;
   bool has_current_content_id = false;
   bool has_current_content_type = false;
+  uint8_t artwork_content_mask = 0;
   lv_timer_t *progress_timer = nullptr;
   std::vector<SliderCtx *> sliders;
   std::vector<MediaControlCtx *> controls;
@@ -627,6 +628,7 @@ inline void media_playback_reset_state(MediaPlaybackState *state,
   state->state_text = "unknown";
   state->title.clear();
   state->artist.clear();
+  state->source.clear();
   state->friendly_name.clear();
   state->current_content_id.clear();
   state->current_content_type.clear();
@@ -650,6 +652,7 @@ inline void media_playback_reset_state(MediaPlaybackState *state,
   state->volume_control_mode = espcontrol::media::VolumeControlMode::ABSOLUTE;
   state->has_current_content_id = false;
   state->has_current_content_type = false;
+  state->artwork_content_mask = 0;
   std::vector<SliderCtx *>().swap(state->sliders);
   std::vector<MediaControlCtx *>().swap(state->controls);
   std::vector<MediaVolumeCtx *>().swap(state->volumes);
@@ -823,8 +826,8 @@ inline void media_playback_apply_state_to_buttons(MediaPlaybackState *state) {
   }
 }
 
-inline void media_playback_apply_state_to_now_playing(MediaPlaybackState *state,
-                                                      MediaNowPlayingCtx *ctx) {
+inline void media_playback_apply_state_to_now_playing_snapshot(
+    MediaPlaybackState *state, MediaNowPlayingCtx *ctx) {
   if (!state || !ctx) return;
   ctx->source_known = state->source_known;
   ctx->external_source = state->external_source;
@@ -833,18 +836,51 @@ inline void media_playback_apply_state_to_now_playing(MediaPlaybackState *state,
       ctx->cover_art, !ctx->source_known || ctx->external_source);
   }
   if (ctx->title_lbl) {
-    const std::string title = state->title.empty() ? std::string("--") : state->title;
+    const std::string title =
+      ctx->external_source_fallback && state->external_source && !state->source.empty()
+        ? state->source
+        : state->title.empty() ? std::string("--") : state->title;
     lv_label_set_text(ctx->title_lbl, title.c_str());
+    if (ctx->show_track_details || ctx->external_source_fallback) {
+      lv_obj_clear_flag(ctx->title_lbl, LV_OBJ_FLAG_HIDDEN);
+    } else {
+      lv_obj_add_flag(ctx->title_lbl, LV_OBJ_FLAG_HIDDEN);
+    }
   }
   if (ctx->artist_lbl) {
     std::strncpy(ctx->artist, state->artist.c_str(), sizeof(ctx->artist) - 1);
     ctx->artist[sizeof(ctx->artist) - 1] = '\0';
     media_apply_now_playing_artist_text(ctx);
+    if (ctx->show_track_details || ctx->external_source_fallback) {
+      lv_obj_clear_flag(ctx->artist_lbl, LV_OBJ_FLAG_HIDDEN);
+    } else {
+      lv_obj_add_flag(ctx->artist_lbl, LV_OBJ_FLAG_HIDDEN);
+    }
   }
   media_position_now_playing_artist(ctx);
   if (ctx->play_pause_background && ctx->btn) {
     set_card_checked_state(ctx->btn, state->available && state->playing);
   }
+}
+
+inline void media_playback_apply_state_to_now_playing(MediaPlaybackState *state,
+                                                      MediaNowPlayingCtx *ctx) {
+  if (!state || !ctx) return;
+  if (ctx->refresh_entity_route) ctx->refresh_entity_route();
+  if (!ctx->active_entity.empty() && state->entity_id != ctx->active_entity) {
+    MediaPlaybackState *active = media_playback_find_state(ctx->active_entity);
+    if (active) media_playback_apply_state_to_now_playing_snapshot(active, ctx);
+    return;
+  }
+  media_playback_apply_state_to_now_playing_snapshot(state, ctx);
+}
+
+inline bool media_playback_has_current_content(const MediaPlaybackState *state) {
+  if (!state || !state->has_state || !state->available ||
+      !espcontrol::cover_art::media_entity_state_usable(state->state_text)) return false;
+  return !state->title.empty() || !state->artist.empty() ||
+         state->has_current_content_id || state->has_current_content_type ||
+         state->artwork_content_mask != 0;
 }
 
 inline void media_playback_apply_state_to_now_playing(MediaPlaybackState *state) {
@@ -1243,8 +1279,11 @@ inline void media_playback_subscribe_source(MediaPlaybackState *state) {
   const uint32_t generation = state->generation;
   auto handle_media_source = [state, generation](esphome::StringRef source) {
     if (!media_playback_generation_valid(state, generation)) return;
-    bool external = media_external_source_input(media_metadata_text(source, ""));
-    bool changed = !state->source_known || external != state->external_source;
+    const std::string next = media_playback_metadata_value(source, HA_STATE_TEXT_MAX_LEN);
+    bool external = media_external_source_input(next);
+    bool changed = !state->source_known || next != state->source ||
+                   external != state->external_source;
+    state->source = next;
     state->source_known = true;
     state->external_source = external;
     if (changed) media_playback_apply_metadata_consumers(state);
@@ -1379,6 +1418,7 @@ inline void media_playback_subscribe_content(MediaPlaybackState *state) {
           state->current_content_id != "unknown" &&
           state->current_content_id != "unavailable";
         media_playback_apply_state_to_playlists(state);
+        media_playback_apply_state_to_now_playing(state);
       })
   );
 
@@ -1393,6 +1433,7 @@ inline void media_playback_subscribe_content(MediaPlaybackState *state) {
           state->current_content_type != "unknown" &&
           state->current_content_type != "unavailable";
         media_playback_apply_state_to_playlists(state);
+        media_playback_apply_state_to_now_playing(state);
       })
   );
 }
@@ -2782,6 +2823,7 @@ inline void setup_media_card(BtnSlot &s, const ParsedCfg &p, uint32_t on_color,
     lv_color_t text_color = lv_obj_get_style_text_color(s.sensor_lbl, LV_PART_MAIN);
     MediaNowPlayingCtx *ctx = new MediaNowPlayingCtx();
     ctx->btn = s.btn;
+    ctx->show_track_details = mode != "cover_art" || media_cover_art_details_enabled(p);
     ctx->play_pause_background = mode == "now_playing" && media_now_playing_play_pause_enabled(p);
     if (mode == "now_playing" && media_now_playing_progress_enabled(p)) {
       ctx->progress_slider = setup_media_progress_background(s.btn, secondary_color, tertiary_color, p.entity);
@@ -2791,13 +2833,6 @@ inline void setup_media_card(BtnSlot &s, const ParsedCfg &p, uint32_t on_color,
       if (s.icon_lbl) lv_obj_add_flag(s.icon_lbl, LV_OBJ_FLAG_HIDDEN);
       if (s.sensor_lbl) lv_obj_add_flag(s.sensor_lbl, LV_OBJ_FLAG_HIDDEN);
       if (s.unit_lbl) lv_obj_add_flag(s.unit_lbl, LV_OBJ_FLAG_HIDDEN);
-      if (!media_cover_art_details_enabled(p)) {
-        if (s.text_lbl) {
-          lv_label_set_text(s.text_lbl, "");
-          lv_obj_add_flag(s.text_lbl, LV_OBJ_FLAG_HIDDEN);
-        }
-        return;
-      }
       lv_obj_t *title_lbl = lv_label_create(s.btn);
       lv_obj_set_style_text_color(title_lbl, lv_color_white(), LV_PART_MAIN);
       apply_width_compensation(title_lbl, width_compensation_percent);
@@ -2813,6 +2848,10 @@ inline void setup_media_card(BtnSlot &s, const ParsedCfg &p, uint32_t on_color,
       }
       ctx->title_lbl = title_lbl;
       ctx->artist_lbl = artist_lbl;
+      if (!ctx->show_track_details) {
+        lv_obj_add_flag(title_lbl, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(artist_lbl, LV_OBJ_FLAG_HIDDEN);
+      }
       ctx->artist_below_title = media_cover_art_uses_screensaver_fonts(
         row_span, col_span);
       ctx->artist_gap = pad > 1 ? pad / 2 : 0;

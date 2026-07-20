@@ -15,8 +15,9 @@ export function installSettingsCoverArtSectionModule(): GlobalDescriptors {
         var coverArtOptions: any = condField();
         var coverArtOnlyOptions: any = condField();
         var coverArtAdvancedBody: any = document.createElement("div");
+        var coverArtScreensaverSettingsBody: any = document.createElement("div");
         var sleepPreventionToggle: any = toggleRow("Keep Screen Awake During Playback", "sp-set-ss-media-sleep-prevention", state.mediaPlayerSleepPreventionOn);
-        coverArtAdvancedBody.appendChild(sleepPreventionToggle.row);
+        coverArtScreensaverSettingsBody.appendChild(sleepPreventionToggle.row);
         sleepPreventionToggle.input.addEventListener("change", function (this: any) {
             state.mediaPlayerSleepPreventionOn = this.checked;
             syncMediaPlayerSleepPreventionUi();
@@ -65,7 +66,7 @@ export function installSettingsCoverArtSectionModule(): GlobalDescriptors {
             postCoverArtDelay(state.coverArtDelay);
         });
         coverArtDelayField.appendChild(coverArtDelaySelect);
-        coverArtOnlyOptions.appendChild(coverArtDelayField);
+        coverArtScreensaverSettingsBody.appendChild(coverArtDelayField);
         els.setCoverArtDelay = coverArtDelaySelect;
         if (coverArtTrackOverlayDurationSupported()) {
             var trackOverlayField: any = document.createElement("div");
@@ -95,16 +96,39 @@ export function installSettingsCoverArtSectionModule(): GlobalDescriptors {
                 postCoverArtTrackOverlayDuration(state.coverArtTrackOverlayDuration);
             });
             trackOverlayField.appendChild(trackOverlaySelect);
-            coverArtOnlyOptions.appendChild(trackOverlayField);
+            coverArtScreensaverSettingsBody.appendChild(trackOverlayField);
             els.setCoverArtTrackOverlayDuration = trackOverlaySelect;
         }
-        var coverArtHideExternalInputToggle: any = toggleRow("Hide for external source inputs", "sp-set-ss-cover-art-hide-external-input", state.coverArtHideExternalInputOn);
-        coverArtAdvancedBody.appendChild(coverArtHideExternalInputToggle.row);
-        coverArtHideExternalInputToggle.input.addEventListener("change", function (this: any) {
-            state.coverArtHideExternalInputOn = this.checked;
+        coverArtOnlyOptions.appendChild(inlineDisclosure("Screensaver Settings", coverArtScreensaverSettingsBody, false));
+        var secondaryCoverArtSettingsBody: any = document.createElement("div");
+        secondaryCoverArtSettingsBody.appendChild(infoPanel(
+            "sp-set-ss-cover-art-secondary-player-info",
+            "Enable if you use an external media player connected to your speakers Line In, TV, or HDMI source. If you add a second media player, cover art, track details, and progress be displayed when the external source is used."));
+        var coverArtShowExternalInputToggle: any = toggleRow("Show external sources", "sp-set-ss-cover-art-show-external-input", !state.coverArtHideExternalInputOn);
+        secondaryCoverArtSettingsBody.appendChild(coverArtShowExternalInputToggle.row);
+        coverArtShowExternalInputToggle.input.addEventListener("change", function (this: any) {
+            state.coverArtHideExternalInputOn = !this.checked;
+            syncCoverArtScreensaverUi();
             postCoverArtHideExternalInput(state.coverArtHideExternalInputOn);
         });
-        els.setCoverArtHideExternalInputToggle = coverArtHideExternalInputToggle.input;
+        els.setCoverArtHideExternalInputToggle = coverArtShowExternalInputToggle.input;
+        var secondaryCoverArtEntityOptions: any = condField();
+        var secondaryCoverArtEntityField: any = document.createElement("div");
+        secondaryCoverArtEntityField.className = "sp-field";
+        secondaryCoverArtEntityField.appendChild(fieldLabel("External Source Media Entity", "sp-set-ss-cover-art-secondary-player"));
+        var secondaryCoverArtEntityInp: any = entityInput("sp-set-ss-cover-art-secondary-player", state.coverArtSecondaryMediaPlayerEntity, "e.g. media_player.apple_tv", ["media_player"]);
+        secondaryCoverArtEntityField.appendChild(secondaryCoverArtEntityInp);
+        secondaryCoverArtEntityOptions.appendChild(secondaryCoverArtEntityField);
+        secondaryCoverArtSettingsBody.appendChild(secondaryCoverArtEntityOptions);
+        bindTextPost(secondaryCoverArtEntityInp, entityName("screen_saver_cover_art_secondary_entity"), {
+            onBlur: function (this: any, value?: any) {
+                state.coverArtSecondaryMediaPlayerEntity = value;
+            },
+            post: postCoverArtSecondaryMediaPlayerEntity,
+        });
+        els.setCoverArtSecondaryMediaPlayer = secondaryCoverArtEntityInp;
+        els.setCoverArtSecondaryMediaPlayerOptions = secondaryCoverArtEntityOptions;
+        coverArtOnlyOptions.appendChild(inlineDisclosure("External sources", secondaryCoverArtSettingsBody, !state.coverArtHideExternalInputOn));
         state.coverArtFilteringEnabled = !!state.coverArtAttributeConditions;
         var coverArtFilterToggle: any = toggleRow("Advanced Filtering", "sp-set-ss-cover-art-filtering", state.coverArtFilteringEnabled);
         coverArtAdvancedBody.appendChild(coverArtFilterToggle.row);
@@ -142,7 +166,7 @@ export function installSettingsCoverArtSectionModule(): GlobalDescriptors {
         });
         els.setCoverArtConditions = coverArtConditionsInp;
         els.setCoverArtFilterOptions = coverArtFilterOptions;
-        coverArtOnlyOptions.appendChild(inlineDisclosure("Advanced Options", coverArtAdvancedBody, !!state.coverArtAttributeConditions || !state.coverArtHideExternalInputOn));
+        coverArtOnlyOptions.appendChild(inlineDisclosure("Advanced Options", coverArtAdvancedBody, !!state.coverArtAttributeConditions));
         els.setCoverArtOnlyOptions = coverArtOnlyOptions;
         coverArtOptions.appendChild(coverArtOnlyOptions);
         els.setCoverArtOptions = coverArtOptions;
@@ -150,7 +174,7 @@ export function installSettingsCoverArtSectionModule(): GlobalDescriptors {
         var coverArtBadge: any = statusBadge("Media cover art on");
         els.setCoverArtBadge = coverArtBadge;
         syncCoverArtScreensaverUi();
-        var coverArtCard: any = makeCollapsibleCard("Cover Art", coverArtBody, true, coverArtBadge);
+        var coverArtCard: any = makeCollapsibleCard("Cover Art Screen Saver", coverArtBody, true, coverArtBadge);
         return coverArtCard;
     }
     return {

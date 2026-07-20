@@ -846,11 +846,15 @@ def firmware_cover_art_external_input_errors(path: Path, root: Path) -> list[str
     resubscribe_body = yaml_script_body(text, "cover_art_resubscribe") or ""
     if "ha_get_" in resubscribe_body:
         errors.append(f"{rel}: avoid retained one-shot reads in the cover art subscription lifecycle")
-    if ('normalized_source == "tv"' not in text or
-            'normalized_source == "line-in"' not in text or
-            'normalized_source == "line in"' not in text or
-            "std::tolower" not in text):
-        errors.append(f"{rel}: treat TV and Line-in sources as external inputs")
+    if resubscribe_body and (
+        "primary_entity != id(cover_art_subscribed_primary_entity)" not in resubscribe_body
+        or "secondary_entity != id(cover_art_subscribed_secondary_entity)" not in resubscribe_body
+        or "id(cover_art_primary_external_input_active) = false" not in resubscribe_body
+    ):
+        errors.append(f"{rel}: reset cached route probes when configured cover art entities change")
+    if ("espcontrol::cover_art::external_media_source" not in text or
+            "espcontrol::cover_art::use_secondary_media_entity" not in text):
+        errors.append(f"{rel}: use the shared TV, line-in, and HDMI media-entity router")
     if "cover_art_apply_external_input_policy" not in text:
         errors.append(f"{rel}: centralize cover art external-input behavior")
     if "script.stop: cover_art_request_artwork" not in text:
@@ -1630,7 +1634,7 @@ def firmware_cover_art_low_heap_progress_errors(
 
     prepared_visibility = re.search(
         r"media_playback_prepare_cover_art_progress\(.*?"
-        r"return media_playback_state_has_progress\(id\(cover_art_media_player_entity\)\.state\);",
+        r"return media_playback_state_has_progress\(id\(cover_art_(?:active_)?media_player_entity\)(?:\.state)?\);",
         text,
         re.DOTALL,
     )
@@ -4951,7 +4955,7 @@ def run_self_test() -> int:
         "          id(cover_art_hide_external_input_enabled).state && id(cover_art_external_input_active);\n",
         (
             "subscribe to the media player source attribute",
-            "treat TV and Line-in sources as external inputs",
+            "use the shared TV, line-in, and HDMI media-entity router",
             "stop pending artwork requests",
         ),
     )
@@ -4966,13 +4970,9 @@ def run_self_test() -> int:
         "      - script.stop: cover_art_request_artwork\n"
         "      - lambda: |-\n"
         "          id(cover_art_hide_external_input_enabled).state && id(cover_art_external_input_active);\n"
-        "          std::string normalized_source = next;\n"
-        "          for (char &ch : normalized_source) {\n"
-        "            ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));\n"
-        "          }\n"
-        "          bool external = normalized_source == \"tv\" ||\n"
-        "                          normalized_source == \"line-in\" ||\n"
-        "                          normalized_source == \"line in\";\n"
+        "          bool external = espcontrol::cover_art::external_media_source(next);\n"
+        "          bool use_secondary = espcontrol::cover_art::use_secondary_media_entity(\n"
+        "            external, true, true, true);\n"
         "          ha_reset_subscription_callbacks(HA_SUBSCRIPTION_SCOPE_COVER_ART);\n"
         "          ha_subscribe_attribute(\n"
         "            cover_entity,\n"

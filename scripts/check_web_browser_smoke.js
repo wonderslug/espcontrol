@@ -751,7 +751,7 @@ async function assertRotationStartupOrdering(browser) {
   }
 }
 
-async function assertSettingsPage(page, label, options = {}) {
+async function assertSettingsPage(page, label, options = {}, posts = []) {
   await page.getByRole("tab", { name: "Settings" }).click();
   await page.waitForSelector("#sp-settings.sp-page.active");
   const settingsVisible = await page.locator("#sp-settings").isVisible();
@@ -776,6 +776,29 @@ async function assertSettingsPage(page, label, options = {}) {
       .evaluateAll((nodes) => nodes.map((node) => node.textContent)),
     ["Display", "Sleep & Schedule", "Preferences", "System"],
     `${label}: settings groups should be ordered by purpose`,
+  );
+  const coverArtPlacement = await page.locator("#sp-settings .sp-config").evaluate((config) => {
+    let section = "";
+    const placement = {};
+    Array.from(config.children).forEach((child, index) => {
+      if (child.classList.contains("sp-settings-status-header")) {
+        section = child.querySelector(".sp-settings-status-title")?.textContent || "";
+        return;
+      }
+      const title = child.querySelector(":scope > .card-header h3")?.textContent || "";
+      if (title) placement[title] = { section, index };
+    });
+    return placement;
+  });
+  assert.strictEqual(
+    coverArtPlacement["Cover Art Screen Saver"]?.section,
+    "Sleep & Schedule",
+    `${label}: cover art settings should be grouped with sleep and schedule controls`,
+  );
+  assert.strictEqual(
+    coverArtPlacement["Cover Art Screen Saver"]?.index,
+    coverArtPlacement.Idle?.index + 1,
+    `${label}: cover art settings should appear immediately below Idle`,
   );
   const firmwareCard = page
     .locator("#sp-settings .card")
@@ -1058,7 +1081,7 @@ async function assertSettingsPage(page, label, options = {}) {
   const coverArtCard = page
     .locator("#sp-settings .card")
     .filter({
-      has: page.locator(".card-header h3", { hasText: /^Cover Art$/ }),
+      has: page.locator(".card-header h3", { hasText: /^Cover Art Screen Saver$/ }),
     })
     .first();
   assert(
@@ -1101,15 +1124,56 @@ async function assertSettingsPage(page, label, options = {}) {
       .getByText("Keep Screen Awake During Playback", { exact: true })
       .isVisible(),
     false,
-    `${label}: keep-screen-awake option should remain inside collapsed advanced options`,
+    `${label}: keep-screen-awake option should remain inside collapsed screensaver settings`,
   );
   assert(
     await coverArtCard.locator("#sp-set-ss-cover-art-player").isVisible(),
     `${label}: media player entity field should render when cover art is enabled`,
   );
+  const screensaverSettings = coverArtCard
+    .getByRole("button", { name: "Screensaver Settings", exact: true })
+    .locator("..");
+  const externalSources = coverArtCard
+    .getByRole("button", { name: "External sources", exact: true })
+    .locator("..");
+  assert(await screensaverSettings.isVisible(), `${label}: cover art screensaver settings panel should render`);
+  assert(await externalSources.isVisible(), `${label}: cover art external sources panel should render`);
+  assert(
+    !(await screensaverSettings.getAttribute("class")).includes("sp-open"),
+    `${label}: cover art screensaver settings should start collapsed`,
+  );
+  assert(
+    !(await externalSources.getAttribute("class")).includes("sp-open"),
+    `${label}: cover art external sources should start collapsed`,
+  );
+  assert.strictEqual(
+    await screensaverSettings.locator("#sp-set-ss-media-sleep-prevention").count(),
+    1,
+    `${label}: keep-screen-awake should belong to screensaver settings`,
+  );
+  assert.strictEqual(
+    await coverArtCard.locator("#sp-set-ss-cover-art-player").evaluate((el) => !!el.closest(".sp-disclosure")),
+    false,
+    `${label}: cover art primary entity should remain outside collapsible panels`,
+  );
+  assert.strictEqual(
+    await coverArtCard.locator("#sp-set-ss-cover-art-delay").isVisible(),
+    false,
+    `${label}: cover art show-after field should begin inside collapsed screensaver settings`,
+  );
+  assert.strictEqual(
+    await coverArtCard.locator("#sp-set-ss-cover-art-secondary-player").isVisible(),
+    false,
+    `${label}: cover art secondary entity should begin inside its collapsed panel`,
+  );
+  await screensaverSettings.locator("> .sp-disclosure-button").click();
   assert(
     await coverArtCard.locator("#sp-set-ss-cover-art-delay").isVisible(),
-    `${label}: cover art show-after field should render when cover art is enabled`,
+    `${label}: cover art show-after field should render inside screensaver settings`,
+  );
+  assert(
+    await coverArtCard.getByText("Keep Screen Awake During Playback", { exact: true }).isVisible(),
+    `${label}: keep-screen-awake should render inside screensaver settings`,
   );
   assert.deepStrictEqual(
     await coverArtCard.locator("#sp-set-ss-cover-art-delay option").evaluateAll(
@@ -1123,6 +1187,79 @@ async function assertSettingsPage(page, label, options = {}) {
     options.coverArtSquareOverlay ? 1 : 0,
     `${label}: track overlay duration visibility should match square cover art layout`,
   );
+  if (options.coverArtSquareOverlay) {
+    assert(
+      await coverArtCard.locator("#sp-set-ss-track-overlay").isVisible(),
+      `${label}: track overlay duration should render inside screensaver settings`,
+    );
+  }
+  await externalSources.locator("> .sp-disclosure-button").click();
+  const coverArtSecondaryInfo = coverArtCard.locator("#sp-set-ss-cover-art-secondary-player-info");
+  assert(await coverArtSecondaryInfo.isVisible(), `${label}: cover art secondary player explanation should render`);
+  assert.strictEqual(
+    await coverArtSecondaryInfo.textContent(),
+    "Enable if you use an external media player connected to your speakers Line In, TV, or HDMI source. If you add a second media player, cover art, track details, and progress be displayed when the external source is used.",
+    `${label}: cover art secondary player explanation should match`,
+  );
+  assert.strictEqual(
+    await coverArtSecondaryInfo.getAttribute("role"),
+    "note",
+    `${label}: cover art secondary player explanation should be announced as a note`,
+  );
+  assert.strictEqual(
+    await coverArtCard.locator("#sp-set-ss-cover-art-secondary-player").isVisible(),
+    false,
+    `${label}: cover art secondary entity should remain hidden until external sources are enabled`,
+  );
+  const showExternalInputToggle = coverArtCard.locator("#sp-set-ss-cover-art-show-external-input");
+  assert(
+    await coverArtCard.getByText("Show external sources", { exact: true }).isVisible(),
+    `${label}: external sources should contain the positive show toggle`,
+  );
+  assert.strictEqual(
+    await coverArtCard.getByText("Hide for external source inputs", { exact: true }).count(),
+    0,
+    `${label}: the inverted hide label should no longer render`,
+  );
+  assert.strictEqual(
+    await showExternalInputToggle.isChecked(),
+    false,
+    `${label}: show-for-external-inputs should invert the default enabled hide setting`,
+  );
+  var beforeShowExternalInput = posts.length;
+  await coverArtCard.locator("#sp-set-ss-cover-art-show-external-input + .sp-toggle-track").click();
+  await waitForPost(
+    posts,
+    {
+      domain: "switch",
+      name: "screen_saver__hide_cover_art_on_external_input",
+      action: "turn_off",
+    },
+    `${label}: enabling show-for-external-inputs disables the saved hide setting`,
+    beforeShowExternalInput,
+  );
+  assert(await showExternalInputToggle.isChecked(), `${label}: show-for-external-inputs should become enabled`);
+  assert(
+    await coverArtCard.locator("#sp-set-ss-cover-art-secondary-player").isVisible(),
+    `${label}: enabling external sources should reveal the secondary entity`,
+  );
+  var beforeHideExternalInput = posts.length;
+  await coverArtCard.locator("#sp-set-ss-cover-art-show-external-input + .sp-toggle-track").click();
+  await waitForPost(
+    posts,
+    {
+      domain: "switch",
+      name: "screen_saver__hide_cover_art_on_external_input",
+      action: "turn_on",
+    },
+    `${label}: disabling show-for-external-inputs restores the saved hide setting`,
+    beforeHideExternalInput,
+  );
+  assert.strictEqual(
+    await coverArtCard.locator("#sp-set-ss-cover-art-secondary-player").isVisible(),
+    false,
+    `${label}: disabling external sources should hide the secondary entity`,
+  );
   assert(
     await coverArtCard
       .getByText("Advanced Options", { exact: true })
@@ -1135,18 +1272,6 @@ async function assertSettingsPage(page, label, options = {}) {
     `${label}: cover art conditions field should be hidden until advanced filtering is enabled`,
   );
   await coverArtCard.getByText("Advanced Options", { exact: true }).click();
-  assert(
-    await coverArtCard
-      .getByText("Keep Screen Awake During Playback", { exact: true })
-      .isVisible(),
-    `${label}: keep-screen-awake option should render inside advanced options`,
-  );
-  assert(
-    await coverArtCard
-      .getByText("Hide for external source inputs", { exact: true })
-      .isVisible(),
-    `${label}: external source input option should render inside advanced options`,
-  );
   assert(
     await coverArtCard
       .getByText("Advanced Filtering", { exact: true })
@@ -1917,6 +2042,78 @@ async function assertCoverSettingsPanels(page, label) {
     });
     return panel && getComputedStyle(panel).display === "none";
   });
+
+  await page.locator(".sp-settings-close").click();
+  await page.waitForFunction(() => {
+    var overlay = document.querySelector(".sp-settings-overlay");
+    return overlay && !overlay.classList.contains("sp-visible");
+  });
+}
+
+async function assertMediaCoverArtSettingsPanels(page, label) {
+  await page.getByRole("tab", { name: "Screen" }).click();
+  await page.waitForSelector("#sp-screen.sp-page.active");
+  await page.locator('.sp-main [data-slot="4"]').click();
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await page.waitForSelector(".sp-settings-overlay.sp-visible");
+  await page.locator("#sp-inp-type").selectOption("media_cover_art");
+
+  const cardSettings = page.locator(".sp-settings-modal .sp-disclosure").filter({
+    has: page.locator("#sp-inp-media-cover-art-card-settings"),
+  });
+  const externalSources = page.locator(".sp-settings-modal .sp-disclosure").filter({
+    has: page.locator("#sp-inp-media-cover-art-secondary-player"),
+  });
+  assert(await cardSettings.isVisible(), `${label}: Cover Art card settings panel should render`);
+  assert(await externalSources.isVisible(), `${label}: Cover Art external sources panel should render`);
+  assert(!(await cardSettings.getAttribute("class")).includes("sp-open"), `${label}: Cover Art card settings should start collapsed`);
+  assert(!(await externalSources.getAttribute("class")).includes("sp-open"), `${label}: Cover Art external sources should start collapsed`);
+  assert(
+    await externalSources.getByText("External sources", { exact: true }).isVisible(),
+    `${label}: Cover Art external sources panel should use the shared title`,
+  );
+  assert.strictEqual(
+    await page.locator("#sp-inp-entity").evaluate((el) => !!el.closest(".sp-disclosure")),
+    false,
+    `${label}: Cover Art primary entity should remain outside collapsible panels`,
+  );
+  assert.strictEqual(
+    await cardSettings.locator(".sp-field").filter({ hasText: "Press Action" }).count(),
+    1,
+    `${label}: Cover Art Press Action should be inside Card Settings`,
+  );
+  assert.strictEqual(
+    await cardSettings.locator("#sp-inp-media-cover-art-details").count(),
+    1,
+    `${label}: Cover Art track details toggle should be inside Card Settings`,
+  );
+  assert.strictEqual(
+    await externalSources.locator("#sp-inp-media-cover-art-secondary-entity").count(),
+    1,
+    `${label}: Cover Art secondary entity should be inside External sources`,
+  );
+
+  await cardSettings.locator("> .sp-disclosure-button").click();
+  assert(
+    await cardSettings.getByText("Press Action", { exact: true }).isVisible(),
+    `${label}: Cover Art Card Settings should reveal Press Action`,
+  );
+  assert(
+    await cardSettings.getByText("Show Track Details", { exact: true }).isVisible(),
+    `${label}: Cover Art Card Settings should reveal Show Track Details`,
+  );
+  await externalSources.locator("> .sp-disclosure-button").click();
+  const info = externalSources.locator("#sp-inp-media-cover-art-secondary-player-info");
+  assert(await info.isVisible(), `${label}: Cover Art secondary media player explanation should be visible`);
+  assert.strictEqual(await info.getAttribute("role"), "note", `${label}: Cover Art secondary explanation should be announced as a note`);
+  assert(
+    (await info.textContent()).includes("Line In, TV, or HDMI"),
+    `${label}: Cover Art secondary explanation should describe external sources`,
+  );
+  assert(
+    await externalSources.getByText("External Source Media Entity", { exact: true }).isVisible(),
+    `${label}: Cover Art secondary entity picker should be visible`,
+  );
 
   await page.locator(".sp-settings-close").click();
   await page.waitForFunction(() => {
@@ -3669,7 +3866,7 @@ async function runCase(browser, testCase) {
       testCase.name,
       testCase,
     );
-    await assertSettingsPage(page, testCase.name, testCase);
+    await assertSettingsPage(page, testCase.name, testCase, posts);
     if (testCase.exerciseInteractions) {
       await assertNightScheduleSensorControls(page, posts, testCase.name);
     }
@@ -3679,6 +3876,7 @@ async function runCase(browser, testCase) {
       testCase,
     );
     await assertCoverSettingsPanels(page, testCase.name);
+    await assertMediaCoverArtSettingsPanels(page, testCase.name);
     await assertAlarmSettingsPanels(page, testCase.name);
     await assertPlaylistValidationOpensSourcePanel(page, testCase.name);
     if (testCase.exerciseInteractions) {
