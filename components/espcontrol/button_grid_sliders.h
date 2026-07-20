@@ -60,9 +60,15 @@ struct MediaNowPlayingCtx {
   ImageCardCtx *cover_art = nullptr;
   lv_obj_t *cover_overlay = nullptr;
   lv_obj_t *btn = nullptr;
+  std::string primary_entity;
+  std::string secondary_entity;
+  std::string active_entity;
+  std::function<void()> refresh_entity_route;
   char artist[HA_STATE_TEXT_MAX_LEN + 1] = {};
   bool source_known = false;
   bool external_source = false;
+  bool external_source_fallback = false;
+  bool show_track_details = true;
   bool play_pause_background = false;
   bool artist_below_title = false;
   lv_coord_t artist_gap = 0;
