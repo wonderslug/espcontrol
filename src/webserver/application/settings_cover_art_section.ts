@@ -103,13 +103,23 @@ export function installSettingsCoverArtSectionModule(): GlobalDescriptors {
         var secondaryCoverArtSettingsBody: any = document.createElement("div");
         secondaryCoverArtSettingsBody.appendChild(infoPanel(
             "sp-set-ss-cover-art-secondary-player-info",
-            "Use a second media entity when the primary player switches to a Line In, TV, or HDMI source. Cover art, track details, and progress will follow the second player while it has current media."));
+            "Enable if you use an external media player connected to your speakers Line In, TV, or HDMI source. If you add a second media player, cover art, track details, and progress be displayed when the external source is used."));
+        var coverArtShowExternalInputToggle: any = toggleRow("Show external sources", "sp-set-ss-cover-art-show-external-input", !state.coverArtHideExternalInputOn);
+        secondaryCoverArtSettingsBody.appendChild(coverArtShowExternalInputToggle.row);
+        coverArtShowExternalInputToggle.input.addEventListener("change", function (this: any) {
+            state.coverArtHideExternalInputOn = !this.checked;
+            syncCoverArtScreensaverUi();
+            postCoverArtHideExternalInput(state.coverArtHideExternalInputOn);
+        });
+        els.setCoverArtHideExternalInputToggle = coverArtShowExternalInputToggle.input;
+        var secondaryCoverArtEntityOptions: any = condField();
         var secondaryCoverArtEntityField: any = document.createElement("div");
         secondaryCoverArtEntityField.className = "sp-field";
         secondaryCoverArtEntityField.appendChild(fieldLabel("External Source Media Entity", "sp-set-ss-cover-art-secondary-player"));
         var secondaryCoverArtEntityInp: any = entityInput("sp-set-ss-cover-art-secondary-player", state.coverArtSecondaryMediaPlayerEntity, "e.g. media_player.apple_tv", ["media_player"]);
         secondaryCoverArtEntityField.appendChild(secondaryCoverArtEntityInp);
-        secondaryCoverArtSettingsBody.appendChild(secondaryCoverArtEntityField);
+        secondaryCoverArtEntityOptions.appendChild(secondaryCoverArtEntityField);
+        secondaryCoverArtSettingsBody.appendChild(secondaryCoverArtEntityOptions);
         bindTextPost(secondaryCoverArtEntityInp, entityName("screen_saver_cover_art_secondary_entity"), {
             onBlur: function (this: any, value?: any) {
                 state.coverArtSecondaryMediaPlayerEntity = value;
@@ -117,13 +127,7 @@ export function installSettingsCoverArtSectionModule(): GlobalDescriptors {
             post: postCoverArtSecondaryMediaPlayerEntity,
         });
         els.setCoverArtSecondaryMediaPlayer = secondaryCoverArtEntityInp;
-        var coverArtShowExternalInputToggle: any = toggleRow("Show for external source inputs", "sp-set-ss-cover-art-show-external-input", !state.coverArtHideExternalInputOn);
-        secondaryCoverArtSettingsBody.appendChild(coverArtShowExternalInputToggle.row);
-        coverArtShowExternalInputToggle.input.addEventListener("change", function (this: any) {
-            state.coverArtHideExternalInputOn = !this.checked;
-            postCoverArtHideExternalInput(state.coverArtHideExternalInputOn);
-        });
-        els.setCoverArtHideExternalInputToggle = coverArtShowExternalInputToggle.input;
+        els.setCoverArtSecondaryMediaPlayerOptions = secondaryCoverArtEntityOptions;
         coverArtOnlyOptions.appendChild(inlineDisclosure("External sources", secondaryCoverArtSettingsBody, !state.coverArtHideExternalInputOn));
         state.coverArtFilteringEnabled = !!state.coverArtAttributeConditions;
         var coverArtFilterToggle: any = toggleRow("Advanced Filtering", "sp-set-ss-cover-art-filtering", state.coverArtFilteringEnabled);

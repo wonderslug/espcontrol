@@ -1197,21 +1197,23 @@ async function assertSettingsPage(page, label, options = {}, posts = []) {
   const coverArtSecondaryInfo = coverArtCard.locator("#sp-set-ss-cover-art-secondary-player-info");
   assert(await coverArtSecondaryInfo.isVisible(), `${label}: cover art secondary player explanation should render`);
   assert.strictEqual(
+    await coverArtSecondaryInfo.textContent(),
+    "Enable if you use an external media player connected to your speakers Line In, TV, or HDMI source. If you add a second media player, cover art, track details, and progress be displayed when the external source is used.",
+    `${label}: cover art secondary player explanation should match`,
+  );
+  assert.strictEqual(
     await coverArtSecondaryInfo.getAttribute("role"),
     "note",
     `${label}: cover art secondary player explanation should be announced as a note`,
   );
-  assert(
-    (await coverArtSecondaryInfo.textContent()).includes("Line In, TV, or HDMI"),
-    `${label}: cover art secondary player explanation should describe external sources`,
-  );
-  assert(
+  assert.strictEqual(
     await coverArtCard.locator("#sp-set-ss-cover-art-secondary-player").isVisible(),
-    `${label}: cover art secondary entity should render inside its panel`,
+    false,
+    `${label}: cover art secondary entity should remain hidden until external sources are enabled`,
   );
   const showExternalInputToggle = coverArtCard.locator("#sp-set-ss-cover-art-show-external-input");
   assert(
-    await coverArtCard.getByText("Show for external source inputs", { exact: true }).isVisible(),
+    await coverArtCard.getByText("Show external sources", { exact: true }).isVisible(),
     `${label}: external sources should contain the positive show toggle`,
   );
   assert.strictEqual(
@@ -1237,6 +1239,10 @@ async function assertSettingsPage(page, label, options = {}, posts = []) {
     beforeShowExternalInput,
   );
   assert(await showExternalInputToggle.isChecked(), `${label}: show-for-external-inputs should become enabled`);
+  assert(
+    await coverArtCard.locator("#sp-set-ss-cover-art-secondary-player").isVisible(),
+    `${label}: enabling external sources should reveal the secondary entity`,
+  );
   var beforeHideExternalInput = posts.length;
   await coverArtCard.locator("#sp-set-ss-cover-art-show-external-input + .sp-toggle-track").click();
   await waitForPost(
@@ -1248,6 +1254,11 @@ async function assertSettingsPage(page, label, options = {}, posts = []) {
     },
     `${label}: disabling show-for-external-inputs restores the saved hide setting`,
     beforeHideExternalInput,
+  );
+  assert.strictEqual(
+    await coverArtCard.locator("#sp-set-ss-cover-art-secondary-player").isVisible(),
+    false,
+    `${label}: disabling external sources should hide the secondary entity`,
   );
   assert(
     await coverArtCard

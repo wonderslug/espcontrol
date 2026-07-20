@@ -231,6 +231,10 @@ export function installSettingsPageHelpersModule(): GlobalDescriptors {
         if (els.setCoverArtHideExternalInputToggle) {
             els.setCoverArtHideExternalInputToggle.checked = !state.coverArtHideExternalInputOn;
         }
+        if (els.setCoverArtSecondaryMediaPlayerOptions) {
+            els.setCoverArtSecondaryMediaPlayerOptions.classList.toggle(
+                "sp-visible", !state.coverArtHideExternalInputOn);
+        }
         if (els.setHomeAssistantArtworkProtocol) {
             els.setHomeAssistantArtworkProtocol.value =
                 normalizeHomeAssistantArtworkProtocol(state.homeAssistantArtworkProtocol);
