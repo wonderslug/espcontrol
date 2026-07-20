@@ -330,6 +330,8 @@ inline bool media_driver_bind_data(
     }
     if (mode == "now_playing") {
       subscribe_media_now_playing_state(now_playing, config.entity);
+    } else {
+      subscribe_media_cover_art_source_state(now_playing, config.entity);
     }
     if (mode == "now_playing") {
       subscribe_media_cover_art(now_playing, config.entity);

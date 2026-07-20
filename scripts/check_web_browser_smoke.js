@@ -983,7 +983,7 @@ async function assertSettingsPage(page, label, options = {}, posts = []) {
   const alarmDelayAudioCard = page
     .locator("#sp-settings .card")
     .filter({
-      has: page.locator(".card-header h3", { hasText: /^Alarm Delay Audio$/ }),
+      has: page.locator(".card-header h3", { hasText: /^Alarm Audio$/ }),
     })
     .first();
   if (options.slug === "esp32-p4-86") {

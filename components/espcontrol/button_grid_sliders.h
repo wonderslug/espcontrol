@@ -4,6 +4,10 @@
 
 // Internal implementation detail for button_grid.h. Include button_grid.h from device YAML.
 
+struct ImageCardCtx;
+inline void image_card_set_media_artwork_suppressed(ImageCardCtx *ctx,
+                                                     bool suppressed);
+
 // ── Slider widgets ───────────────────────────────────────────────────
 
 // Context attached to each LVGL slider via user_data
@@ -61,6 +65,7 @@ struct MediaNowPlayingCtx {
   std::string active_entity;
   std::function<void()> refresh_entity_route;
   char artist[HA_STATE_TEXT_MAX_LEN + 1] = {};
+  bool source_known = false;
   bool external_source = false;
   bool external_source_fallback = false;
   bool show_track_details = true;
