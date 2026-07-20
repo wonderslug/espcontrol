@@ -22,6 +22,13 @@ CHIP = "ESP32-S3"
 PROJECT_NAME = "jtenniswood.espcontrol"
 ESPHOME_ENV = Path(__file__).resolve().parents[1] / ".github" / "esphome.env"
 RELEASE_WORKFLOW = Path(__file__).resolve().parents[1] / ".github" / "workflows" / "release.yml"
+RELEASE_SKILL = (
+    Path(__file__).resolve().parents[1]
+    / ".agents"
+    / "skills"
+    / "release"
+    / "SKILL.md"
+)
 ESPHOME_ENV_RE = re.compile(r"^ESPHOME_VERSION=20[0-9]{2}\.[0-9]{1,2}\.[0-9]{1,2}$")
 
 
@@ -145,6 +152,14 @@ def test_release_workflow_uses_current_ota_output() -> None:
     assert "scripts/firmware_release.py verify-bundle" in workflow
     assert "scripts/firmware_release.py publish-draft" in workflow
     assert "path: dist/firmware/" in workflow, "publishable firmware must use the dist boundary"
+
+
+def test_release_skill_creates_selected_tag_before_draft() -> None:
+    skill = RELEASE_SKILL.read_text(encoding="utf-8")
+    tag_creation = skill.index('git tag -a "$TAG"')
+    assert skill.index('TAG="vX.Y.Z"') < tag_creation
+    assert skill.index('TAG="vX.Y.Z-beta.N"') < tag_creation
+    assert skill.index('gh release create "$TAG"', tag_creation) > tag_creation
 
 
 def make_release_files(base: Path, slug: str = SLUG, version: str = VERSION) -> tuple[Path, Path, Path]:
@@ -419,6 +434,7 @@ def test_public_pages_verification() -> None:
 def main() -> int:
     test_esphome_env_format()
     test_release_workflow_uses_current_ota_output()
+    test_release_skill_creates_selected_tag_before_draft()
     test_valid_files_and_directory()
     test_placeholder_fails()
     test_unrelated_placeholder_strings_pass()

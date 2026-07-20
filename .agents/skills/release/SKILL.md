@@ -71,12 +71,25 @@ If there is no existing stable release, treat the first stable release as
 
 ### 3. Create the Tag and Draft Release
 
-Push the exact release tag first so every workflow job can check out one
-immutable source revision. Then create a draft release for that existing tag.
-Do not publish the draft manually: the workflow owns that final transition.
+Choose the exact tag before creating it.
+
+Stable release:
 
 ```bash
 TAG="vX.Y.Z"
+```
+
+Pre-release:
+
+```bash
+TAG="vX.Y.Z-beta.N"
+```
+
+Push that exact release tag so every workflow job can check out one immutable
+source revision. Then create a draft release for the existing tag. Do not
+publish the draft manually: the workflow owns that final transition.
+
+```bash
 git tag -a "$TAG" -m "Release $TAG" origin/main
 git push origin "$TAG"
 ```
@@ -94,7 +107,6 @@ gh release create "$TAG" \
 Pre-release:
 
 ```bash
-TAG="vX.Y.Z-beta.N"
 gh release create "$TAG" \
   --verify-tag \
   --draft \
