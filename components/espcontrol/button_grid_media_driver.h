@@ -326,6 +326,12 @@ inline bool media_driver_bind_data(
       ? static_cast<MediaNowPlayingCtx *>(
           lv_obj_get_user_data(slot.sensor_container))
       : nullptr;
+    if (mode == "cover_art" && now_playing) {
+      // The visual context can survive a Phase 2 refresh after its previous
+      // control was released. Clear that route before any source-state attach
+      // can immediately apply cached state through the stale callback.
+      now_playing->refresh_entity_route = nullptr;
+    }
     media_driver_track_now_playing(context, slot.btn, now_playing);
     if (now_playing && now_playing->progress_slider) {
       media_driver_track_slider(
