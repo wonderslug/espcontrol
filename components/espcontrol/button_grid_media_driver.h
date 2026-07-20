@@ -187,6 +187,10 @@ inline void media_driver_bind_cover_art_route(
     const std::string &primary_entity,
     const std::string &secondary_entity) {
   if (!now_playing || primary_entity.empty()) return;
+  // Phase 2 can reuse this visual context after releasing its old control.
+  // Clear the old route before attaching playback state because attachment
+  // can immediately apply cached state and invoke the route callback.
+  now_playing->refresh_entity_route = nullptr;
   now_playing->primary_entity = primary_entity;
   now_playing->secondary_entity = secondary_entity;
   now_playing->active_entity.clear();
@@ -267,11 +271,8 @@ inline void media_driver_bind_cover_art_route(
     }
 
     if (entity_changed && control) {
-      // A restored display setting can rerun Phase 2 while reusing the
-      // existing cover-art widgets. The newly bound control already targets
-      // the primary entity, so avoid detaching and rewriting it unless the
-      // route genuinely changed. Besides doing unnecessary work, that initial
-      // rewrite can touch a control released by the preceding layout refresh.
+      // A newly bound control already targets the primary entity. Rebind it
+      // only when the active route genuinely switches to another entity.
       if (control->entity_id != next_entity) {
         media_playback_detach_control(control);
         control->entity_id = next_entity;
