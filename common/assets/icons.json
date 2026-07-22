@@ -344,6 +344,16 @@
       "mdi": "car-electric"
     },
     {
+      "name": "Car Estate",
+      "codepoint": "F07A8",
+      "mdi": "car-estate"
+    },
+    {
+      "name": "Car Pickup",
+      "codepoint": "F07AA",
+      "mdi": "car-pickup"
+    },
+    {
       "name": "Cast",
       "codepoint": "F0118",
       "mdi": "cast"
