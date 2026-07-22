@@ -93,6 +93,8 @@ static const IconEntry ICON_ENTRIES[] = {
     {"Bus",                                "\U000F00E7"},
     {"Camera",                             "\U000F0100"},
     {"Car Electric",                       "\U000F0B6C"},
+    {"Car Estate",                         "\U000F07A8"},
+    {"Car Pickup",                         "\U000F07AA"},
     {"Cast",                               "\U000F0118"},
     {"Cat",                                "\U000F011B"},
     {"CCTV",                               "\U000F07AE"},
