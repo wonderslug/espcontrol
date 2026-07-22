@@ -12,7 +12,7 @@
     "deviceProfiles": 8,
     "cardTypes": 43,
     "entityNames": 101,
-    "icons": 344,
+    "icons": 346,
     "structuralIcons": 22,
     "compatibilityFixtureGroups": 2
   },
@@ -7895,6 +7895,16 @@
         "name": "Car Electric",
         "codepoint": "F0B6C",
         "mdi": "car-electric"
+      },
+      {
+        "name": "Car Estate",
+        "codepoint": "F07A8",
+        "mdi": "car-estate"
+      },
+      {
+        "name": "Car Pickup",
+        "codepoint": "F07AA",
+        "mdi": "car-pickup"
       },
       {
         "name": "Cast",
