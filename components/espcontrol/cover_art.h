@@ -46,7 +46,8 @@ inline std::string normalized_media_source(std::string source) {
 inline bool external_media_source(const std::string &source) {
   const std::string normalized = normalized_media_source(source);
   return normalized == "tv" || normalized == "line-in" ||
-         normalized == "line in" || normalized.rfind("hdmi", 0) == 0;
+         normalized == "line in" || normalized == "apple ott" ||
+         normalized.rfind("hdmi", 0) == 0;
 }
 
 inline bool media_card_artwork_suppressed(bool source_known,
