@@ -68,7 +68,7 @@ All web UI assets — the device JavaScript bundle, MDI icon font, Inter and Rob
 
 ### Additional icons
 
-New icons in the icon picker: **Laptop**, **Microphone Off**, and **Video Off**.
+New icons in the icon picker: **Laptop**, **Microphone Off**, **Video Off**, **Car Estate**, and **Car Pickup**.
 
 ---
 
