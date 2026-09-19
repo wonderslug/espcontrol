@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "bundles": [
     {
-      "id": "9112be666815f7b69d1d3067567340e3b510883968a4edb1c35336704e1e4063",
-      "sha256": "9112be666815f7b69d1d3067567340e3b510883968a4edb1c35336704e1e4063",
-      "path": "bundles/9112be666815f7b69d1d3067567340e3b510883968a4edb1c35336704e1e4063/www.js",
+      "id": "4b603d32723a0f8fc5415fd8db20cf30ace4a6e2649026a3bcb95b09760d1e34",
+      "sha256": "4b603d32723a0f8fc5415fd8db20cf30ace4a6e2649026a3bcb95b09760d1e34",
+      "path": "bundles/4b603d32723a0f8fc5415fd8db20cf30ace4a6e2649026a3bcb95b09760d1e34/www.js",
       "deviceProfiles": [
         "guition-esp32-p4-jc1060p470",
         "guition-esp32-p4-jc1060p470-v2",
@@ -17,18 +17,18 @@
       ],
       "firmwareVersions": [
         "dev",
+        "v2.10.0",
         "v2.9.1",
         "v2.9.0",
         "v2.8.6",
-        "v2.8.4",
-        "v2.8.3"
+        "v2.8.4"
       ],
       "webAssetVersion": 2
     },
     {
-      "id": "9112be666815f7b69d1d3067567340e3b510883968a4edb1c35336704e1e4063",
-      "sha256": "9112be666815f7b69d1d3067567340e3b510883968a4edb1c35336704e1e4063",
-      "path": "bundles/9112be666815f7b69d1d3067567340e3b510883968a4edb1c35336704e1e4063/www.js",
+      "id": "4b603d32723a0f8fc5415fd8db20cf30ace4a6e2649026a3bcb95b09760d1e34",
+      "sha256": "4b603d32723a0f8fc5415fd8db20cf30ace4a6e2649026a3bcb95b09760d1e34",
+      "path": "bundles/4b603d32723a0f8fc5415fd8db20cf30ace4a6e2649026a3bcb95b09760d1e34/www.js",
       "deviceProfiles": [
         "guition-esp32-p4-jc1060p470",
         "guition-esp32-p4-jc1060p470-v2",
@@ -41,11 +41,11 @@
       ],
       "firmwareVersions": [
         "dev",
+        "v2.10.0",
         "v2.9.1",
         "v2.9.0",
         "v2.8.6",
-        "v2.8.4",
-        "v2.8.3"
+        "v2.8.4"
       ],
       "webAssetVersion": 1
     }
