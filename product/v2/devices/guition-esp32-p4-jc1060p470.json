@@ -31,7 +31,8 @@
     "firmware": {
       "package": {
         "substitutions": {
-          "clock_font_size": "\"140\""
+          "clock_font_size": "\"140\"",
+          "clock_ampm_font_size": "\"35\""
         },
         "backlightPwmFrequency": {
           "wifi": "1000Hz",
