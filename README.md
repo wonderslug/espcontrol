@@ -66,6 +66,10 @@ so the alert still gets through. On dismiss the device fires
 
 All web UI assets — the device JavaScript bundle, MDI icon font, Inter and Roboto fonts — are embedded in flash at compile time. The setup page loads instantly from the device with no external network requests. This also means the panel's configuration UI remains accessible when your internet is down.
 
+### AM/PM indicator for 12-hour clocks
+
+When a device is set to 12-hour time, the top-bar clock and the full-screen clock screensaver both show an "am"/"pm" suffix instead of a bare 24-hour-style time. The top bar and clock-bar layouts widen to fit the worst-case "00:00 pm" width so the suffix is never clipped, and the screensaver shows a separate AM/PM label positioned at the bottom-right of the time, sized proportionally to each device's clock font.
+
 ### Additional icons
 
 New icons in the icon picker: **Laptop**, **Microphone Off**, **Video Off**, **Car Estate**, and **Car Pickup**.
