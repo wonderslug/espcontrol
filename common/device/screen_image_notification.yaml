@@ -383,7 +383,9 @@ api:
             if (image_notif_modal_close_btn() == nullptr) {
               image_notif_modal_close_btn() = control_modal_create_round_button(
                   id(image_notif_modal_frame), 32, "\U000F0156",
-                  id(font_icon_main)->get_lv_font(), DARK_BORDER, SECONDARY_GREY, 100);
+                  id(font_icon_main)->get_lv_font(),
+                  theme_display_color(current_theme().border),
+                  theme_display_color(current_theme().surface_primary), 100);
               lv_obj_add_event_cb(image_notif_modal_close_btn(), [](lv_event_t *) {
                 id(image_notif_dismiss_tap).execute();
               }, LV_EVENT_CLICKED, nullptr);
@@ -444,7 +446,9 @@ api:
             if (image_notif_modal_close_btn() == nullptr) {
               image_notif_modal_close_btn() = control_modal_create_round_button(
                   id(image_notif_modal_frame), 32, "\U000F0156",
-                  id(font_icon_main)->get_lv_font(), DARK_BORDER, SECONDARY_GREY, 100);
+                  id(font_icon_main)->get_lv_font(),
+                  theme_display_color(current_theme().border),
+                  theme_display_color(current_theme().surface_primary), 100);
               lv_obj_add_event_cb(image_notif_modal_close_btn(), [](lv_event_t *) {
                 id(image_notif_dismiss_tap).execute();
               }, LV_EVENT_CLICKED, nullptr);
