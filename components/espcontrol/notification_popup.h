@@ -8,6 +8,7 @@
 // dismiss: cancels the timer, hides the scrim, fires the appropriate event.
 // =============================================================================
 #pragma once
+#include <cstring>
 #include <string>
 #include "esphome/components/api/homeassistant_service.h"
 
@@ -21,18 +22,26 @@ static lv_obj_t    *s_notification_scrim   = nullptr;
 // --------------------------------------------------------------------------
 // Fire a HA event with device_name + message_id payload
 // --------------------------------------------------------------------------
+// The request fields are StringRef on older ESPHome and ProgmemStringRef on
+// 2026.11+; both accept (const char *, size_t), so build them that way.
+template<typename String>
+inline void notification_set_string(String &field, const char *value) {
+  const char *text = value != nullptr ? value : "";
+  field = String(text, std::strlen(text));
+}
+
 inline void notification_fire_event(const char *event_name, const std::string &message_id) {
   if (esphome::api::global_api_server == nullptr) return;
   esphome::api::HomeassistantActionRequest req;
-  req.service  = decltype(req.service)(event_name);
+  notification_set_string(req.service, event_name);
   req.is_event = true;
   req.data.init(2);
-  auto &kv1   = req.data.emplace_back();
-  kv1.key     = decltype(kv1.key)("device_name");
-  kv1.value   = decltype(kv1.value)(esphome::App.get_name().c_str());
-  auto &kv2   = req.data.emplace_back();
-  kv2.key     = decltype(kv2.key)("message_id");
-  kv2.value   = decltype(kv2.value)(message_id.c_str());
+  auto &kv1 = req.data.emplace_back();
+  notification_set_string(kv1.key, "device_name");
+  notification_set_string(kv1.value, esphome::App.get_name().c_str());
+  auto &kv2 = req.data.emplace_back();
+  notification_set_string(kv2.key, "message_id");
+  notification_set_string(kv2.value, message_id.c_str());
   esphome::api::global_api_server->send_homeassistant_action(req);
 }
 
