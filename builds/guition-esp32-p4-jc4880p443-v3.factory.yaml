@@ -1,11 +1,10 @@
 # =============================================================================
 # FACTORY BUILD - Guition ESP32-P4 JC4880P443 V3 (4.3" portrait)
 # =============================================================================
-# Factory image: www.js bundled inline for first-boot web UI access.
+# Factory image: web UI assets (www.js + fonts/icons) are fully embedded in flash.
 # =============================================================================
 
 substitutions:
-  cover_art_placeholder_file: "../common/assets/cover_art_placeholder.svg"
   firmware_version: "0.0.0"
   espcontrol_component_url: "file:///config"
   icon_font_file: "/config/common/assets/fonts/espcontrol-icons.ttf"
@@ -17,14 +16,8 @@ packages:
 
 esphome:
   project:
-    name: jtenniswood.espcontrol
+    name: wonderslug.espcontrol
     version: "${firmware_version}"
 
 dashboard_import:
-  package_import_url: github://jtenniswood/espcontrol/devices/guition-esp32-p4-jc4880p443-v3/esphome.yaml@main
-
-web_server:
-  port: 80
-  version: 3
-  js_url: https://jtenniswood.github.io/espcontrol/webserver/www.js?device=${device_slug}&v=${firmware_version}&ui=20260714-shared
-  js_include: "../docs/public/webserver/embedded/www.js"
+  package_import_url: github://wonderslug/espcontrol/devices/guition-esp32-p4-jc4880p443-v3/esphome.yaml@main
