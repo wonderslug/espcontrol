@@ -408,7 +408,7 @@ struct HttpHeader {
   const char *value;
 };
 
-// Descriptor for a single flash-embedded static asset (font, CSS, image).
+// Descriptor for a single flash-embedded static asset (e.g. the /0.js bundle).
 // The generated __init__.py fills ESPHOME_ASSET_TABLE[] with these at build time.
 struct EmbeddedAsset {
   const char *url;

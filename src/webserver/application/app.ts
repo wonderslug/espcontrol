@@ -11,6 +11,8 @@ import type { PreviewInteractionsFeature } from "./preview_interactions";
 import type { PreviewRenderFeature } from "./preview_render";
 import type { ButtonSettingsFeature } from "./button_settings";
 
+declare const __ESPCONTROL_EMBEDDED_MDI_STYLES__: string;
+
 export interface AppFeature {
     init(): void;
 }
@@ -49,10 +51,18 @@ export function createAppFeature(pageTitle: AppTitleFeature, webStyles: string, 
         link.href = "https://www.buymeacoffee.com/jtenniswood";
         link.target = "_blank";
         link.rel = "noopener";
-        link.innerHTML = '<img src="/assets/bmac.png" alt="Buy Me A Coffee" height="60" style="border-radius:999px;">';
+        link.textContent = "Buy me a coffee";
         panel.appendChild(link);
         document.body.appendChild(panel);
         syncTabChrome();
+    }
+    function installLocalWebAssets(this: any) {
+        if (document.getElementById("espcontrol-local-web-assets"))
+            return;
+        var style: any = document.createElement("style");
+        style.id = "espcontrol-local-web-assets";
+        style.textContent = __ESPCONTROL_EMBEDDED_MDI_STYLES__;
+        document.head.appendChild(style);
     }
     function init(this: any) {
         setViewportMeta();
@@ -65,14 +75,7 @@ export function createAppFeature(pageTitle: AppTitleFeature, webStyles: string, 
         var style: any = document.createElement("style");
         style.textContent = webStyles;
         document.head.appendChild(style);
-        var mdi: any = document.createElement("link");
-        mdi.rel = "stylesheet";
-        mdi.href = "/assets/mdi.css";
-        document.head.appendChild(mdi);
-        var fonts: any = document.createElement("link");
-        fonts.rel = "stylesheet";
-        fonts.href = "/assets/fonts.css";
-        document.head.appendChild(fonts);
+        installLocalWebAssets();
         buildUI();
         addSupportButton();
         syncClockBarUi();

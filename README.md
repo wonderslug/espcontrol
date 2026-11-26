@@ -64,7 +64,7 @@ so the alert still gets through. On dismiss the device fires
 
 ### Fully-local web UI (no CDN dependencies)
 
-All web UI assets — the device JavaScript bundle, MDI icon font, Inter and Roboto fonts — are embedded in flash at compile time. The setup page loads instantly from the device with no external network requests. This also means the panel's configuration UI remains accessible when your internet is down.
+The device's self-contained JavaScript bundle, with the EspControl icon font (the same artwork the panel draws), Inter and Roboto inlined into it, is embedded in flash at compile time and served as `/0.js`. The setup page loads instantly from the device with no external network requests. This also means the panel's configuration UI remains accessible when your internet is down.
 
 ### AM/PM indicator for 12-hour clocks
 
